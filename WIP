@@ -1,0 +1,5 @@
+Main focus has been so far on the condition parser.  So far, I am able to parse some very simple expressions such as "a.b ==  6 or a.c > 6".
+
+Got it now so that on a simple expression we can run RSpec and evaluate the parse tree.  Working on the OR and AND versions next.
+
+Parsing fairly complex expressions.  Need to expand tests to cover more cases.
