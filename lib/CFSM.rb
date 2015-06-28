@@ -7,7 +7,7 @@ class CFSM
   def state(state, other_parameters, &exec_block)
     # The first clause of the evalgraph must be a check on the state the FSM
     # is currently in.
-    evalgraph = EvalGraph.new( state )
+    evalgraph = EvalEngine.new( state )
     
     # If an if clause is defined, then build a graph to evaluate it.
     evalgraph.add_checks( other_parameters[:if] ) if other_parameters[:if]

@@ -1,7 +1,10 @@
 # To change this license header, choose License Headers in Project Properties.
 # To change this template file, choose Tools | Templates
 # and open the template in the editor.
+
 require 'parslet'
+require './lib/condition_transform'
+
 require 'byebug'
 
 class ConditionParser < Parslet::Parser
@@ -12,19 +15,19 @@ class ConditionParser < Parslet::Parser
   rule(:space)          { match["\t "] }
   rule(:space?)         { space.repeat }
   rule(:string)         { str('"') >> ((str('\"').absent? >> str('"')).absent? >> any).repeat.as(:string) >> str('"') }
-  rule(:varname)        { match("[A-Za-z0-9_]").repeat(1) >> ( str(".") >> match("[A-Za-z0-9_]").repeat(1) ).maybe }
+  rule(:varname)        { match("[A-Za-z]").repeat(1) >> ( str(".") >> match("[A-Za-z0-9_]").repeat(1) ).maybe }
   rule(:comparator)     { str("==") | str("!=") | str("<") | str("<=") | str(">") | str(">=") }
 
   # Simple classes
   rule(:number) {
-    str('-').maybe >>
+    ( str('-').maybe >>
     (str('0') | (match('[1-9]') >> digit.repeat)) >>
     (str('.') >> digit.repeat(1)).maybe >>
     (
       (str('e') | str('E')) >>
       (str('+') | str('-')).maybe >>
       digit.repeat(1)
-    ).maybe }
+    ).maybe ).as(:number) }
   rule(:boolean)        { str("true") | str("false") }
   rule(:state_var)      { (str("@") >> varname).as( :state_var ) }
   rule(:state_name)     { (str(":") >> varname).as( :state ) }
@@ -101,4 +104,7 @@ class ConditionParser < Parslet::Parser
 end
 
 p = ConditionParser.new
-puts p.parse('a==1 and b==2 or a<4 and b<2 and c>4').inspect
+t = ConditionTransform.new
+tree = p.parse('a==1 and b==2 or a<4 and b<2 and c>"peter"')
+puts tree.inspect
+puts t.apply( tree ).inspect 
