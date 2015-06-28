@@ -4,10 +4,10 @@ require 'parslet'
 
 class ConditionTransform < Parslet::Transform
   # rule( :comparison => { :left => sequence(:left), :comparator => single(:comparator), :right => sequence(:right) } ) do
-  #  ComparisonNode.new( comparator.to_sym, left, right)
+  #  [ comparator, left, right ]
   # end
   
-  rule( :comparator => simple(:op) ) { op.to_sym }
+  # rule( :comparator => simple(:op) ) { op.to_sym }
   rule( :string => simple(:s) ) { String.new(s) }
   rule( :number => simple(:n) ) { n.to_f }
 end
