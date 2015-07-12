@@ -15,7 +15,7 @@ class ConditionParser < Parslet::Parser
   rule(:space)          { match["\t "] }
   rule(:space?)         { space.repeat }
   rule(:string)         { str('"') >> ((str('\"').absent? >> str('"')).absent? >> any).repeat.as(:string) >> str('"') }
-  rule(:varname)        { match("[A-Za-z]") >> match("[A-Za-z0-9_]").repeat(0) >> ( str(".") >> match("[A-Za-z0-9_]").repeat(1) ).maybe }
+  rule(:varname)        { match("[A-Za-z]") >> match("[A-Za-z0-9_]").repeat(0) }
   rule(:comparator)     { str("==") | str("!=") | str("<") | str("<=") | str(">") | str(">=") }
 
   # Simple classes
@@ -31,7 +31,7 @@ class ConditionParser < Parslet::Parser
   rule(:boolean)        { str("true") | str("false") }
   rule(:state_var)      { (str("@") >> varname).as( :state_var ) }
   rule(:symbol)         { (str(":") >> varname).as( :symbol ) }
-  rule(:event)          { varname.as( :event ) }
+  rule(:event)          { ( varname >> ( str(".") >> varname ).repeat(0) ).as( :event ) }
 
   # Grammar parts
   rule(:or_expression)  { ( and_expression >> ( space >> str("or") >> space >> or_expression).repeat(1) ).as(:or) | and_expression }
@@ -105,6 +105,6 @@ end
 
 p = ConditionParser.new
 t = ConditionTransform.new
-tree = p.parse('a==1 and ( @b==:working or a<4 ) and b==2 and c>"peter"')
+tree = p.parse('a==1 and ( @b==:working or a<4 ) and b.d==2 and c>"peter"')
 puts tree.inspect
 puts t.apply( tree ).inspect 
