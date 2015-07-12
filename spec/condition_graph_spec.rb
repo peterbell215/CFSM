@@ -7,7 +7,23 @@ require 'condition_graph'
 require 'byebug'
 
 describe ConditionGraph do
-  describe "#===" do
+  describe "#inspect" do
+    it "should produce nice output" do
+      graph = ConditionGraph.new ( [
+          ConditionsNode.new( [1, 2], [], [1, 2], true ),           # 0
+          ConditionsNode.new( [7, 8], [:fsm_c], [], false ),        # 1
+          ConditionsNode.new( [3, 4, 5, 6], [:fsm_a], [], false ),  # 2
+      ] )
+
+      expect( graph.inspect ).to eq(
+        "start: 0\n"\
+        "0: {1, 2} [] -> 1, 2\n"\
+        "1: {7, 8} [fsm_c] -> end\n"\
+        "2: {3, 4, 5, 6} [fsm_a] -> end\n" ) 
+    end
+  end
+  
+  describe "#==" do
     before(:each) do
       # Create the same graph twice/
       @graphs = Array.new(2) do
@@ -25,16 +41,29 @@ describe ConditionGraph do
     end
     
     it "should match two identical graphs" do
-      expect( @graphs[0] === @graphs[1] ).to be_truthy
+      expect( @graphs[0] ).to eq( @graphs[1] )
     end
     
     it "should match two graphs that are identical, but with nodes in different sequence" do
-      expect( @graphs[0] === @graphs[1].shuffle ).to be_truthy
+      expect( @graphs[0] ).to eq( @graphs[0].shuffle )
     end
     it "should not match two similar graphs" do
       @graphs[1][3].conditions.delete(14)
       
-      expect( @graphs[0] === @graphs[1] ).to be_falsey
+      expect( @graphs[0] ).to eq( @graphs[1] )
+    end
+    
+    it "should not match agree two graphs are the same if one is a subset of the other" do
+      graph1 = [
+        ConditionsNode.new( [1, 2, 3, 4], [:fsm_a], [1], true ),     # 0
+        ConditionsNode.new( [5, 6], [:fsm_b], [], false ),           # 1
+        ConditionsNode.new( [1, 2, 3, 4], [:fsm_a], [], true )      # 2        
+      ]
+      
+      graph2 = graph1.delete_at(2)
+      
+      expect( graph1 ).to eq( graph2 )
+      expect( graph2 ).to eq( graph1 )
     end
   end
   
@@ -60,7 +89,7 @@ describe ConditionGraph do
           ConditionsNode.new( [5, 6], [:fsm_b], [], false ),  # 1
       ] )
       
-      expect( @graph === @expected )
+      expect( @graph ).to eq( @expected )
     end
     
     it "should create two condition chains in sequence if the 1st is full subset of the 2nd" do
@@ -72,7 +101,7 @@ describe ConditionGraph do
           ConditionsNode.new( [5, 6], [:fsm_b], [], false ),  # 1
       ] )
       
-      expect( @graph === @expected )
+      expect( @graph ).to eq( @expected )
     end
     
     it "should create two separate condition chains if they don't share any conditions" do
@@ -85,7 +114,7 @@ describe ConditionGraph do
           ConditionsNode.new( [3, 4, 5, 6], [:fsm_a], [], false ),  # 2
       ] )
       
-      expect( @graph === @expected )
+      expect( @graph ).to eq( @expected )
     end
     
   end  

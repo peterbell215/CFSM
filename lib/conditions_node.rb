@@ -17,8 +17,6 @@ class ConditionsNode
   # This is checking whether the two nodes are close enough to then doing a closer
   # examination.
   def similar( cond_node2 )
-    byebug if self.edges.nil? || cond_node2.edges.nil?
-    
     self.conditions == cond_node2.conditions &&
       self.transitions == cond_node2.transitions &&
       self.start_node == cond_node2.start_node &&

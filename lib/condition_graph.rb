@@ -68,7 +68,37 @@ class ConditionGraph < Array
     self
   end
 
-  def ===(graph2)
+  ##
+  # Produces easily understandable output of the graph.  For example:
+  # 
+  # start: 0, 2\n
+  # 0: {1, 2}[] -> 1, 2
+  # 1: {7, 8}[:fsm_c] -> end
+  # 2: {3, 4, 5, 6}[:fsm_a] -> false
+  #
+  # The first line shows which nodes are start nodes.  Then each node
+  # has its own line.  The first number is an index for easier reference.
+  # This is followed by the set of ANDed conditions for the node.  In square
+  # brackets follows the set of transitions that can be executed if we reach
+  # this point in the graph.  The final element following the -> shows where
+  # the graph executor next goes as indices.  If the node is a leaf node, then
+  # this is marked by the word 'end'.
+  def inspect
+    # Print the list of starters
+    string = "start:"
+    self.each_with_index { |obj, ind| string << " #{ind.to_s}" if obj.start_node }
+    string << "\n"
+    
+    # Print each line
+    self.each_with_index do |obj,ind|
+      string << "#{ind}: {#{obj.conditions.to_a.join(", ")}} "\
+        "[#{obj.transitions.to_a.join(", ")}] "\
+        "-> #{ obj.edges.empty? ? "end" : obj.edges.to_a.join(", ")}\n"
+    end
+    string
+  end
+  
+  def ==(graph2)
     # Check that they are the same length.
     return false if self.nr_nodes != graph2.nr_nodes
 
