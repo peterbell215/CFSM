@@ -8,9 +8,9 @@
 class ConditionsNode
   def initialize( conditions, transitions, edges = [], start_node = true )
     @start_node = start_node
-    @conditions = Set.new( conditions )
-    @transitions = Set.new( transitions )
-    @edges = edges
+    @conditions = Set.new( conditions ) # make a copy 
+    @transitions = Set.new( transitions ) # make a copy
+    @edges = Set.new( edges )
   end
   
   ##

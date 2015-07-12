@@ -7,10 +7,6 @@ require 'condition_graph'
 require 'byebug'
 
 describe ConditionGraph do
-  before(:each) do
-    @graph = ConditionGraph.new
-  end
-
   describe "#===" do
     before(:each) do
       # Create the same graph twice/
@@ -43,16 +39,53 @@ describe ConditionGraph do
   end
   
   describe "#optimize_graph" do
+    before(:each) do
+      @graph = ConditionGraph.new
+    end
+  
     it "should accept a single condition chain" do
-      @graph.add_conditions([1, 2, 3, 4], [:fsm1] )
+      @graph.add_conditions([1, 2, 3, 4], :fsm1 )
       
       expect( @graph[ 0 ].start_node ).to be true 
-      expect( @graph[ 0 ].conditions ).to match_array( [1, 2, 3, 4] )
-      expect( @graph[ 0 ].transitions ).to match_array( [:fsm1] )
+      expect( @graph[ 0 ].conditions.to_a ).to match_array( [1, 2, 3, 4] )
+      expect( @graph[ 0 ].transitions.to_a ).to match_array( [:fsm1] )
+    end
+
+    it "should create two condition chains in sequence if the 2nd is full subset of the 1st" do
+      @graph.add_conditions(Set.new( [1, 2, 3, 4 ] ), :fsm_a )
+      @graph.add_conditions(Set.new( [1, 2, 3, 4, 5, 6] ), :fsm_b )
+        
+      @expected = ConditionGraph.new ( [
+          ConditionsNode.new( [1, 2, 3, 4], [:fsm_a], [1], true ),  # 0
+          ConditionsNode.new( [5, 6], [:fsm_b], [], false ),  # 1
+      ] )
+      
+      expect( @graph === @expected )
+    end
+    
+    it "should create two condition chains in sequence if the 1st is full subset of the 2nd" do
+      @graph.add_conditions(Set.new( [1, 2, 3, 4, 5, 6] ), :fsm_b )      
+      @graph.add_conditions(Set.new( [1, 2, 3, 4 ] ), :fsm_a )
+  
+      @expected = ConditionGraph.new ( [
+          ConditionsNode.new( [1, 2, 3, 4], [:fsm_a], [1], true ),  # 0
+          ConditionsNode.new( [5, 6], [:fsm_b], [], false ),  # 1
+      ] )
+      
+      expect( @graph === @expected )
     end
     
     it "should create two separate condition chains if they don't share any conditions" do
+      @graph.add_conditions(Set.new( [1, 2, 7, 8] ), :fsm_c )
+      @graph.add_conditions(Set.new( [1, 2, 3, 4, 5, 6] ), :fsm_a )
+        
+      @expected = ConditionGraph.new ( [
+          ConditionsNode.new( [1, 2], [], [1, 2], true ),           # 0
+          ConditionsNode.new( [7, 8], [:fsm_c], [], false ),        # 1
+          ConditionsNode.new( [3, 4, 5, 6], [:fsm_a], [], false ),  # 2
+      ] )
       
+      expect( @graph === @expected )
     end
     
   end  

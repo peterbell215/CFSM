@@ -36,27 +36,36 @@ class ConditionGraph < Array
   def add_conditions( anded_conditions, transition )
     if self.empty?
       # First condition to be added to the graph.
-      self.push( ConditionsNode.new(anded_conditions, transition) )
+      self.push( ConditionsNode.new( anded_conditions, [transition] ) )
     else
       # Search through the array to see if the new conditions are
       # already contained in array graph as a condition node.
-      self.each_with_index do |obj, index|
-        if !obj.startnode
-          self.insert(index, ConditionsNode.new( anded_conditions, transition ) )
-          break
-        elsif anded_conditions == obj.conditions
-          # the two are the same.  Therefore, simply add transition to the set
-          # of transitions on this node.
-          self[index].addTransition( transitions )
-          break
-        elsif anded_conditions < obj.conditions
-          self[ index ] = ConditionsNode.new( obj.getConditions & anded_conditions, transition, false )
-          self[ index ].edges = [ self.length ]
-          self.push( @obj.conditions( obj.conditions - anded_conditions ) )
-          break
+      catch :added_conditions do
+        self.each_with_index do |obj, index|
+          if obj.start_node
+            if anded_conditions == obj.conditions
+              # the two are the same.  Therefore, simply add transition to the set
+              # of transitions on this node.
+              self[index].transitions.add( transition )
+              throw :added_conditions
+            elsif anded_conditions < obj.conditions
+              # the new conditions are a subset of the existing conditions.  Therefore,
+              # split the existing conditions into those shared with the new conditions
+              # and those that come later.
+              self[ index ] = ConditionsNode.new( obj.conditions & anded_conditions, [transition], [ self.length ], false )
+              obj.conditions = obj.conditions - anded_conditions
+              self.push( obj )
+              break
+            end
+          end
         end
+        # if we reach here, we have not been able to add the new conditions
+        # to an existing chain. Therefore, we simply add them as a new node
+        # in their own right.
+        self.push( ConditionsNode.new( anded_conditions, [transition] ) )
       end
     end
+    self
   end
 
   def ===(graph2)
@@ -71,7 +80,9 @@ class ConditionGraph < Array
           catch :dont_match do           
             if cond_node1.similar( cond_node2 )
               # make a copy of the edge list for cond_node2
-              edge_list2 = Array.new cond_node2.edges
+              # byebug unless cond_node2.edges.is_a? Set
+              
+              edge_list2 = Set.new cond_node2.edges
 
               # Now check that the edges are the same for both nodes.
               cond_node1.edges.each do | edge1 |
@@ -105,7 +116,7 @@ class ConditionGraph < Array
     (0..self.length-1).each do |i|
       new_graph[ nodemap[i] ] = ConditionsNode.new( self[i].conditions,
         self[i].transitions,
-        Array.new( self[i].edges.length ) { |e| nodemap[ self[i].edges[e] ] },
+        Set.new( self[i].edges ) { |e| nodemap[ e ] },
         self[i].start_node )
     end
     
