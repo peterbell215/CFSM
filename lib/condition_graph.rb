@@ -1,6 +1,6 @@
-# To change this license header, choose License Headers in Project Properties.
-# To change this template file, choose Tools | Templates
-# and open the template in the editor.
+# CFSM Project.
+# Author: peter.bell215@gmail.com
+# Licensed under MIT2.
 
 require 'conditions_node'
 
@@ -12,27 +12,45 @@ class ConditionGraph < Array
   # A chain is a hash of one element containing a set of conditions, and
   # a transition description.  So a chain might be:
   #
-  #   { [:c1, :c2, :c3, :c4] => :fsm1_transition }
+  #   0: {:c1, :c2, :c3, :c4}[:fsm1_transition] -> 1
   #
-  # This describes that if conditions :c1 to :c4 are fulfilled, then the
-  # :fsm1_transition should be performed.
+  # This describes that the first entry in the graph says that if conditions
+  # :c1 to :c4 are fulfilled, then the :fsm1_transition should be performed.
+  # Furthermore, the graph executor should then consider moving to the 2nd
+  # entry in the graph.
   #
-  # This static methods job is to merge two chains in the above description into
-  # a single representation. So if one chain is a sub-set of the other, this
-  # method would do the following mapping:
-  #
-  # { [:c1, :c2, :c3, :c4] => :fsm1_transition }
-  # { [:c1, :c2] => :fsm2_transition }
-  #
+  # This method's job is to merge a further chain into an existing graph.
+  # The merge only ever evaluates start nodes in the graph.  It applies
+  # one of the four rules:
+  # 
+  # 0: {:c1, :c2, :c3, :c4}[:fsm1_transition] -> end
+  # merged with 
+  # {:c1, :c2, :c3, :c4}[:fsm2_transition]
   # becomes
+  # 0: {:c1, :c2, :c3, :c4}[:fsm1_transition, :fsm2_transition] -> end
+  # 
+  # 0: {:c1, :c2, :c3, :c4}[:fsm1_transition] -> end
+  # merged with 
+  # {:c1, :c2}[:fsm2_transition]
+  # becomes
+  # 0: {:c1, :c2}[:fsm2_transition] -> [1]
+  # 1: {:c3, :c4}[:fsm1_transition] -> end
+  # 
+  # 0: {:c1, :c2}[:fsm1_transition][:fsm1_transition] -> end
+  # merged with 
+  # {:c1, :c2, :c3, :c4}[:fsm2_transition]
+  # becomes
+  # 0: {:c1, :c2}[:fsm1_transition] -> [1]
+  # 1: {:c3, :c4}[:fsm2_transition] -> end
+  # 
+  # 0: {:c1, :c2, :c3, :c4}[:fsm1_transition][:fsm1_transition] -> end
+  # merged with 
+  # {:c1, :c2, :c5, :c6}[:fsm2_transition]
+  # becomes
+  # 0: {:c1, :c2}[] -> [1,2]
+  # 1: {:c3, :c4}[:fsm1_transition] -> end
+  # 2: {:c5, :c6}[:fsm2_transition] -> end
   #
-  # { [:c1, :c2] => :fsm2_transition, [:c3, :c4] => :fsm1_transition }
-  #
-  # The other interesting case is if the two condition sets share some common
-  # elements, but also have some differences:
-  #
-  # { [:c1, :c2, :c3, :c4] => :fsm1_transition }
-  # { [:c1, :c2, :c5, :c6] => :fsm2_transition }
   def add_conditions( anded_conditions, transition )
     if self.empty?
       # First condition to be added to the graph.
@@ -52,10 +70,21 @@ class ConditionGraph < Array
               # the new conditions are a subset of the existing conditions.  Therefore,
               # split the existing conditions into those shared with the new conditions
               # and those that come later.
-              self[ index ] = ConditionsNode.new( obj.conditions & anded_conditions, [transition], [ self.length ], false )
+              self[ index ] = ConditionsNode.new( obj.conditions & anded_conditions, [transition], [ self.length ], true )
               obj.conditions = obj.conditions - anded_conditions
+              obj.start_node = false
               self.push( obj )
-              break
+              throw :added_conditions
+            elsif obj.conditions < anded_conditions
+              obj.edges << self.length
+              self.push( ConditionsNode.new( anded_conditions - obj.conditions, [transition], [], false ) )
+              throw :added_conditions
+            elsif obj.conditions.intersect?( anded_conditions )
+              intersect = obj.conditions.intersection anded_conditions
+              self.push( ConditionsNode.new( obj.conditions - intersect, obj.transitions, [], false ))
+              self.push( ConditionsNode.new( anded_conditions - intersect, [transition], [], false ))
+              self[ index ] = ConditionsNode.new( intersect, [], [ self.length-2, self.length-1 ], true )
+              throw :added_conditions
             end
           end
         end
@@ -98,20 +127,28 @@ class ConditionGraph < Array
     string
   end
   
+  ##
+  # Compares two graphs for equality.  Firstly, it checks that the two
+  # graphs have the same number of nodes.  It then takes each node in the first
+  # graph and looks for a node in the second graph that is similar.  The
+  # definition of similar is that both nodes have the same conditions, the
+  # same transitions, and the same number of edges leaving the node.
+  #
+  # If both nodes are similar, we then check that for each edge in the first
+  # graph's node, there is a corresponding edge in the second graph's node
+  # for which the nodes at the end of the edge are also similar.
   def ==(graph2)
     # Check that they are the same length.
     return false if self.nr_nodes != graph2.nr_nodes
 
-    self.each_with_index do |cond_node1, index|
+    self.each do |cond_node1|
       catch :do_match do
         # Now for this condition_node, see if we can find the same node in second
         # graph
-        graph2.each_with_index do |cond_node2, index|
-          catch :dont_match do           
+        graph2.each do |cond_node2|
+          catch :dont_match do
             if cond_node1.similar( cond_node2 )
               # make a copy of the edge list for cond_node2
-              # byebug unless cond_node2.edges.is_a? Set
-              
               edge_list2 = Set.new cond_node2.edges
 
               # Now check that the edges are the same for both nodes.

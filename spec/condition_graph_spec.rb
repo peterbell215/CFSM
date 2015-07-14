@@ -47,23 +47,11 @@ describe ConditionGraph do
     it "should match two graphs that are identical, but with nodes in different sequence" do
       expect( @graphs[0] ).to eq( @graphs[0].shuffle )
     end
+    
     it "should not match two similar graphs" do
       @graphs[1][3].conditions.delete(14)
       
-      expect( @graphs[0] ).to eq( @graphs[1] )
-    end
-    
-    it "should not match agree two graphs are the same if one is a subset of the other" do
-      graph1 = [
-        ConditionsNode.new( [1, 2, 3, 4], [:fsm_a], [1], true ),     # 0
-        ConditionsNode.new( [5, 6], [:fsm_b], [], false ),           # 1
-        ConditionsNode.new( [1, 2, 3, 4], [:fsm_a], [], true )      # 2        
-      ]
-      
-      graph2 = graph1.delete_at(2)
-      
-      expect( graph1 ).to eq( graph2 )
-      expect( graph2 ).to eq( graph1 )
+      expect( @graphs[0] ).to_not eq( @graphs[1] )
     end
   end
   
@@ -86,7 +74,7 @@ describe ConditionGraph do
         
       @expected = ConditionGraph.new ( [
           ConditionsNode.new( [1, 2, 3, 4], [:fsm_a], [1], true ),  # 0
-          ConditionsNode.new( [5, 6], [:fsm_b], [], false ),  # 1
+          ConditionsNode.new( [5, 6], [:fsm_b], [], false ),        # 1
       ] )
       
       expect( @graph ).to eq( @expected )
@@ -98,7 +86,7 @@ describe ConditionGraph do
   
       @expected = ConditionGraph.new ( [
           ConditionsNode.new( [1, 2, 3, 4], [:fsm_a], [1], true ),  # 0
-          ConditionsNode.new( [5, 6], [:fsm_b], [], false ),  # 1
+          ConditionsNode.new( [5, 6], [:fsm_b], [], false ),        # 1
       ] )
       
       expect( @graph ).to eq( @expected )
