@@ -22,7 +22,30 @@ describe ConditionGraph do
         "2: {3, 4, 5, 6} [fsm_a] -> end\n" ) 
     end
   end
-  
+
+  describe "#clone" do
+    it "should make a deep copy including of the sets." do
+      graph = ConditionGraph.new ( [
+                                   ConditionsNode.new( [1, 2], [], [1, 2], true ),           # 0
+                                   ConditionsNode.new( [7, 8], [:fsm_c], [], false ),        # 1
+                                   ConditionsNode.new( [3, 4, 5, 6], [:fsm_a], [], false ),  # 2
+                               ] )
+
+      copy = graph.clone
+
+      expect( graph.length ).to eq( copy.length )
+      (0..graph.length-1).each do |index|
+        expect( graph[index].conditions ).to match( copy[index].conditions )
+        expect( graph[index].conditions ).not_to be( copy[index].conditions )
+        expect( graph[index].transitions ).to match( copy[index].transitions )
+        expect( graph[index].transitions ).not_to be( copy[index].transitions.object_id )
+        expect( graph[index].edges ).to match( copy[index].edges )
+        expect( graph[index].edges ).not_to be( copy[index].edges )
+        expect( graph[index].start_node ).to eq( copy[index].start_node )
+      end
+    end
+  end
+
   describe "#==" do
     before(:each) do
       # Create the same graph twice/
@@ -104,7 +127,23 @@ describe ConditionGraph do
       
       expect( @graph ).to eq( @expected )
     end
-    
+
+    it "should create merge three chains correctly" do
+      @condition_set = {
+          Set.new( [1, 2, 7, 8] ) => :fsm_c,
+          Set.new( [1, 2, 3, 4, 5, 6] ) => :fsm_b,
+          Set.new( [3, 4, 5, 6] ) => :fsm_a
+      }
+
+      @condition_set.each_pair { |conds, state| @graph.add_conditions( conds, state ) }
+
+      expect( @graph.inspect ).to eq(
+        "start: 0 3\n"\
+        "0: {1, 2} [] -> 1, 2\n"\
+        "1: {7, 8} [fsm_c] -> end\n"\
+        "2: {3, 4, 5, 6} [fsm_b] -> end\n"\
+        "3: {3, 4, 5, 6} [fsm_a] -> end\n" )
+    end
   end  
 end
 

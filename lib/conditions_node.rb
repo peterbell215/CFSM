@@ -12,9 +12,13 @@ class ConditionsNode
     @transitions = Set.new( transitions ) # make a copy
     @edges = Set.new( edges )
   end
-  
+
+  def clone
+    ConditionsNode.new( self.conditions, self.transitions, self.edges, self.start_node )
+  end
+
   ##
-  # This is checking whether the two nodes are close enough to then doing a closer
+  # This is checking whether the two nodes are close enough to then do a closer examination
   # examination.
   def similar( cond_node2 )
     self.conditions == cond_node2.conditions &&

@@ -8,6 +8,9 @@ class ConditionGraph < Array
 
   alias :nr_nodes :length
 
+  def clone
+    ConditionGraph.new( self.length ) { |index| self[index].clone }
+  end
   ##
   # A chain is a hash of one element containing a set of conditions, and
   # a transition description.  So a chain might be:
@@ -97,6 +100,11 @@ class ConditionGraph < Array
     self
   end
 
+  ##
+  # We measure the complexity of the graph by the number of conditions it has.
+  def count_complexity
+    self.inject( 0 ) { |nr_conditions, conditions_node| nr_conditions + conditions_node.conditions.length }
+  end
   ##
   # Produces easily understandable output of the graph.  For example:
   # 
