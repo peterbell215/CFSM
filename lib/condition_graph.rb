@@ -55,6 +55,9 @@ class ConditionGraph < Array
   # 2: {:c5, :c6}[:fsm2_transition] -> end
   #
   def add_conditions( anded_conditions, transition )
+    # This is mainly here for testing purposes.  Allows us to not
+    anded_conditions = Set.new anded_conditions if anded_conditions.is_a? Array
+
     if self.empty?
       # First condition to be added to the graph.
       self.push( ConditionsNode.new( anded_conditions, [transition] ) )
@@ -101,7 +104,7 @@ class ConditionGraph < Array
   end
 
   ##
-  # We measure the complexity of the graph by the number of conditions it has.
+  # We measure the complexity of the graph by the number of conditions it has to evaluate
   def count_complexity
     self.inject( 0 ) { |nr_conditions, conditions_node| nr_conditions + conditions_node.conditions.length }
   end
@@ -122,10 +125,8 @@ class ConditionGraph < Array
   # this is marked by the word 'end'.
   def inspect
     # Print the list of starters
-    string = "start:"
-    self.each_with_index { |obj, ind| string << " #{ind.to_s}" if obj.start_node }
-    string << "\n"
-    
+    string = 'start: ' << (0..self.length-1).to_a.reject { |i| !self[i].start_node }.join(', ') << "\n"
+
     # Print each line
     self.each_with_index do |obj,ind|
       string << "#{ind}: {#{obj.conditions.to_a.join(", ")}} "\
