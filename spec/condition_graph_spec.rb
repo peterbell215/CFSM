@@ -7,19 +7,28 @@ require 'condition_graph'
 require 'byebug'
 
 describe ConditionGraph do
-  describe "#inspect" do
-    it "should produce nice output" do
-      graph = ConditionGraph.new ( [
-          ConditionsNode.new( [1, 2], [], [1, 2], true ),           # 0
-          ConditionsNode.new( [7, 8], [:fsm_c], [], false ),        # 1
-          ConditionsNode.new( [3, 4, 5, 6], [:fsm_a], [], false ),  # 2
-      ] )
+  describe "graph to/and from strings" do
+    before( :each ) do
+      @graph = ConditionGraph.new ( [
+                                     ConditionsNode.new( [1, 2], [], [1, 2], true ),           # 0
+                                     ConditionsNode.new( [7, 8], [:fsm_c, :fsm_b], [], false ),        # 1
+                                     ConditionsNode.new( [3, 4, 5, 6], [:fsm_a], [], false ),  # 2
+                                 ] )
 
-      expect( graph.inspect ).to eq(
-        "start: 0\n"\
+      @graph_as_string = "start: 0\n"\
         "0: {1, 2} [] -> 1, 2\n"\
-        "1: {7, 8} [fsm_c] -> end\n"\
-        "2: {3, 4, 5, 6} [fsm_a] -> end\n" ) 
+        "1: {7, 8} [fsm_c, fsm_b] -> end\n"\
+        "2: {3, 4, 5, 6} [fsm_a] -> end\n"
+    end
+
+    it "should produce nice output" do
+      expect( @graph.inspect ).to eq( @graph_as_string )
+    end
+
+    it "should generate a graph from a valid string" do
+      new_graph = ConditionGraph.from_string @graph_as_string
+
+      expect( new_graph ).to eq( @graph )
     end
   end
 
