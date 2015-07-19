@@ -32,8 +32,8 @@ class ConditionsNode
   def conditions=( conds )
     @conditions = ( conds.is_a? Set ) ? conds : Set.new( conds )
   end
+
   attr_reader :conditions
-    
   attr_accessor :start_node
   attr_accessor :transitions
   attr_accessor :edges

@@ -161,7 +161,7 @@ class ConditionGraph < Array
       elsif elements = @@line_matcher.match(line)
         conditions = Set.new elements[2].split(", ").map! { |n| n.to_i }
         transitions = Set.new elements[3].split(", ").map! { |s| s.to_sym }
-        edges = elements[4] == 'end' ? nil : Set.new( elements[4].split(", ").map! { |n| n.to_i } )
+        edges = elements[4] == 'end' ? nil : Set.new( elements[4].split(', ').map! { |n| n.to_i } )
 
         graph[ elements[1].to_i ] = ConditionsNode.new( conditions, transitions, edges, false )
       end

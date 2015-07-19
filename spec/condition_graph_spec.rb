@@ -153,6 +153,26 @@ describe ConditionGraph do
         "2: {3, 4, 5, 6} [fsm_b] -> end\n"\
         "3: {3, 4, 5, 6} [fsm_a] -> end\n" )
     end
-  end  
+  end
+
+  describe '#count_complexity' do
+    it 'should return nil if the graph is empty' do
+      expect( ConditionGraph.new.count_complexity ).to eq(0)
+    end
+
+    it 'should return the number of conditions correctly' do
+      @graph = ConditionGraph.new
+
+      @condition_sets = {
+          Set.new( [1, 2, 7, 8] ) => :fsm_c,
+          Set.new( [1, 2, 3, 4, 5, 6] ) => :fsm_b,
+          Set.new( [3, 4, 5, 6] ) => :fsm_a
+      }
+
+      @condition_sets.each_pair { |conds, state| @graph.add_conditions( conds, state ) }
+
+      expect( @graph.count_complexity ).to eq(12)
+    end
+  end
 end
 
