@@ -104,8 +104,8 @@ describe ConditionGraph do
     end
     
     it "should create two condition chains in sequence if the 1st is full subset of the 2nd" do
-      @graph.add_conditions(Set.new( [1, 2, 3, 4, 5, 6] ), :fsm_b )      
-      @graph.add_conditions(Set.new( [1, 2, 3, 4 ] ), :fsm_a )
+      @graph.add_conditions( [1, 2, 3, 4, 5, 6], :fsm_b )
+      @graph.add_conditions( [1, 2, 3, 4 ], :fsm_a )
   
       @expected = ConditionGraph.new ( [
           ConditionsNode.new( [1, 2, 3, 4], [:fsm_a], [1], true ),  # 0
@@ -116,8 +116,8 @@ describe ConditionGraph do
     end
     
     it "should create two separate condition chains if they don't share any conditions" do
-      @graph.add_conditions(Set.new( [1, 2, 7, 8] ), :fsm_c )
-      @graph.add_conditions(Set.new( [1, 2, 3, 4, 5, 6] ), :fsm_a )
+      @graph.add_conditions( [1, 2, 7, 8], :fsm_c )
+      @graph.add_conditions( [1, 2, 3, 4, 5, 6], :fsm_a )
         
       @expected = ConditionGraph.new ( [
           ConditionsNode.new( [1, 2], [], [1, 2], true ),           # 0
@@ -129,16 +129,16 @@ describe ConditionGraph do
     end
 
     it "should create merge three chains correctly" do
-      @condition_set = {
+      @condition_sets = {
           Set.new( [1, 2, 7, 8] ) => :fsm_c,
           Set.new( [1, 2, 3, 4, 5, 6] ) => :fsm_b,
           Set.new( [3, 4, 5, 6] ) => :fsm_a
       }
 
-      @condition_set.each_pair { |conds, state| @graph.add_conditions( conds, state ) }
+      @condition_sets.each_pair { |conds, state| @graph.add_conditions( conds, state ) }
 
       expect( @graph.inspect ).to eq(
-        "start: 0 3\n"\
+        "start: 0, 3\n"\
         "0: {1, 2} [] -> 1, 2\n"\
         "1: {7, 8} [fsm_c] -> end\n"\
         "2: {3, 4, 5, 6} [fsm_b] -> end\n"\

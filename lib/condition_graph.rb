@@ -8,9 +8,12 @@ class ConditionGraph < Array
 
   alias :nr_nodes :length
 
+  ##
+  # We need clone to be deep.
   def clone
     ConditionGraph.new( self.length ) { |index| self[index].clone }
   end
+
   ##
   # A chain is a hash of one element containing a set of conditions, and
   # a transition description.  So a chain might be:
@@ -55,8 +58,9 @@ class ConditionGraph < Array
   # 2: {:c5, :c6}[:fsm2_transition] -> end
   #
   def add_conditions( anded_conditions, transition )
-    # This is mainly here for testing purposes.  Allows us to not
-    anded_conditions = Set.new anded_conditions if anded_conditions.is_a? Array
+    # This is here primarily to make the Rspec's slightly easier to read by not requiring
+    # anded_conditions to be a Set.  Internally, it does need to be a set, though.
+    anded_conditions = Set.new( anded_conditions) if anded_conditions.is_a? Array
 
     if self.empty?
       # First condition to be added to the graph.
@@ -82,10 +86,13 @@ class ConditionGraph < Array
               self.push( obj )
               throw :added_conditions
             elsif obj.conditions < anded_conditions
+              # New conditions super-set of existing conditions.  Therefore, we simply add the missing conditions on
+              # as a new branch.
               obj.edges << self.length
               self.push( ConditionsNode.new( anded_conditions - obj.conditions, [transition], [], false ) )
               throw :added_conditions
             elsif obj.conditions.intersect?( anded_conditions )
+              # The two sets of conditions have conditions in common, but both have unique conditions.
               intersect = obj.conditions.intersection anded_conditions
               self.push( ConditionsNode.new( obj.conditions - intersect, obj.transitions, [], false ))
               self.push( ConditionsNode.new( anded_conditions - intersect, [transition], [], false ))
@@ -135,7 +142,7 @@ class ConditionGraph < Array
     end
     string
   end
-  
+
   ##
   # Compares two graphs for equality.  Firstly, it checks that the two
   # graphs have the same number of nodes.  It then takes each node in the first
