@@ -117,7 +117,7 @@ class ConditionGraph < Array
   def execute
     transitions = Set.new      # list of transitions that can be executed.
 
-    self.each_with_index() do |condition_node, current|
+    self.each_with_index do |condition_node, current|
       if condition_node.start_node
         stack = []            # stack used to keep track of different branches for evaluation.
 
@@ -169,8 +169,8 @@ class ConditionGraph < Array
     # Print each line
     self.each_with_index do |obj,ind|
       string << "#{ind}: {#{obj.conditions.to_a.join(", ")}} "\
-        "[#{obj.transitions.to_a.join(", ")}] "\
-        "-> #{ obj.edges.empty? ? "end" : obj.edges.to_a.join(", ")}\n"
+        "[#{obj.transitions.to_a.join(', ')}] "\
+        "-> #{ obj.edges.empty? ? 'end' : obj.edges.to_a.join(', ')}\n"
     end
 
     string
@@ -187,11 +187,11 @@ class ConditionGraph < Array
     start_array = nil
 
     input_string.split(/[\n;]/).each do |line|
-      if starts = @@start_matcher.match(line)
+      if ( starts = @@start_matcher.match(line) )
         start_array = starts[1].split(', ').map! { |s| s.to_i }
       elsif elements = @@line_matcher.match(line)
-        conditions = Set.new elements[2].split(", ").map! { |n| n.to_i }
-        transitions = Set.new elements[3].split(", ").map! { |s| s.to_sym }
+        conditions = Set.new elements[2].split(', ').map! { |n| n.to_i }
+        transitions = Set.new elements[3].split(', ').map! { |s| s.to_sym }
         edges = elements[4] == 'end' ? nil : Set.new( elements[4].split(', ').map! { |n| n.to_i } )
 
         graph[ elements[1].to_i ] = ConditionsNode.new( conditions, transitions, edges, false )
@@ -229,7 +229,7 @@ class ConditionGraph < Array
 
               # Now check that the edges are the same for both nodes.
               cond_node1.edges.each do | edge1 |
-                throw :dont_match if !edge_list2.reject! { |edge2| self[ edge1 ].similar( graph2[ edge2 ] ) }
+                throw :dont_match unless edge_list2.reject! { |edge2| self[edge1].similar(graph2[edge2]) }
               end
 
               # if we get here, we have managed to find a corresponding edge in
@@ -247,7 +247,7 @@ class ConditionGraph < Array
       end
       # if we get here, then its because we executed the :do_match.
     end
-    return true
+    true
   end
 
   ##
