@@ -3,6 +3,7 @@
 # Licensed under MIT2.
 
 require 'conditions_node'
+require 'condition_permutations'
 
 class ConditionGraph < Array
 
@@ -28,29 +29,29 @@ class ConditionGraph < Array
   # This method's job is to merge a further chain into an existing graph.
   # The merge only ever evaluates start nodes in the graph.  It applies
   # one of the four rules:
-  # 
+  #
   # 0: {:c1, :c2, :c3, :c4}[:fsm1_transition] -> end
-  # merged with 
+  # merged with
   # {:c1, :c2, :c3, :c4}[:fsm2_transition]
   # becomes
   # 0: {:c1, :c2, :c3, :c4}[:fsm1_transition, :fsm2_transition] -> end
-  # 
+  #
   # 0: {:c1, :c2, :c3, :c4}[:fsm1_transition] -> end
-  # merged with 
+  # merged with
   # {:c1, :c2}[:fsm2_transition]
   # becomes
   # 0: {:c1, :c2}[:fsm2_transition] -> [1]
   # 1: {:c3, :c4}[:fsm1_transition] -> end
-  # 
+  #
   # 0: {:c1, :c2}[:fsm1_transition][:fsm1_transition] -> end
-  # merged with 
+  # merged with
   # {:c1, :c2, :c3, :c4}[:fsm2_transition]
   # becomes
   # 0: {:c1, :c2}[:fsm1_transition] -> [1]
   # 1: {:c3, :c4}[:fsm2_transition] -> end
-  # 
+  #
   # 0: {:c1, :c2, :c3, :c4}[:fsm1_transition][:fsm1_transition] -> end
-  # merged with 
+  # merged with
   # {:c1, :c2, :c5, :c6}[:fsm2_transition]
   # becomes
   # 0: {:c1, :c2}[] -> [1,2]
@@ -111,6 +112,36 @@ class ConditionGraph < Array
   end
 
   ##
+  # Executes the graph.  When it needs to evaluate a condition it yields to the caller to evalulate
+  # the condition.
+  def execute
+    transitions = Set.new      # list of transitions that can be executed.
+
+    self.each_with_index() do |condition_node, current|
+      if condition_node.start_node
+        stack = []            # stack used to keep track of different branches for evaluation.
+
+        loop do
+          # At this point self[current] points to a ConditionNode.  This has a set of conditions which we
+          # need to evaluate in turn.
+          if self[current].conditions.all? { |c| yield c }
+            # all the conditions evalulated to true. Therefore, add any transitions assciated with this node.
+            transitions.merge self[current].transitions
+            # Now push the follow ons onto the stack.
+            stack.concat self[current].edges.to_a
+          end
+
+          # If the stack is empty we are done.
+          break if stack.empty?
+          current = stack.pop
+        end
+      end
+    end
+    #return the transitions
+    transitions
+  end
+
+  ##
   # We measure the complexity of the graph by the number of conditions it has to evaluate
   def count_complexity
     self.inject( 0 ) { |nr_conditions, conditions_node| nr_conditions + conditions_node.conditions.length }
@@ -118,7 +149,7 @@ class ConditionGraph < Array
 
   ##
   # Produces easily understandable output of the graph.  For example:
-  # 
+  #
   # start: 0, 2\n
   # 0: {1, 2}[] -> 1, 2
   # 1: {7, 8}[:fsm_c] -> end
@@ -200,7 +231,7 @@ class ConditionGraph < Array
               cond_node1.edges.each do | edge1 |
                 throw :dont_match if !edge_list2.reject! { |edge2| self[ edge1 ].similar( graph2[ edge2 ] ) }
               end
-              
+
               # if we get here, we have managed to find a corresponding edge in
               # cond_node2 for each edge in cond_node1.  Therefore, we should exit
               # to the main self loop and test the next node for the existenance
@@ -218,20 +249,36 @@ class ConditionGraph < Array
     end
     return true
   end
-  
-  # This is a little helper function that can mix up a tree.  Used for testing
+
+  ##
+  # This is a little helper function that adds the conditions to the graph in the
+  # sequence they are provided in *condition_sets*.  This is used for testing to
+  # separate out the process of exploring all the permutations within ConditionPermutations
+  # versus the actual process of building a graph.
+  #
+  # @param [Hash] condition_sets
+  # @return [ConditionGraph]
+  def add_condition_sets( condition_sets )
+    condition_sets.each_pair { |conds, state| self.add_conditions( conds, state ) }
+    self
+  end
+
+  ##
+  # This is a little helper function that can mix up a ConditionGraph tree and return the new tree.  Used for testing
   # purposes.
+  #
+  # @return [ConditionGraph]
   def shuffle
     nodemap = (0..self.length-1).to_a.shuffle
     new_graph = ConditionGraph.new( self.length )
-    
+
     (0..self.length-1).each do |i|
       new_graph[ nodemap[i] ] = ConditionsNode.new( self[i].conditions,
         self[i].transitions,
         Set.new( self[i].edges ) { |e| nodemap[ e ] },
         self[i].start_node )
     end
-    
+
     new_graph
   end
 end
