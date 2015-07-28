@@ -1,16 +1,23 @@
-# To change this license header, choose License Headers in Project Properties.
-# To change this template file, choose Tools | Templates
-# and open the template in the editor.
+# @author Peter Bell
+# Licensed under MIT2.
 
 ##
 # Uses to represent a condition node within a directed graph of conditions.
 # The directed graph shows the RETE decision tree.
 class ConditionsNode
+  ##
+  # Constructor for a condition node.
+  #
+  # @param conditions [Set] defines the set of conditions all of which must be true for the condition node to be true
+  # @param transitions [Set<Fixnum>] defines the set of transitions to be raised if the conditions are true
+  # @param edges [Set<Fixnum>] defines the set of follow conditions within the graph
+  # @param start_node [Set<Fixnum.] defines whether this node is a starting node
+  # @return [ConditionsNode]
   def initialize( conditions, transitions, edges = [], start_node = true )
     @start_node = start_node
-    @conditions = Set.new( conditions ) # make a copy 
+    @conditions = Set.new( conditions ) # make a copy
     @transitions = Set.new( transitions ) # make a copy
-    @edges = Set.new( edges )
+    @edges = Set.new( edges ) # make a copy
   end
 
   def clone
@@ -26,7 +33,7 @@ class ConditionsNode
       self.start_node == cond_node2.start_node &&
       self.edges.length == cond_node2.edges.length
   end
-  
+
   ##
   # Make sure that any conditions added to the ConditionsNode is a set.
   def conditions=( conds )

@@ -81,7 +81,7 @@ class ConditionGraph < Array
               # the new conditions are a subset of the existing conditions.  Therefore,
               # split the existing conditions into those shared with the new conditions
               # and those that come later.
-              self[ index ] = ConditionsNode.new( obj.conditions & anded_conditions, [transition], [ self.length ], true )
+              self[ index ] = ConditionsNode.new( anded_conditions, [transition], [ self.length ], true )
               obj.conditions = obj.conditions - anded_conditions
               obj.start_node = false
               self.push( obj )
@@ -95,7 +95,7 @@ class ConditionGraph < Array
             elsif obj.conditions.intersect?( anded_conditions )
               # The two sets of conditions have conditions in common, but both have unique conditions.
               intersect = obj.conditions.intersection anded_conditions
-              self.push( ConditionsNode.new( obj.conditions - intersect, obj.transitions, [], false ))
+              self.push( ConditionsNode.new( obj.conditions - intersect, obj.transitions, obj.edges, false ))
               self.push( ConditionsNode.new( anded_conditions - intersect, [transition], [], false ))
               self[ index ] = ConditionsNode.new( intersect, [], [ self.length-2, self.length-1 ], true )
               throw :added_conditions

@@ -61,18 +61,26 @@ module ConditionPermutations
   # b = [1, 2, 3, 4, 5, 6 ] => :fsm_b
   # c = [3, 4, 5, 6 ] => :fsm_a
   #
-  # This function will try all permutations of combining the three anded_conditions
-  # in order to determine the optimal graph.
+  # This function will try a reasonable number of permutations to combine the sets.  If we have less than 5 members
+  # in the set, we try all permutations.
   #
   # @return [ConditionGraph]
   # @param [Hash<Set => Symbol, CFSM>] condition_sets
   def permutate_graphs( condition_sets )
+    @set_of_graphs = []
+
     # This is mainly here for testing purposes.  Allows us to not have to explicitely create a set when creating
     # the test data.
-    @set_of_graphs = []
     condition_sets.keys.keep_if { |c| c.is_a? Array }.each { |c| condition_sets[ Set.new( c )] = condition_sets.delete( c ) }
 
-    condition_sets.keys.permutation.each { |sequence_of_insertions| apply_one_permutation( condition_sets, sequence_of_insertions ) }
+    if condition_sets.size > 6
+      (1..40).each do
+         apply_one_permutation( condition_sets, condition_sets.keys.shuffle )
+      end
+    else
+      condition_sets.keys.permutation.each { |sequence_of_insertions| apply_one_permutation( condition_sets, sequence_of_insertions ) }
+    end
+
     self
   end
 
@@ -87,6 +95,7 @@ module ConditionPermutations
   def apply_one_permutation( condition_sets, seq_of_insertions )
     previous_graph_index = nil
     seq_of_insertions.each do |conditions|
+      # noinspection RubyResolve
       if previous_graph_index.nil?
         # First element in the permutation of conditions.  So we check if the graph already
         # exists.  If it does we set the previous graph to that instance.  If it does not
@@ -119,8 +128,9 @@ module ConditionPermutations
     @set_of_graphs.each_with_index { | graph_entry, index | return index if graph == graph_entry.graph }
 
     # if we reach here, it is because the graph is new
+    # noinspection RubyResolve
     @set_of_graphs.push( Struct::GraphEntry.new( graph, {} ) )
-    return @set_of_graphs.length-1
+    @set_of_graphs.length-1
   end
 
   ##
@@ -134,4 +144,11 @@ module ConditionPermutations
     @set_of_graphs.keep_if { |g| g.nxt_conditions.empty? }
     @set_of_graphs.min { |a, b| a.graph.count_complexity <=> b.graph.count_complexity }.graph
   end
+
+  ##
+  # Used for debugging: works out how we arrived at the winning graph.
+  def winning_permutation( optimal_graph )
+    # find the winning graph within the set of final graphs
+  end
+
 end
