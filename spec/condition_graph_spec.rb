@@ -145,7 +145,7 @@ describe ConditionGraph do
 
       expect( graph ).to eq(
         ConditionGraph::from_string 'start: 0, 3;0: {1, 2} [] -> 1, 2;1: {7, 8} [fsm_c] -> end;2: {3, 4, 5, 6} [fsm_b] -> end;'\
-        '3: {3, 4, 5, 6} [fsm_a] -> end\n' )
+        '3: {3, 4, 5, 6} [fsm_a] -> end;' )
     end
   end
 
