@@ -3,7 +3,7 @@
 # and open the template in the editor.
 
 class EventProcessor
-  @@parser = ConditionParser.new
+  @@parser = Parser.new
   
   # Hash with one event processor for each event type in the system.
   @@event_processors = {}
@@ -13,7 +13,7 @@ class EventProcessor
   # cfsm: reference to the FSM that is registering an interest in the even
   # current_state: symbol - the state in which the event has to be to accept the event
   # transition_state: symbol - the state to which the FSM will move if the event is processed successfully
-  # condition: an expression (see ConditionParser for details) that has to be checked
+  # condition: an expression (see Parser for details) that has to be checked
   # proc: the 
   def self.register_event( name, fsm, current_state, next_state, condition = nil, &proc )
     if @@event_processors[ name ]

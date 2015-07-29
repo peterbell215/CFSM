@@ -2,16 +2,18 @@
 # To change this template file, choose Tools | Templates
 # and open the template in the editor.
 
-require 'condition_parser'
-require 'condition_transform'
+require 'condition_parser/parser'
+require 'condition_parser/condition_transform'
 require 'rspec/expectations'
 
-describe ConditionTransform do
-  let( :condition_parser ) { ConditionParser.new }
-  let( :condition_transform ) { ConditionTransform.new }
+module ConditionParser
+  describe ConditionTransform do
+    let( :condition_parser ) { Parser.new }
+    let( :condition_transform ) { ConditionTransform.new }
 
-  it 'should produce an evaluation of a comparison' do
-    expect( condition_transform.apply( condition_parser.parse('a == "Peter"') ) ).to be_nil
+    it 'should produce an evaluation of a comparison' do
+      # TODO: this needs a better test.
+      expect( condition_transform.apply( condition_parser.parse('a == "Peter"') ) ).not_to be_nil
+    end
   end
 end
-

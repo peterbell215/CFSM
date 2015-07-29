@@ -48,4 +48,10 @@ class NextStopDisplay < CFSM
 end
 
 
+p = Parser.new
+t = ConditionTransform.new
+tree = p.parse('a==1 and ( @b==:working or a<4 ) and b.d==2 and c>"peter"')
+puts tree.inspect
+puts t.apply( tree ).inspect
+
 puts "Hello World"
