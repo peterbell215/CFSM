@@ -3,8 +3,11 @@
 
 require 'set'
 require 'condition_graph'
+require 'logger'
 
 describe ConditionGraph do
+  let(:log) { Logger.new( 'condition_graph.txt' ).tap { |l| l.level = Logger::DEBUG } }
+
   describe 'graph to/and from strings' do
     subject(:graph) do
       ConditionGraph.new(
@@ -217,19 +220,19 @@ describe ConditionGraph do
         conditions_sets_as_array = complex_conditions_set.keys
 
         conditions_sets_as_array.each_with_index do |conds, index|
-          puts "iteration #{index}: adding #{conds.inspect} => #{complex_conditions_set[conds]}"
+          log.debug "iteration #{index}: adding #{conds.inspect} => #{complex_conditions_set[conds]}"
 
           # add the next condition set with transition into the graph.
           graph.add_conditions( conds, complex_conditions_set[conds] )
 
-          puts "resulting graph: #{graph.inspect}"
+          log.debug "resulting graph: #{graph.inspect}"
 
           # now test if we have broken anything by lopping through each condition set
           # we have added to far, and making sure that they each execute correctly.
           (0..index).each do |i|
             condition_set_under_test = conditions_sets_as_array[i]
             expected_transition = complex_conditions_set[ condition_set_under_test ]
-            puts "Testing #{i}: #{condition_set_under_test.inspect} => #{expected_transition}"
+            log.debug "Testing #{i}: #{condition_set_under_test.inspect} => #{expected_transition}"
             expect( graph.execute { |c| condition_set_under_test.member? c } ).to include( expected_transition )
           end
         end
@@ -241,11 +244,11 @@ describe ConditionGraph do
       it 'should build a graph correctly.' do
         graph = ConditionGraph.new.add_condition_sets complex_conditions_set
 
-        puts graph.inspect
+        log.debug graph.inspect
 
         # Now test that for every condition set we get the correct
         complex_conditions_set.each_pair do |condition_set, transition|
-          puts "#{condition_set.inspect} => #{transition}"
+          log.debug "#{condition_set.inspect} => #{transition}"
           expect( graph.execute { |c| condition_set.member? c } ).to include( transition )
         end
       end
