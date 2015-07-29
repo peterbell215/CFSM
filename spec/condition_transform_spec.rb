@@ -7,13 +7,11 @@ require 'condition_transform'
 require 'rspec/expectations'
 
 describe ConditionTransform do
-  before(:each) do
-    @condition_parser = ConditionParser.new
-    @condition_transform = ConditionTransform.new
-  end
+  let( :condition_parser ) { ConditionParser.new }
+  let( :condition_transform ) { ConditionTransform.new }
 
-  it "should produce an evaluation of a comparison" do 
-    expect( @condition_transform.apply( @condition_parser.parse('a == "Peter"') ) ).to be_nil
+  it 'should produce an evaluation of a comparison' do
+    expect( condition_transform.apply( condition_parser.parse('a == "Peter"') ) ).to be_nil
   end
 end
 

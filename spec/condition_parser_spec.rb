@@ -10,9 +10,7 @@ RSpec::Matchers.define :have_parse_tree do |expected|
 end
 
 describe ConditionParser do
-  before(:each) do
-    @condition_parser = ConditionParser.new
-  end
+  subject( :condition_parser) { ConditionParser.new }
 
   describe "#compare_parse_arrays" do
     it "should return nil for two arrays with no common members" do
@@ -20,46 +18,42 @@ describe ConditionParser do
     end
  
     it "should match two equal arrays" do
-      @array = [ :a, :b ]
-      @result = ConditionParser::compare_parse_arrays( @array, @array.clone )
-      expect( @result ).to be true 
-      
-      @result = ConditionParser::compare_parse_arrays( @array, @array.clone.insert(1, @array.sample ) )
-      expect( @result ).to be true 
-      
-      @result = ConditionParser::compare_parse_arrays( @array.clone.insert(1, @array.sample ), @array )
-       expect( @result ).to be true
+      array = [ :a, :b ]
+      expect( ConditionParser::compare_parse_arrays( array, array.clone ) ).to be true
+
+      expect( ConditionParser::compare_parse_arrays( array, array.clone.insert(1, array.sample ) ) ).to be true
+
+      expect( ConditionParser::compare_parse_arrays( array.clone.insert(1, array.sample ), array ) ).to be true
     end
    
     it "should not match two un-equal arrays" do
-      @result = ConditionParser::compare_parse_arrays( [ :a, :b ], [:b, :c, :d] )
-      expect( @result[:common] ).to match_array( [ :b ] )
-      expect( @result[:only_1] ).to match_array( [ :a ] )
-      expect( @result[:only_2] ).to match_array( [ :c, :d ] )
+      result = ConditionParser::compare_parse_arrays( [ :a, :b ], [:b, :c, :d] )
+      expect( result[:common] ).to match_array( [ :b ] )
+      expect( result[:only_1] ).to match_array( [ :a ] )
+      expect( result[:only_2] ).to match_array( [ :c, :d ] )
     end
   end  
   
   describe "#compare_parse_trees" do
     it "should correctly compare the same parse tree." do
-      @res1 = { :or => [
-           { :comparison => { :left=>"a.b", :comparator=>"==", :right=>"1"} },
-           { :comparison => { :left=>"a.c", :comparator=>"<", :right=>"2" } } ] }
-      @res2 = { :or => [
-         { :comparison => { :left=>"a.b", :comparator=>"==", :right=>"1"} },
-         { :comparison => { :left=>"a.c", :comparator=>"<", :right=>"2" } } ] }
+      res1 = { :or => [
+           { :comparison => { :left => 'a.b', :comparator => '==', :right => '1'} },
+           { :comparison => { :left=>'a.c', :comparator => '<', :right=> '2'} } ] }
+      res2 = { :or => [
+          { :comparison => { :left => 'a.b', :comparator => '==', :right => '1'} },
+          { :comparison => { :left=>'a.c', :comparator => '<', :right=> '2'} } ] }
 
-      expect( ConditionParser::compare_parse_trees(@res1, @res2) ).to be true
+      expect( ConditionParser::compare_parse_trees(res1, res2) ).to be true
     end
   end
-  
-  
+
   describe "#parse" do
     it "should parse a simple comparison with different white space configs" do
-      @result = { :comparison => { :left=>"a.b", :comparator=>"==", :right=>"1" } }
-      expect( @condition_parser.parse( "a.b==1" ) ).to have_parse_tree( @result )
-      expect( @condition_parser.parse( "a.b ==1" ) ).to have_parse_tree( @result )
-      expect( @condition_parser.parse( "a.b== 1" ) ).to have_parse_tree( @result )
-      expect( @condition_parser.parse( "a.b == 1" ) ).to have_parse_tree( @result )
+      result = { :comparison => {:left => {:event => 'a.b'}, :comparator => '==', :right => {:number => '1'} } }
+      expect( condition_parser.parse( "a.b==1" ) ).to have_parse_tree( result )
+      expect( condition_parser.parse( "a.b ==1" ) ).to have_parse_tree( result )
+      expect( condition_parser.parse( "a.b== 1" ) ).to have_parse_tree( result )
+      expect( condition_parser.parse( "a.b == 1" ) ).to have_parse_tree( result )
     end
 
     it "should parse two comparisons joined by an 'or' expression" do
