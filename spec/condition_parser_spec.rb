@@ -1,12 +1,9 @@
-# To change this license header, choose License Headers in Project Properties.
-# To change this template file, choose Tools | Templates
-# and open the template in the editor.
+# @author Peter Bell
+# Licensed under MIT2
 
 require 'parslet'
 require 'condition_parser/parser'
 require 'rspec/expectations'
-
-
 
 module ConditionParser
   RSpec::Matchers.define :have_parse_tree do |expected|
@@ -24,9 +21,7 @@ module ConditionParser
       it 'should match two equal arrays' do
         array = [ :a, :b ]
         expect( Parser::compare_parse_arrays( array, array.clone ) ).to be true
-
         expect( Parser::compare_parse_arrays( array, array.clone.insert(1, array.sample ) ) ).to be true
-
         expect( Parser::compare_parse_arrays( array.clone.insert(1, array.sample ), array ) ).to be true
       end
 
