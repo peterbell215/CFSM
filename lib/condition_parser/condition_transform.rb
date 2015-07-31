@@ -11,8 +11,9 @@ module ConditionParser
     rule( :number => simple(:n) ) { n.str.to_f }
     rule( :symbol => simple(:s) ) { s.str[1..-1].to_sym }
     rule( :event => simple(:e) )  { EventAttribute.new( e.to_s ) }
-    rule( :state_var => simple(:s) ) { FsmStateVariable.new( s.str[1..-1] ) }
+    rule( :state_var => simple(:s) ) { |context| FsmStateVariable.new(context[:cfsm_class], context[:s].str[1..-1]) }
 
+    rule( :brackets => subtree(:b) ) { b }
     rule( :comparison => { :left => subtree(:left), :comparator => simple(:comparator), :right => subtree(:right) } ) do
       EventCondition.new( comparator.str.to_sym, left, right )
     end

@@ -42,6 +42,23 @@ module ConditionParser
 
     rule(:boolean_test)   { str('!').maybe >> (symbol | event) }
 
+    ##
+    # Constructor.  Main purpose it to create the ConditionTransform and hold in a instance variable
+    # for efficient user.
+    def initialize
+      @condition_transform = ConditionTransform.new
+      super
+    end
+
+    ## Invoked to process a tree.
+    # @param [String] condition
+    # @param [Class] event_class
+    # @param [Class] cfsm_class
+    # @return [ParseTree]
+    def process_if(condition, event_class, cfsm_class)
+      @condition_transform.apply( self.parse( condition ), :event_class => event_class, :fsm_class => cfsm_class )
+    end
+
     # Compare two arrays within the parse tree and identify the elements that
     # are common and those that are different.
     # [ a, b ], [ c, d ] => nil

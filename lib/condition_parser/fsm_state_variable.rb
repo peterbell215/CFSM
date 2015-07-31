@@ -14,15 +14,21 @@ module ConditionParser
     #
     # @param fsm [Class] class of the FSM
     # @param state [Object]
-    def initialize(state)
+    def initialize(fsm_class, state)
+      @fsm_class = fsm_class
       @state = state.to_s
     end
 
     attr_reader :state
+    attr_reader :fsm_class
 
-
+    ##
+    # Comparator
+    #
+    # @param [FsmStateVariable] object2
+    # @return [True,False]
     def ==(object2)
-      self.state==object2.state
+      self.state==object2.state && self.state==object2.state
     end
   end
 end

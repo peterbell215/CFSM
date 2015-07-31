@@ -27,7 +27,8 @@ module CfsmClasses
       raise TooLateToRegisterEvent if @@event_processors[ name ].is_a? ConditionOptimisation::ConditionGraph
 
         # Create a parse tree
-      fsm_check = ConditionParser::FsmStateVariable.new( fsm_class, current_state)
+      fsm_check = ConditionParser::EventCondition::fsm_state_checker(fsm_class, current_state)
+
       if_tree = unless conditions[:if].nil?
                   { :and => [ fsm_check, @@transformer.apply( @@parser.parse( conditions[:if] ) ) ] }
                 else

@@ -10,6 +10,17 @@ module ConditionParser
     attr_reader :value
 
     ##
+    # Factory method to provide a convenient way of creating an EventCondition to
+    # check the current state of the FSM.
+    #
+    # @param [Class] fsm
+    # @param [Symbol] state
+    # @return [EventCondition]
+    def self.fsm_state_checker(fsm_class, state)
+      EventCondition.new(:==, FsmStateVariable.new( fsm_class, "state" ), state)
+    end
+
+    ##
     # Constructor
     #
     # @param comparator [Symbol] the comparison to be undertaken
