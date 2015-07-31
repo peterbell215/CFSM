@@ -8,15 +8,14 @@ require 'condition_parser/event_attribute'
 module ConditionParser
   class ConditionTransform < Parslet::Transform
     rule( :string => simple(:s) ) { String.new( s.str ) }
-    rule( :number => simple(:n) ) { n.to_f }
-    rule( :symbol => simple(:s) ) { s.to_s[1..-1].to_sym }
+    rule( :number => simple(:n) ) { n.str.to_f }
+    rule( :symbol => simple(:s) ) { s.str[1..-1].to_sym }
     rule( :event => simple(:e) )  { EventAttribute.new( e.to_s ) }
     rule( :state_var => simple(:s) ) { FsmStateVariable.new( s.str[1..-1] ) }
 
     rule( :comparison => { :left => subtree(:left), :comparator => simple(:comparator), :right => subtree(:right) } ) do
       EventCondition.new( comparator.str.to_sym, left, right )
     end
-
 
     ##
     #

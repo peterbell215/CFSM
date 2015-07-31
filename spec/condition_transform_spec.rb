@@ -30,6 +30,13 @@ module ConditionParser
         expected_result = ConditionParser::EventCondition.new( :<, FsmStateVariable.new('distance_to_travel'), 5.0)
         expect( condition_transform.apply( condition_parser.parse( '@distance_to_travel < 5.0' ) ) ).to eq( expected_result )
       end
+
+      it 'should produce an evaluation of a comparison between an event variable and with a FSM state variable' do
+        result = condition_parser.parse( '@distance_to_travel < threshold_on_distance' )
+        expected_result = ConditionParser::EventCondition.new( :<, FsmStateVariable.new('distance_to_travel'),
+                                                               EventAttribute.new('threshold_on_distance') )
+        expect( condition_transform.apply( result ) ).to eq( expected_result )
+      end
     end
 
     context 'Complex expression evaluations' do
