@@ -3,7 +3,7 @@
 
 require 'cfsm_classes/transition'
 require 'condition_parser/parser'
-require 'condition_parser/state_check'
+require 'condition_parser/fsm_state_variable'
 require 'condition_parser/condition_transform'
 require 'condition_optimisation/condition_graph'
 
@@ -27,7 +27,7 @@ module CfsmClasses
       raise TooLateToRegisterEvent if @@event_processors[ name ].is_a? ConditionOptimisation::ConditionGraph
 
         # Create a parse tree
-      fsm_check = ConditionParser::StateCheck.new( fsm_class, current_state)
+      fsm_check = ConditionParser::FsmStateVariable.new( fsm_class, current_state)
       if_tree = unless conditions[:if].nil?
                   { :and => [ fsm_check, @@transformer.apply( @@parser.parse( conditions[:if] ) ) ] }
                 else
@@ -47,8 +47,7 @@ module CfsmClasses
     # @return [Object]
     def self.convert_condition_trees
       @@event_processors.each_pair do |event, condition_trees |
-        condition_trees.each do |tree|
-          ConditionTransform::generate_permutations( tree )
+        condition_trees.each { |tree| ConditionTransform::generate_permutations( tree ) }
       end
     end
 

@@ -10,10 +10,13 @@ module ConditionParser
     rule( :string => simple(:s) ) { String.new( s.str ) }
     rule( :number => simple(:n) ) { n.to_f }
     rule( :symbol => simple(:s) ) { s.to_s[1..-1].to_sym }
+    rule( :event => simple(:e) )  { EventAttribute.new( e.to_s ) }
+    rule( :state_var => simple(:s) ) { FsmStateVariable.new( s.str[1..-1] ) }
 
-    rule( :comparison => { :left => { :event => simple(:e) }, :comparator => simple(:comparator), :right => subtree(:right) } ) do
-      EventCondition.new( comparator.str.to_sym, EventAttribute.new( e.to_str ), right )
+    rule( :comparison => { :left => subtree(:left), :comparator => simple(:comparator), :right => subtree(:right) } ) do
+      EventCondition.new( comparator.str.to_sym, left, right )
     end
+
 
     ##
     #

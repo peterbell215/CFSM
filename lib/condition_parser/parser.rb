@@ -1,6 +1,5 @@
-# To change this license header, choose License Headers in Project Properties.
-# To change this template file, choose Tools | Templates
-# and open the template in the editor.
+# @author Peter Bell
+# Licensed under MIT
 
 require 'parslet'
 require 'condition_parser/condition_transform'
@@ -88,10 +87,10 @@ module ConditionParser
 
     def self.compare_parse_trees(expected, actual)
        if actual.instance_of?( Array ) && expected.instance_of?( Array )
-        return compare_parse_arrays(expected, actual) == true
+        return compare_parse_arrays(expected, actual)
       elsif actual.instance_of?( Hash  ) && expected.instance_of?( Hash )
         actual.each_pair do |key, value|
-          return false if !compare_parse_trees(expected[key], value)
+          return false unless compare_parse_trees(expected[key], value)
         end
         # if we got here, then every parse element in the array2 is also in the
         # array1.  Therefore, so long as they are the same length, they are equal.

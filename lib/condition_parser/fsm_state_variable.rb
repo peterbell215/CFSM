@@ -8,18 +8,21 @@ module ConditionParser
   # reasoning is that you might have a number of state machines all testing the same conditions.
   # This way the RETE graph can check all of those conditions before finally checking state,
   # leading to an optimised state.
-  class StateCheck
+  class FsmStateVariable
     ##
     # Constructor
     #
     # @param fsm [Class] class of the FSM
     # @param state [Object]
-    def initialize(fsm, state)
-      @fsm = fsm
-      @state = state
+    def initialize(state)
+      @state = state.to_s
     end
 
-    attr_reader :fsm
     attr_reader :state
+
+
+    def ==(object2)
+      self.state==object2.state
+    end
   end
 end
