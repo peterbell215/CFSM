@@ -8,12 +8,35 @@ require 'rspec/expectations'
 
 module ConditionParser
   describe ConditionTransform do
+    subject( :condition_transform ) { ConditionTransform.new }
     let( :condition_parser ) { Parser.new }
-    let( :condition_transform ) { ConditionTransform.new }
 
-    it 'should produce an evaluation of a comparison' do
-      # TODO: this needs a better test.
-      expect( condition_transform.apply( condition_parser.parse('a == "Peter"') ) ).not_to be_nil
+    it "should produce an EventCondition of a comparison with a String" do
+      expected_result = ConditionParser::EventCondition.new( :==, EventAttribute.new('a'), 'Peter')
+      expect( condition_transform.apply( condition_parser.parse('a == "Peter"' ) ) ).to eq( expected_result )
+    end
+
+    it "should produce an evaluation of a comparison with an Integer" do
+      expected_result = ConditionParser::EventCondition.new( :==, EventAttribute.new('a'), 4)
+      expect( condition_transform.apply( condition_parser.parse('a == 4' ) ) ).to eq( expected_result )
+    end
+
+    it "should produce an evaluation of an AND set of conditions" do
+      result = condition_transform.apply( condition_parser.parse('a == 4 and b == "Peter"' ) )
+      expect( result ).to be_a Hash
+      expect( result[:and] ).to be_a Array
+      expect( result[:or] ).to be_nil
+      expect( result[:and][0] ).to eq( ConditionParser::EventCondition.new( :==, EventAttribute.new('a'), 4 ) )
+      expect( result[:and][1] ).to eq( ConditionParser::EventCondition.new( :==, EventAttribute.new('b'), 'Peter' ) )
+    end
+
+    it "should produce an evaluation of an OR set of conditions" do
+      result = condition_transform.apply( condition_parser.parse('a == 4 or b == "Peter"' ) )
+      expect( result ).to be_a Hash
+      expect( result[:or] ).to be_a Array
+      expect( result[:o] ).to be_nil
+      expect( result[:or][0] ).to eq( ConditionParser::EventCondition.new( :==, EventAttribute.new('a'), 4 ) )
+      expect( result[:or][1] ).to eq( ConditionParser::EventCondition.new( :==, EventAttribute.new('b'), 'Peter' ) )
     end
   end
 end

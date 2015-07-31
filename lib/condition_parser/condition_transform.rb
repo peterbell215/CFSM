@@ -3,6 +3,7 @@
 
 require 'parslet'
 require 'condition_parser/event_condition'
+require 'condition_parser/event_attribute'
 
 module ConditionParser
   class ConditionTransform < Parslet::Transform
@@ -11,11 +12,14 @@ module ConditionParser
     rule( :symbol => simple(:s) ) { s.to_s[1..-1].to_sym }
 
     rule( :comparison => { :left => { :event => simple(:e) }, :comparator => simple(:comparator), :right => subtree(:right) } ) do
-      EventCondition.new( comparator.str.to_sym, e, right )
+      EventCondition.new( comparator.str.to_sym, EventAttribute.new( e.to_str ), right )
     end
 
-    rule( :comparison => { :left => subtree(:left), :comparator => simple(:comparator), :right => subtree(:right) } ) do
-      [ comparator.str.to_sym, left, right ]
+    ##
+    #
+    def generate_permutations
+      # TODO: code here
     end
+
   end
 end

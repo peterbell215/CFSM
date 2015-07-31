@@ -10,12 +10,12 @@ module ConditionParser
     root( :or_expression )
 
     # Simple types
-    rule(:digit)          { match["0-9"] }
+    rule(:digit)          { match['0-9'] }
     rule(:space)          { match["\t "] }
     rule(:space?)         { space.repeat }
     rule(:string)         { str('"') >> ((str('\"').absent? >> str('"')).absent? >> any).repeat.as(:string) >> str('"') }
-    rule(:varname)        { match("[A-Za-z]") >> match("[A-Za-z0-9_]").repeat(0) }
-    rule(:comparator)     { str("==") | str("!=") | str("<") | str("<=") | str(">") | str(">=") }
+    rule(:varname)        { match('[A-Za-z]') >> match('[A-Za-z0-9_]').repeat(0) }
+    rule(:comparator)     { str('==') | str('!=') | str('<') | str('<=') | str('>') | str('>=') }
 
     # Simple classes
     rule(:number) {
@@ -27,21 +27,21 @@ module ConditionParser
         (str('+') | str('-')).maybe >>
         digit.repeat(1)
       ).maybe ).as(:number) }
-    rule(:boolean)        { str("true") | str("false") }
-    rule(:state_var)      { (str("@") >> varname).as( :state_var ) }
-    rule(:symbol)         { (str(":") >> varname).as( :symbol ) }
-    rule(:event)          { ( varname >> ( str(".") >> varname ).repeat(0) ).as( :event ) }
+    rule(:boolean)        { str('true') | str('false') }
+    rule(:state_var)      { (str('@') >> varname).as( :state_var ) }
+    rule(:symbol)         { (str(':') >> varname).as( :symbol ) }
+    rule(:event)          { ( varname >> ( str('.') >> varname ).repeat(0) ).as( :event ) }
 
     # Grammar parts
-    rule(:or_expression)  { ( and_expression >> ( space >> str("or") >> space >> or_expression).repeat(1) ).as(:or) | and_expression }
-    rule(:and_expression) { ( evaluation >> ( space >> str("and") >> space >> evaluation).repeat(1) ).as(:and) | evaluation }
+    rule(:or_expression)  { ( and_expression >> ( space >> str('or') >> space >> or_expression).repeat(1) ).as(:or) | and_expression }
+    rule(:and_expression) { ( evaluation >> ( space >> str('and') >> space >> evaluation).repeat(1) ).as(:and) | evaluation }
     rule(:evaluation)     { comparison.as(:comparison) | boolean_test | brackets.as(:brackets) }
-    rule(:brackets)       { str("(") >> space? >> or_expression >> space? >> str(")") }
+    rule(:brackets)       { str('(') >> space? >> or_expression >> space? >> str(')') }
     rule(:comparison)     { lhs.as(:left) >> space? >> comparator.as(:comparator) >> space? >> rhs.as(:right) }
     rule(:lhs)            { state_var | event }
     rule(:rhs)            { lhs | number| string | symbol | boolean }
 
-    rule(:boolean_test)   { str("!").maybe >> (symbol | event) }
+    rule(:boolean_test)   { str('!').maybe >> (symbol | event) }
 
     # Compare two arrays within the parse tree and identify the elements that
     # are common and those that are different.

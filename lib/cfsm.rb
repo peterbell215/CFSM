@@ -55,4 +55,11 @@ class CFSM
 
     CfsmClasses::EventProcessor::register_event( other_parameters[:on], self, state, other_parameters[:transition] )
   end
+
+  ##
+  # Starts the communicating finite state machine system.  The main action is to compile all the condition trees
+  # into sets of RETE graphs for easier processing.
+  def self.start
+    CfsmClasses::EventProcessor::convert_condition_trees
+  end
 end

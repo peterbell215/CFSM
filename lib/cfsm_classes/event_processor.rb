@@ -43,8 +43,16 @@ module CfsmClasses
       @@event_processors[name].push Struct::EventTree.new( if_tree, transition )
     end
 
-    private
 
+    # @return [Object]
+    def self.convert_condition_trees
+      @@event_processors.each_pair do |event, condition_trees |
+        condition_trees.each do |tree|
+          ConditionTransform::generate_permutations( tree )
+      end
+    end
+
+    private
     # Create single instances of the parser and the transformer.
     @@parser =  ConditionParser::Parser.new
     @@transformer = ConditionParser::ConditionTransform.new

@@ -62,7 +62,7 @@ module ConditionOptimisation
     # b = [1, 2, 3, 4, 5, 6 ] => :fsm_b
     # c = [3, 4, 5, 6 ] => :fsm_a
     #
-    # This function will try a reasonable number of permutations to combine the sets.  If we have less than 5 members
+    # This function will try a reasonable number of permutations to combine the sets.  If we have less than 6 members
     # in the set, we try all permutations.
     #
     # @return [ConditionGraph]
