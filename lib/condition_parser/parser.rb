@@ -2,7 +2,7 @@
 # Licensed under MIT
 
 require 'parslet'
-require 'condition_parser/condition_transform'
+require 'condition_parser/transformer'
 
 module ConditionParser
   class Parser < Parslet::Parser
@@ -46,7 +46,7 @@ module ConditionParser
     # Constructor.  Main purpose it to create the ConditionTransform and hold in a instance variable
     # for efficient user.
     def initialize
-      @condition_transform = ConditionTransform.new
+      @condition_transform = Transformer.new
       super
     end
 

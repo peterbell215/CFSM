@@ -6,7 +6,7 @@ require 'condition_parser/event_condition'
 require 'condition_parser/event_attribute'
 
 module ConditionParser
-  class ConditionTransform < Parslet::Transform
+  class Transformer < Parslet::Transform
     rule( :string => simple(:s) ) { String.new( s.str ) }
     rule( :number => simple(:n) ) { n.str.to_f }
     rule( :symbol => simple(:s) ) { s.str[1..-1].to_sym }

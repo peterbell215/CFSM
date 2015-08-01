@@ -5,7 +5,7 @@ require 'parslet'
 require 'cfsm'
 require 'cfsm_event'
 require 'condition_parser/parser'
-require 'condition_parser/condition_transform'
+require 'condition_parser/transformer'
 require 'condition_parser/fsm_state_variable'
 
 require 'rspec/expectations'
@@ -108,7 +108,7 @@ module ConditionParser
     end
   end
 
-  describe ConditionTransform do
+  describe Transformer do
     subject( :condition_parser ) { Parser.new }
     before(:all) do
       class TestFSM < CFSM; end

@@ -13,6 +13,8 @@ describe CFSM do
 
     CfsmEvent.new(:event1, self)
 
+    pending
+
     expect( fsm.state ).to eq( :b )
   end
 end
