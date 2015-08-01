@@ -14,6 +14,8 @@ module CfsmClasses
     ##
     # Class method to register that a FSM reacting to an event while in a defined state and transitioning to a new state.
     #
+    # @api private
+    #
     # @param name [Class,symbol] the event that we are reacting too.
     # @param current_state [Symbol] the state in which the FSM needs to be when receiving this event
     # @param next_state [Symbol] the state to which the FSM will transition on receiving the event and if the conditions are met
@@ -55,7 +57,6 @@ module CfsmClasses
     private
     # Create single instances of the parser and the transformer.
     @@parser =  ConditionParser::Parser.new
-    @@transformer = ConditionParser::ConditionTransform.new
 
     # Hash with one event processor for each event type of in the system.  While the CFSMs are
     # being constructed, the hash will point to an array of parse trees.
