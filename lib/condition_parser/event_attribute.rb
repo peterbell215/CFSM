@@ -7,6 +7,10 @@ module ConditionParser
       @attribute = a
     end
 
+    def hash
+      @attribute.hash
+    end
+
     def ==(object2)
       return self.attribute == object2.attribute
     end

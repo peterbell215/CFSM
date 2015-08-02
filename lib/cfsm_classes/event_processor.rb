@@ -55,6 +55,7 @@ module CfsmClasses
     end
 
     private
+
     # Create single instances of the parser and the transformer.
     @@parser =  ConditionParser::Parser.new
 

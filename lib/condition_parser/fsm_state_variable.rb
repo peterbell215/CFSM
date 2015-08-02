@@ -30,5 +30,15 @@ module ConditionParser
     def ==(object2)
       self.state==object2.state && self.state==object2.state
     end
+
+    ##
+    # Override the standard hash key so that different instances that are == generate the same hash
+    # key.
+    # @return [Fixnum]
+    def hash
+      fsm_class.to_s.hash ^ state.hash
+    end
+
+    alias eql? ==
   end
 end

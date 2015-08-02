@@ -10,17 +10,6 @@ module ConditionParser
     attr_reader :value
 
     ##
-    # Factory method to provide a convenient way of creating an EventCondition to
-    # check the current state of the FSM.
-    #
-    # @param [Class] fsm
-    # @param [Symbol] state
-    # @return [EventCondition]
-    def self.fsm_state_checker(fsm_class, state)
-      EventCondition.new(:==, FsmStateVariable.new( fsm_class, "state" ), state)
-    end
-
-    ##
     # Constructor
     #
     # @param comparator [Symbol] the comparison to be undertaken
@@ -30,6 +19,27 @@ module ConditionParser
       @comparator = comparator
       @attribute = attribute
       @value = value
+
+      self
+    end
+
+    ##
+    # Factory method to provide a convenient way of creating an EventCondition to
+    # check the current state of the FSM.
+    #
+    # @param [Class] fsm
+    # @param [Symbol] state
+    # @return [EventCondition]
+    def self.fsm_state_checker(fsm_class, state)
+      EventCondition.new(:==, FsmStateVariable.new( fsm_class, :state ), state)
+    end
+
+    ##
+    # Override the standard hash key so that different instances that are == generate the same hash
+    # key
+    # @return [Fixnum]
+    def hash
+      self.comparator.object_id ^ self.attribute.hash ^ self.value.hash
     end
 
     # @param [EventCondition] object2
@@ -37,5 +47,7 @@ module ConditionParser
     def ==(object2)
       self.comparator == object2.comparator && self.attribute == object2.attribute && self.value == object2.value
     end
+
+    alias eql? :==
   end
 end
