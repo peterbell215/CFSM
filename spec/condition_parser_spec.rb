@@ -168,5 +168,56 @@ module ConditionParser
       expect( result[:and][1][:or][0] ).to eq( ConditionParser::EventCondition.new( :==, FsmStateVariable.new( TestFSM, 'b' ), 'Peter' ) )
       expect( result[:and][1][:or][1] ).to eq( ConditionParser::EventCondition.new( :<, EventAttribute.new('c'), 5.0 ) )
     end
+
+    describe 'self.generate_permutations(tree)' do
+      describe 'self.and' do
+        it 'should combine two arguments under AND' do
+          expect( Transformer.and( [], 2 ) ).to match_array [ 2 ]
+          expect( Transformer.and( 1, [] ) ).to match_array [ 1 ]
+          expect( Transformer.and( 1, 2 ) ).to match_array [ 1, 2 ]
+          expect( Transformer.and( 1, [2, 3] ) ).to match_array [ 1, 2, 3 ]
+          expect( Transformer.and( [1, 2], 3 ) ).to match_array [ 1, 2, 3 ]
+          expect( Transformer.and( [1, 2], [3, 4] ) ).to match_array [ 1, 2, 3, 4 ]
+        end
+      end
+
+      describe 'self.or' do
+        it 'should combine two arguments under AND' do
+          expect( Transformer.or( [], 2 ) ).to match_array [ [ 2 ] ]
+          expect( Transformer.or( 1, 2 ) ).to match_array [[ 1 ] , [ 2 ]]
+          expect( Transformer.or( 1, [2, 3] ) ).to match_array [[ 1 ], [ 2, 3 ]]
+          expect( Transformer.or( [1, 2], 3 ) ).to match_array [[ 1, 2 ], [ 3 ]]
+          expect( Transformer.or( [1, 2], [3, 4] ) ).to match_array [[ 1, 2], [ 3, 4 ]]
+          expect( Transformer.or( [[1, 2], [3, 4]], [5, 6] ) ).to match_array [[ 1, 2, 5, 6], [ 3, 4, 5, 6 ]]
+          expect( Transformer.or( [[1, 2], [3, 4]], [[5, 6], [7, 8]] ) ).to match_array [[1, 2, 5, 6], [1, 2, 7, 8], [3, 4, 5, 6], [3, 4, 7, 8]]
+        end
+      end
+
+      it 'should turn a single condition into a single element array' do
+        expect( Transformer.generate_permutations( 1 ) ).to match_array [ [1] ]
+      end
+
+      it 'should turn a set of ANDed conditions into an array' do
+        expect( Transformer.generate_permutations( { :and => [ 1, 2 ] } ) ).to match_array [ [ 1, 2] ]
+        expect( Transformer.generate_permutations( { :and => [ 1, 2, 3 ] } ) ).to match_array [ [ 1, 2, 3] ]
+      end
+
+      it "should turn a set of ORed conditions into an array" do
+        expect( Transformer.generate_permutations( { :or => [ 1, 2 ] } ) ).to match_array [ [ 1 ], [ 2 ] ]
+        expect( Transformer.generate_permutations( { :or => [ 1, 2, 3 ] } ) ).to match_array [ [ 1 ], [ 2 ], [ 3 ] ]
+      end
+
+      it 'should correctly combine (1 OR (2 AND 3) => [1], [2, 3]' do
+        expect( Transformer.generate_permutations( { :or => [ 1, { :and => [ 2, 3 ] } ] } ) ).to match_array [ [ 1 ], [ 2, 3 ] ]
+        expect( Transformer.generate_permutations( { :or => [ { :and => [ 1, 2 ] }, 3 ] } ) ).to match_array [ [ 1, 2 ], [ 3 ] ]
+      end
+
+      it 'should correctly combine (1 AND (2 OR 3) => [1, 2], [1, 3]' do
+        expect( Transformer.generate_permutations( { :and => [ 1, { :or => [ 2, 3 ] } ] } ) ).to match_array [ [ 1, 2 ], [ 1, 3 ] ]
+        # expect( Transformer.generate_permutations( { :or => [ { :and => [ 1, 2 ] }, 3 ] } ) ).to match_array [ [ 1, 2 ], [ 3 ] ]
+      end
+    end
   end
+
+  describe
 end

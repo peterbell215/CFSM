@@ -19,7 +19,6 @@ module ConditionParser
       @comparator = comparator
       @attribute = attribute
       @value = value
-
       self
     end
 
