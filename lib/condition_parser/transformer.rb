@@ -18,18 +18,10 @@ module ConditionParser
       EventCondition.new( comparator.str.to_sym, left, right )
     end
 
+    # Used by the methods below which require even individual items to be stored in an array of an array.
     #
-    # @param [EventCondition, Array<EventCondition>] a
-    # @param [EventCondition, Array<EventCondition>] b
-    # @return [Array<EventCondition>]
-    def self.and(a , b)
-      if a.is_a?( Array ) && a.empty?
-        b.is_a?( Array ) ? b : [b]
-      else
-        (a.is_a?( Array ) ? a : [a] ).concat( b.is_a?( Array ) ? b : [b] )
-      end
-    end
-
+    # @param [Object] x
+    # @return [Array<Array<Object>>]
     def self.make_a_of_a( x )
       if x.is_a? Array
         if x[0].is_a? Array
@@ -42,32 +34,48 @@ module ConditionParser
       end
     end
 
+    # Combines two sets of conditions under AND.
+    #
+    # @param [EventCondition, Array<EventCondition>] a
+    # @param [EventCondition, Array<EventCondition>] b
+    # @return [Array<EventCondition>]
+    def self.and(a , b)
+       result = []
+       make_a_of_a( a ).each { |el_a| make_a_of_a( b ).each { |el_b| result.push( el_a + el_b ) } }
+       result
+    end
+
+    # Combines two sets of conditions under OR.
+    #
     # @param [EventCondition, Array<EventCondition>] a
     # @param [EventCondition, Array<EventCondition>] b
     # @return [Array<EventCondition>]
     def self.or(a, b)
-      result = []
-      make_a_of_a( a ).each { |el_a| make_a_of_a( b ).each { |el_b| result.push( el_a + el_b ) } }
-      result
+      if a.is_a?( Array ) && a.empty?
+        make_a_of_a b
+      elsif b.is_a?( Array ) && b.empty?
+        make_a_of_a a
+      else
+        make_a_of_a( a ) + make_a_of_a( b )
+      end
     end
+
     ##
-    #
+    # Recurse through the
     # @param [Hash,EventCondition] tree
     # @return [Array<Array<EventConditions>>]
     def self.generate_permutations(tree)
       if tree.is_a?(Hash)
-        if (and_conditions = tree[:and])
-          and_conditions.inject( nil ) do |result, subtree|
-            if result
-              self.and( result, subtree.is_a?( Hash ) ? generate_permutations(subtree) : subtree )
-            else
-              generate_permutations( subtree )
-            end
+        if ( tree[:and] )
+          tree[:and].inject( nil ) do |result, subtree|
+            result ? self.and( result, generate_permutations(subtree) ) : generate_permutations( subtree )
           end
         else
           # must be :or tree
-          tree[:or].inject( [] ) { |result, subtree| result.or( generate_permutations(subtree) ) }
+          tree[:or].inject( [] ) { |result, subtree| self.or( result, generate_permutations(subtree) ) }
         end
+      else
+        self.make_a_of_a( tree )
       end
     end
   end

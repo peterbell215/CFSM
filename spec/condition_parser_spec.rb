@@ -172,24 +172,26 @@ module ConditionParser
     describe 'self.generate_permutations(tree)' do
       describe 'self.and' do
         it 'should combine two arguments under AND' do
-          expect( Transformer.and( [], 2 ) ).to match_array [ 2 ]
-          expect( Transformer.and( 1, [] ) ).to match_array [ 1 ]
-          expect( Transformer.and( 1, 2 ) ).to match_array [ 1, 2 ]
-          expect( Transformer.and( 1, [2, 3] ) ).to match_array [ 1, 2, 3 ]
-          expect( Transformer.and( [1, 2], 3 ) ).to match_array [ 1, 2, 3 ]
-          expect( Transformer.and( [1, 2], [3, 4] ) ).to match_array [ 1, 2, 3, 4 ]
+          expect( Transformer.and( 1, 2 ) ).to match_array [ [ 1, 2 ] ]
+          expect( Transformer.and( 1, [2, 3] ) ).to match_array [ [ 1, 2, 3 ] ]
+          expect( Transformer.and( [1, 2], 3 ) ).to match_array [ [ 1, 2, 3 ] ]
+          expect( Transformer.and( [1, 2], [3, 4] ) ).to match_array [ [ 1, 2, 3, 4 ] ]
+          expect( Transformer.and( [1, 2] , [[3, 4], [5, 6] ] ) ).to match_array [[1, 2, 3, 4], [1, 2, 5, 6]]
+          expect( Transformer.and( [[1, 2], [3, 4]], [[5, 6], [7, 8]] ) ).to match_array [[1, 2, 5, 6], [1, 2, 7, 8], [3, 4, 5, 6], [3, 4, 7, 8]]
         end
       end
 
       describe 'self.or' do
         it 'should combine two arguments under AND' do
+          expect( Transformer.or( 1, [] ) ).to match_array [ [ 1 ] ]
           expect( Transformer.or( [], 2 ) ).to match_array [ [ 2 ] ]
-          expect( Transformer.or( 1, 2 ) ).to match_array [[ 1 ] , [ 2 ]]
+          expect( Transformer.or( 1, 2 ) ).to match_array [[ 1 ], [ 2 ]]
           expect( Transformer.or( 1, [2, 3] ) ).to match_array [[ 1 ], [ 2, 3 ]]
           expect( Transformer.or( [1, 2], 3 ) ).to match_array [[ 1, 2 ], [ 3 ]]
           expect( Transformer.or( [1, 2], [3, 4] ) ).to match_array [[ 1, 2], [ 3, 4 ]]
-          expect( Transformer.or( [[1, 2], [3, 4]], [5, 6] ) ).to match_array [[ 1, 2, 5, 6], [ 3, 4, 5, 6 ]]
-          expect( Transformer.or( [[1, 2], [3, 4]], [[5, 6], [7, 8]] ) ).to match_array [[1, 2, 5, 6], [1, 2, 7, 8], [3, 4, 5, 6], [3, 4, 7, 8]]
+          expect( Transformer.or( [[1, 2], [3, 4]], [5, 6] ) ).to match_array [[ 1, 2], [3, 4], [5, 6 ]]
+          expect( Transformer.or( [1, 2], [[3, 4], [5, 6]] ) ).to match_array [[1, 2], [3, 4], [5, 6]]
+
         end
       end
 
