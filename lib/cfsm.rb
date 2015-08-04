@@ -60,6 +60,8 @@ class CFSM
   # Starts the communicating finite state machine system.  The main action is to compile all the condition trees
   # into sets of RETE graphs for easier processing.
   def self.start
+    CfsmClasses::EventProcessor::cache_conditions
     CfsmClasses::EventProcessor::convert_condition_trees
   end
+
 end

@@ -14,7 +14,6 @@ module ConditionParser
 
       # check if the member exists: if so add
       (self.member?(event_condition)) ? self[event_condition] : self[event_condition] = self.length
-
     end
   end
 end

@@ -22,15 +22,16 @@ module CfsmClasses
     # @param conditions [String] the conditions that the FSM must meet to
     # @param proc [Proc] a method to be executed as part of the state transition
     def self.register_event( name, fsm_class, current_state, next_state, conditions = {}, &proc)
-      # if we have not seen this one yet, then create an array to hold the various condition trees and transitions
-      @@event_processors[ name ] = Array.new  if @@event_processors[ name ].nil?
+      # if we have not seen this one yet, then create a Hash to cache the conditions, and an array to hold the various
+      # condition trees and transitions
+      @@condition_cache[ name ] = ConditionParser::ConditionHash.new unless @@condition_cache[ name ]
+      @@event_processors[ name ] = Array.new unless @@event_processors[ name ]
 
       # Make sure we have not yet passed the point of turning this into a ConditionGraph.
       raise TooLateToRegisterEvent if @@event_processors[ name ].is_a? ConditionOptimisation::ConditionGraph
 
-        # Create a parse tree
+      # Create a parse tree with at least a state check.
       fsm_check = ConditionParser::EventCondition::fsm_state_checker(fsm_class, current_state)
-
       if_tree = unless conditions[:if].nil?
                   { :and => [ fsm_check, @@transformer.apply( @@parser.parse( conditions[:if] ) ) ] }
                 else
@@ -47,10 +48,19 @@ module CfsmClasses
     end
 
 
+    def self.cache_conditions
+      @@event_processors.each_pair do |event, condition_trees|
+        condition_trees.each{ |tree| tree.if_tree}
+      end
+    end
+
     # @return [Object]
     def self.convert_condition_trees
-      @@event_processors.each_pair do |event, condition_trees |
-        condition_trees.each { |tree| Transformer::generate_permutations( tree ) }
+      @@event_processors.each_pair do |event, condition_trees|
+        # condition_trees is an array of Struct::EventTree.  So we need to convert each of the
+        # if_tree's within the struct to an array.
+        condition_trees.each { |tree|
+          Transformer::generate_permutations( tree.if_tree, tree.transition ) }
       end
     end
 
@@ -58,6 +68,8 @@ module CfsmClasses
 
     # Create single instances of the parser and the transformer.
     @@parser =  ConditionParser::Parser.new
+
+
 
     # Hash with one event processor for each event type of in the system.  While the CFSMs are
     # being constructed, the hash will point to an array of parse trees.
@@ -71,6 +83,10 @@ module CfsmClasses
     # If event_a is raised, and FsmA is in state_a, and the message contains a field 'a' that has value 'Peter', then
     # FsmA should transition to state_b.
     @@event_processors = {}
+
+    # In order to facilitate faster manipulation of the conditions during the optimisation we cache the
+    # conditions in this Hash together with an integer.  The Caches are in turn hashed onto the EventConditions.
+    @@condition_cache = {}
 
     # Used to hold the condition tree and transition descriptions in the @@event_processors hash.
     Struct.new('EventTree', :condition_tree, :transition )

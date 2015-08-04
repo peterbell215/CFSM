@@ -11,11 +11,27 @@ module ConditionParser
     rule( :number => simple(:n) ) { n.str.to_f }
     rule( :symbol => simple(:s) ) { s.str[1..-1].to_sym }
     rule( :event => simple(:e) )  { EventAttribute.new( e.to_s ) }
-    rule( :state_var => simple(:s) ) { |context| FsmStateVariable.new(context[:cfsm_class], context[:s].str[1..-1]) }
+    rule( :state_var => simple(:s) ) { |context| FsmStateVariable.new(context[:fsm_class], context[:s].str[1..-1]) }
 
     rule( :brackets => subtree(:b) ) { b }
     rule( :comparison => { :left => subtree(:left), :comparator => simple(:comparator), :right => subtree(:right) } ) do
       EventCondition.new( comparator.str.to_sym, left, right )
+    end
+
+    # Recurse down the tree, replacing each EventCondition with an integer number.  Used to help make
+    # the manipulation of the condition trees easier.
+    #
+    # @param [ConditionHash] cache
+    # @param [Hash,Array,EventCondition] tree
+    # @return [Hash,Array,Fixnum]
+    def self.cache_conditions( cache, tree )
+      if tree.is_a? EventCondition
+        (cache << tree)
+      else
+        # If its not an EventCondition (leaf node) then it must be a Hash.
+        (tree[:or] || tree[:and]).map! { |sub_tree| sub_tree = cache_conditions( cache, sub_tree) }
+        tree
+      end
     end
 
     # Used by the methods below which require even individual items to be stored in an array of an array.

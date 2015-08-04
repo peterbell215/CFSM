@@ -36,7 +36,7 @@ module ConditionParser
     # key.
     # @return [Fixnum]
     def hash
-      fsm_class.to_s.hash ^ state.hash
+      fsm_class.to_s.hash ^ state.to_s.hash
     end
 
     alias eql? ==
