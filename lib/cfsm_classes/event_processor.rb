@@ -69,8 +69,6 @@ module CfsmClasses
     # Create single instances of the parser and the transformer.
     @@parser =  ConditionParser::Parser.new
 
-
-
     # Hash with one event processor for each event type of in the system.  While the CFSMs are
     # being constructed, the hash will point to an array of parse trees.
     # Once event processing has started, this is converted into a ConditionGraph.  The conversion

@@ -40,6 +40,19 @@ module ConditionParser
     end
 
     describe '#compare_parse_trees' do
+      it 'should return nil for an element versus an array' do
+        expect( Parser::compare_parse_trees( { :or => [ 1 , 2] }, 1 ) ).to be_falsey
+        expect( Parser::compare_parse_trees( ConditionParser::EventCondition.new( :==, EventAttribute.new('a'), 'Peter'),
+                                             { :or => [ ConditionParser::EventCondition.new( :==, EventAttribute.new('a'), 4 ),
+                                                        ConditionParser::EventCondition.new( :<, EventAttribute.new('b'), 4 ) ] } ) ).to be_falsey
+      end
+
+      it 'should return true for two elements' do
+        pending
+
+        expect( false ).to be_truthy
+      end
+
       it 'should correctly compare the same parse tree.' do
         res1 = { :or => [
              { :comparison => { :left => 'a.b', :comparator => '==', :right => '1'} },
@@ -149,24 +162,31 @@ module ConditionParser
         expect( result[:and][1] ).to eq( ConditionParser::EventCondition.new( :==, EventAttribute.new('b'), 'Peter' ) )
       end
 
-      it "should produce an evaluation of an OR set of conditions" do
+      it 'should produce an evaluation of an OR set of conditions' do
         result = condition_parser.process_if('a == 4 or b == "Peter"', CfsmEvent, TestFSM  )
-        expect( result ).to be_a Hash
-        expect( result[:or] ).to be_an Array
-        expect( result[:and] ).to be_nil
-        expect( result[:or][0] ).to eq( ConditionParser::EventCondition.new( :==, EventAttribute.new('a'), 4 ) )
-        expect( result[:or][1] ).to eq( ConditionParser::EventCondition.new( :==, EventAttribute.new('b'), 'Peter' ) )
+        expect( result ).to have_parse_tree(
+          { :or =>
+            [
+                ConditionParser::EventCondition.new( :==, EventAttribute.new('a'), 4 ),
+                ConditionParser::EventCondition.new( :==, EventAttribute.new('b'), 'Peter' )
+            ]
+          } )
       end
 
       it 'should produce an evaluation of an expression including brackets' do
         result = condition_parser.process_if('a == 4 and (@b == "Peter" or c<5)', CfsmEvent, TestFSM  )
-        expect( result ).to be_a Hash
-        expect( result[:and] ).to be_an Array
-        expect( result[:and][0] ).to eq ConditionParser::EventCondition.new( :==, EventAttribute.new( 'a' ), 4.0)
-        expect( result[:and][1] ).to be_a Hash
-        expect( result[:and][1][:or] ).to be_an Array
-        expect( result[:and][1][:or][0] ).to eq( ConditionParser::EventCondition.new( :==, FsmStateVariable.new( TestFSM, 'b' ), 'Peter' ) )
-        expect( result[:and][1][:or][1] ).to eq( ConditionParser::EventCondition.new( :<, EventAttribute.new('c'), 5.0 ) )
+        expect( result ).to have_parse_tree(
+          { :and =>
+            [
+                ConditionParser::EventCondition.new( :==, EventAttribute.new( 'a' ), 4.0),
+                { :or =>
+                    [
+                        ConditionParser::EventCondition.new( :==, FsmStateVariable.new( TestFSM, 'b' ), 'Peter' ),
+                        ConditionParser::EventCondition.new( :<, EventAttribute.new('c'), 5 )
+                    ]
+                }
+            ]
+          } )
       end
 
       describe 'cache_conditions' do
@@ -235,5 +255,4 @@ module ConditionParser
       end
     end
   end
-
 end

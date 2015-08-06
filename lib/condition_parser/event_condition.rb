@@ -44,7 +44,8 @@ module ConditionParser
     # @param [EventCondition] object2
     # @return [True,False]
     def ==(object2)
-      self.comparator == object2.comparator && self.attribute == object2.attribute && self.value == object2.value
+      object2.is_a?( EventCondition ) &&
+        self.comparator == object2.comparator && self.attribute == object2.attribute && self.value == object2.value
     end
 
     alias eql? :==
