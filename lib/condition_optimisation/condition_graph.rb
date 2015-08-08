@@ -1,6 +1,6 @@
 # CFSM Project.
 # Author: peter.bell215@gmail.com
-# Licensed under MIT2.
+# Licensed under MIT.
 
 require 'condition_optimisation/conditions_node'
 require 'condition_optimisation/condition_permutations'

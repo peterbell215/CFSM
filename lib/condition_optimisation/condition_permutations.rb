@@ -145,11 +145,5 @@ module ConditionOptimisation
       @set_of_graphs.keep_if { |g| g.nxt_conditions.empty? }
       @set_of_graphs.min { |a, b| a.graph.count_complexity <=> b.graph.count_complexity }.graph
     end
-
-    ##
-    # Used for debugging: works out how we arrived at the winning graph.
-    def winning_permutation( optimal_graph )
-      # find the winning graph within the set of final graphs
-    end
   end
 end

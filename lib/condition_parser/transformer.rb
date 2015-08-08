@@ -82,7 +82,7 @@ module ConditionParser
     # @return [Array<Array<EventConditions>>]
     def self.generate_permutations(tree)
       if tree.is_a?(Hash)
-        if ( tree[:and] )
+        if tree[:and]
           tree[:and].inject( nil ) do |result, subtree|
             result ? self.and( result, generate_permutations(subtree) ) : generate_permutations( subtree )
           end

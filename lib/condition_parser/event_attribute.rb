@@ -1,5 +1,5 @@
 # @author Peter Bell
-# Licensed under MIT2
+# Licensed under MIT
 
 module ConditionParser
   class EventAttribute
@@ -11,8 +11,12 @@ module ConditionParser
       @attribute.hash
     end
 
+    def evaluate(event)
+      event.send( @attribute )
+    end
+
     def ==(object2)
-      return self.attribute == object2.attribute
+      self.attribute == object2.attribute
     end
 
     attr_reader :attribute

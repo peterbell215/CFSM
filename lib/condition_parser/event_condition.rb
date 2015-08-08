@@ -33,6 +33,8 @@ module ConditionParser
       EventCondition.new(:==, FsmStateVariable.new( fsm_class, :state ), state)
     end
 
+
+
     ##
     # Override the standard hash key so that different instances that are == generate the same hash
     # key

@@ -157,9 +157,9 @@ module ConditionOptimisation
       let!( :set_a ){ Set.new( [1, 2, 7, 8]) }
       let!( :set_b ){ Set.new( [1, 2, 3, 4, 5, 6] ) }
       let!( :set_c ){ Set.new( [3, 4, 5, 6] ) }
-      let!( :condition_sets ) { { set_a => :fsm_a, set_b => :fsm_b, set_c => :fsm_c } }
+      let!( :conditions ) { { set_a => :fsm_a, set_b => :fsm_b, set_c => :fsm_c } }
 
-      subject( :graph ) { ConditionGraph.new.add_condition_sets condition_sets }
+      subject( :graph ) { ConditionGraph.new.add_condition_sets conditions }
       subject( :simple_graph ) { ConditionGraph.new.add_conditions( set_a, :fsm_a ) }
 
       describe '#execute' do

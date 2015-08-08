@@ -11,9 +11,9 @@ describe CFSM do
 
     expect( fsm.state ).to eq( :a )
 
-    CfsmEvent.new(:event1, self)
+    CFSM.start
 
-    pending
+    CFSM.post( CfsmEvent.new(:event1, self) )
 
     expect( fsm.state ).to eq( :b )
   end
