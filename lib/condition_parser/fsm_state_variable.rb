@@ -12,14 +12,14 @@ module ConditionParser
     ##
     # Constructor
     #
-    # @param fsm [Class] class of the FSM
-    # @param state [Object]
-    def initialize(fsm_class, state)
+    # @param [class] fsm_class is the class of FSM that can be evaluated
+    # @param [Object] state_var is the state variable of the FSM class.  This needs to actually be a method on the FSM class
+    def initialize(fsm_class, state_var)
       @fsm_class = fsm_class
-      @state = state.to_s
+      @state_var = state_var
     end
 
-    attr_reader :state
+    attr_reader :state_var
     attr_reader :fsm_class
 
     ##
@@ -28,7 +28,7 @@ module ConditionParser
     # @param [FsmStateVariable] object2
     # @return [True,False]
     def ==(object2)
-      self.state==object2.state && self.state==object2.state
+      self.fsm_class==object2.fsm_class && self.state_var==object2.state_var
     end
 
     ##
@@ -36,7 +36,7 @@ module ConditionParser
     # key.
     # @return [Fixnum]
     def hash
-      fsm_class.to_s.hash ^ state.to_s.hash
+      fsm_class.to_s.hash ^ state_var.to_s.hash
     end
 
     alias eql? ==

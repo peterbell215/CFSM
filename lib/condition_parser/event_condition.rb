@@ -3,7 +3,9 @@
 
 module ConditionParser
   ##
-  # Holds an event condition that needs to be evaluated.
+  # Holds an event condition that needs to be evaluated.  Takes the form of:
+  # - attribute (either of an event or of a FSM)
+  # -
   class EventCondition
     attr_reader :comparator
     attr_reader :attribute
@@ -33,7 +35,23 @@ module ConditionParser
       EventCondition.new(:==, FsmStateVariable.new( fsm_class, :state ), state)
     end
 
+    # This will evaluate for whether the condition has been met.
+    # @param [Array<CFSM>] cfsms is the array of FSMs to be evaluated.
+    # @return [Array<CFSM>] is the array of FSMs that match the evaluated condition.
+    def evaluate( cfsms, event )
+      if attribute.is_a? FsmStateVariable
+        if cfsms
+          cfsms.delete_if
+        end
+        cfsms ||= CFSM.state_machines( @attribute.fsm_class )
 
+
+        throw NotImplementedError
+      else
+        # simply testing a condition.
+        event.evaluate( self.attribute ).send( self.comparator, self.value )
+      end
+    end
 
     ##
     # Override the standard hash key so that different instances that are == generate the same hash

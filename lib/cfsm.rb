@@ -13,11 +13,6 @@ class CFSM
   # hash maps from the module onto the individual event_processor.
   @@eventprocessors = {}
 
-  def self.namespace
-    result = self.name.split('::').slice(0..-2).join('::')
-    result.empty? ? 'Global' : result
-  end
-
   ##
   # Create the FSM.
   def initialize
@@ -27,6 +22,15 @@ class CFSM
   end
 
   attr_reader :state
+
+  # Related FSMs can be grouped into modules.  All FSMs that are part of the same module are deemed to be part of the
+  # same name space.  This method takes the class name (e.g. CommsSystem::ModemInterface::Modem) and removes the last
+  # part.  The rest (e.g. CommsSystem::ModemInterface) is considered to be the namespace.  If the CFSM's class is at
+  # the top level (i.e. no proceeding modules), then the namespace is set to 'Global'.
+  def self.namespace
+    result = self.name.split('::').slice(0..-2).join('::')
+    result.empty? ? 'Global' : result
+  end
 
   # the core function that does the heavy lifting.
   # @return [Object]
@@ -43,17 +47,37 @@ class CFSM
 
   ##
   # Starts the communicating finite state machine system.  The main action is to compile all the condition trees
-  # into sets of RETE graphs for easier processing.
-  def self.start
-    processor = @@eventprocessors[ self.namespace]
-    processor.cache_conditions
-    processor.convert_trees_to_sets
-    processor.convert_sets_to_graph
-    processor.run
+  # into sets of RETE graphs for easier processing.  The standard approach to running the CFSM systems is async.
+  # Here each CFSM system has a separate thread waiting on the input queue.  When an event is posted, control to
+  # the posting process is returned immediately.  The CFSM system will then process the event asynchronously.  In
+  # non-async mode, control is only returned to the posting process, once the event has been processed.
+  #
+  # @param [Hash] options defines various options for the start command
+  # @option options [Array<Module>,Module] :namespace defines the namespace that should be started.  If missing all namespaces are started.
+  # @option options [True,False] :async defines whether the execution of the namespaces should be run async,
+  def self.start( options = {} )
+    raise OnlyStartOnCFSMClass if self != CFSM
+
+    namespaces = options.delete( :namespace )
+    if namespaces
+      processors = namespaces.is_a? Array ? namespaces : [ namespaces ]
+    else
+      processors = @@eventprocessors.keys
+    end
+
+    processors.each { |processor| @@eventprocessors[processor].run( options ) }
   end
 
   # Used to post an event to all CFSM systems that need to know about it.
   def self.post( event )
-    @@eventprocessors.each_value { |processor| processor.post( event )}
+    @@eventprocessors.each_value { |processor| processor.post( event ) }
+  end
+
+  # Given a class of FSMs, this returns an array of instantiated FSMs of that class.
+  #
+  # @param [Class] fsm_class
+  # @return [Array<CFSM>]
+  def self.state_machines( fsm_class )
+    # code here
   end
 end

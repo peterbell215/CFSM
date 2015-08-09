@@ -1,5 +1,5 @@
 # @author Peter Bell
-# Licensed under MIT2.
+# Licensed under MIT
 
 require 'cfsm_classes/transition'
 require 'condition_parser/parser'
@@ -12,13 +12,20 @@ require 'condition_optimisation/condition_permutations'
 module CfsmClasses
   class TooLateToRegisterEvent < Exception; end
 
-  # this class hides the implementation complexities of the Communicating FSM system.  It is really only to be invoked from
-  # methods within the CFSM class.
+  # This class hides the implementation complexities of the Communicating FSM system.  It is really only to be invoked from
+  # methods within the CFSM class
+  # TODO Need to replace the current Queue class from the standard library with a prioritised thread safe queue.
+  #
+  # @api private
   class EventProcessor
     include ConditionOptimisation::ConditionPermutations
 
     # Constructor.  Creates an instance of EventProcessor.
     def initialize
+      # Used to store runtime options.  Key one at the moment is :async => False which prevents CFSM from creating
+      # a separate thread to process events.
+      @options = nil
+
       ##
       # This variable holds a list of all instantiated FSMs within the namespace. It holds the data as a hash of namespace to
       # an array of all instantiated FSMs.
@@ -88,6 +95,70 @@ module CfsmClasses
       @conditions[name].push Struct::EventTree.new( if_tree, transition )
     end
 
+    # Method used to register with the event processor what the initial state is for a class of
+    # communicating FSMs.
+    #
+    # @api private
+    #
+    # @param [Class] cfsm_class
+    # @param [Symbol] initial_state
+    # @return [Symbol] returns the initial state
+    # @raises ConflictingInitialStates if the initial state is already set for this state machine
+    def register_initial_state(cfsm_class, initial_state)
+      # check if an initial state is indicated.
+      raise ConflictingInitialStates if @cfsm_initial_state[ cfsm_class ]
+      @cfsm_initial_state[ cfsm_class ] = initial_state
+    end
+
+    # Retrieves the initial state for this class of FSM.  If it is not defined, raises an error.
+    #
+    # @api private
+    #
+    # @param [Class] cfsm_class
+    # @return [Symbol]
+    def initial_state( cfsm_class )
+      @cfsm_initial_state[ cfsm_class ] || raise( NoInitialState )
+    end
+
+    # Registers an instance of a CFSM with the event processor.  Used by the constructor of the CFSM.
+    #
+    # @api private
+    #
+    # @param [CFSM] cfsm
+    # @return [Symbol] initial state for the FSM
+    def register_cfsm( cfsm )
+      ( @cfsms[ cfsm.class ] ||= Array.new ).push( self )
+    end
+
+    # Creates the queue for this event processor.  If the event processor is to operate in async mode, also
+    # creates the processing thread and starts waiting for events to be queued.
+    def run( options )
+      @options = options
+
+      # Do the heavy lifting on converting the condition trees to optimised condition graphs.
+      cache_conditions
+      convert_trees_to_sets
+      convert_sets_to_graph
+
+      # For each event CFSM namespace, we also have a queue to hold unprocessed events.
+      @event_queue ||= Queue.new
+
+      # If running in async mode, then create a thread with an infinite loop to process incoming events.
+      @thread = Thread.new { loop { process_event } } if @options[:async].nil? || @options[:async]
+    end
+
+    # Receives an event for consideration by the event processor.  So long as we have a ConditionGraph
+    # for that event we stick it into the queue for processing.  If we are not operating in async mode,
+    # then we also process the event.
+    def post( event )
+      if @conditions[ event.class ]
+        @event_queue.push event
+        self.process_event unless @thread
+      end
+    end
+
+    private
+
     # Take all the condition trees associated with this EventProcessor and populate the @conditions_cache
     # hash.
     # @api private
@@ -128,51 +199,16 @@ module CfsmClasses
       self
     end
 
-    def self.run
-      # For each event class, we also have a queue of each event type.
-      unless @event_queue
-        @event_queue = Queue.new
+    # Removes the next event from the queue and executes the condition graph to see if the event can be
+    # processed.
+    def process_event
+      event = @event_queue.pop
 
-        Thread.new do
-          event = @event_queue.pop
-          @conditions[ event ].condition_tree.execute( event )
-        end
+      # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
+      fsms = nil
+      @conditions[ event.class ].condition_tree.execute do |c|
+        fsms = @condition_cache[ event.class ][ c ].evaluate( fsms, event )
       end
-    end
-
-    # Method used to register with the event processor what the initial state is for a class of
-    # communicating FSMs.
-    #
-    # @api private
-    #
-    # @param [Class] cfsm_class
-    # @param [Symbol] initial_state
-    # @return [Symbol] returns the initial state
-    # @raises ConflictingInitialStates if the initial state is already set for this state machine
-    def register_initial_state(cfsm_class, initial_state)
-      # check if an initial state is indicated.
-      raise ConflictingInitialStates if @cfsm_initial_state[ cfsm_class ]
-      @cfsm_initial_state[ cfsm_class ] = initial_state
-    end
-
-    # Retrieves the initial state for this class of FSM.  If it is not defined, raises an error.
-    #
-    # @api private
-    #
-    # @param [Class] cfsm_class
-    # @return [Symbol]
-    def initial_state( cfsm_class )
-      @cfsm_initial_state[ cfsm_class ] || raise( NoInitialState )
-    end
-
-    # Registers an instance of a CFSM with the event processor.  Used by the constructor of the CFSM.
-    #
-    # @api private
-    #
-    # @param [CFSM] cfsm
-    # @return [Symbol] initial state for the FSM
-    def register_cfsm( cfsm )
-      ( @cfsms[ cfsm.class ] ||= Array.new ).push( self )
     end
 
     # Create single instances of the parser and the transformer.

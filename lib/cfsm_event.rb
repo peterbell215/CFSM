@@ -3,14 +3,14 @@
 # Class to represent a message/event that is produced and then sent to the appropriate CFSMs.
 class CfsmEvent
   # @param [Symbol,Class] event_class
-  # @param src [Object] the source from which the message was transmitted.  Reference to an object.
-  # @param prio [Fixnum] the priority of the message with 0 the lowest priority
   # @param msg [Hash] addition data as a Hash
+  # @param prio [Fixnum] the priority of the message with 0 the lowest priority
   # @return [CfsmEvent]
-  def initialize(event_class, src, prio=0, msg={})
+  def initialize(event_class, msg={}, prio=0 )
     @event_class = event_class
-    @src = src
-    @prio = prio
     @msg = msg
+    # TODO: automatically determine source from stack.
+    # @src = src
+    @prio = prio
   end
 end
