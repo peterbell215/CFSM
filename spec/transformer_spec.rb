@@ -5,7 +5,7 @@ require 'parslet'
 require 'cfsm'
 require 'cfsm_event'
 require 'condition_parser/parser'
-require 'condition_parser/condition_hash'
+require 'condition_parser/condition_cache'
 require 'condition_parser/transformer'
 require 'condition_parser/fsm_state_variable'
 
@@ -86,7 +86,7 @@ module ConditionParser
       describe 'cache_conditions' do
         it 'should convert EventConditions to cached Fixnums' do
           result = condition_parser.process_if('a == 4 and (@b == "Peter" or c<5)', CfsmEvent, TestFSM  )
-          cache = ConditionHash.new
+          cache = ConditionCache.new
           Transformer.cache_conditions( cache, result )
 
           expect( result ).to have_parse_tree( {:and=>[0, {:or=>[1, 2]}]} )

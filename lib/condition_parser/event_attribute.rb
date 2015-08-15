@@ -16,7 +16,7 @@ module ConditionParser
     end
 
     def ==(object2)
-      self.attribute == object2.attribute
+      object2.is_a?( EventAttribute ) && attribute == object2.attribute
     end
 
     attr_reader :attribute

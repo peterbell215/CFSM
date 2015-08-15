@@ -6,6 +6,8 @@ require 'condition_optimisation/conditions_node'
 require 'condition_optimisation/condition_permutations'
 
 module ConditionOptimisation
+  # TODO: Replace the current start_node mechanism with a simpler array.
+
   class ConditionGraph < Array
 
     alias :nr_nodes :length
@@ -124,10 +126,20 @@ module ConditionOptimisation
 
           loop do
             # At this point self[current] points to a ConditionNode.  This has a set of conditions which we
-            # need to evaluate in turn.
-            if self[current].conditions.all? { |c| yield c }
+            # need to evaluate in turn. *fsms* keeps a list of all finite state machines that are still in play.
+            fsms = self[current].conditions.inject( :all ) do |f, c|
+              break unless ( f = yield(c, f) )
+              f
+            end
+
+            if fsms
               # all the conditions evalulated to true. Therefore, add any transitions assciated with this node.
-              transitions.merge self[current].transitions
+              # However, the generic transition of the graph needs to be replaced with the specific fsm here.
+              fsms.each do |fsm|
+                self[current].transitions.each do |transition|
+                  transitions.add transition.clone.tap { |t| t.fsm = fsm } if transition.fsm==fsm.class
+                end
+              end
               # Now push the follow ons onto the stack.
               stack.concat self[current].edges.to_a
             end

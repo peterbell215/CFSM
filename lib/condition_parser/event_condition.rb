@@ -38,15 +38,21 @@ module ConditionParser
     # This will evaluate for whether the condition has been met.
     # @param [Array<CFSM>] cfsms is the array of FSMs to be evaluated.
     # @return [Array<CFSM>] is the array of FSMs that match the evaluated condition.
+
     def evaluate( cfsms, event )
-      if attribute.is_a? FsmStateVariable
-        if cfsms
-          cfsms.delete_if
+      if @attribute.is_a? FsmStateVariable
+        # if cfsms remains nil then this particular namespace has not FSMs instantiated,
+        # therefore return []
+        cfsms = CFSM.state_machines( @attribute.fsm_class ) if cfsms == :all
+
+        if cfsms && !cfsms.empty?
+          cfsms.each do |fsm|
+            # TODO: @value could be complex.  Need something to deal with that case.
+            cfsms.delete(fsm) unless fsm.send( @attribute.state_var ).send( @comparator, @value )
+          end
+
+          cfsms
         end
-        cfsms ||= CFSM.state_machines( @attribute.fsm_class )
-
-
-        throw NotImplementedError
       else
         # simply testing a condition.
         event.evaluate( self.attribute ).send( self.comparator, self.value )

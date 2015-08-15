@@ -5,7 +5,7 @@ require 'parslet'
 require 'cfsm'
 require 'cfsm_event'
 require 'condition_parser/parser'
-require 'condition_parser/condition_hash'
+require 'condition_parser/condition_cache'
 require 'condition_parser/transformer'
 require 'condition_parser/fsm_state_variable'
 

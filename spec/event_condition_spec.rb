@@ -8,7 +8,10 @@ require 'cfsm_event'
 require 'condition_parser/event_condition'
 
 class TestFSM1 < CFSM
-  state :a, :on => :test_event, :transition => :b, :initial => true
+  state :a do
+    on :test_event, :transition => :b, :initial => true
+  end
+
   def initialize( test_var )
     @test_var = test_var
   end
@@ -16,7 +19,9 @@ class TestFSM1 < CFSM
 end
 
 class TestFSM2 < CFSM
-  state :c, :on => :test_event, :transition => :d
+  state :c do
+    on :test_event, :transition => :d
+  end
 end
 
 module ConditionParser

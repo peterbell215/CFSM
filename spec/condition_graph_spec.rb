@@ -179,7 +179,7 @@ module ConditionOptimisation
         end
 
         it 'should only return :fsm_a if conditons 3 to 6 are false ' do
-          expect( graph.execute { |c| set_a.member? c } ).to contain_exactly( :fsm_a )
+          expect( graph.execute { |c, fsms| set_a.member? c } ).to contain_exactly( :fsm_a )
         end
 
         it 'should only return :fsm_b and :fsm_c for conditons 1 to 6' do

@@ -1,13 +1,13 @@
 
 require 'cfsm'
-require 'condition_parser/condition_hash'
+require 'condition_parser/condition_cache'
 
 require 'rspec'
 
 module ConditionParser
-  describe 'ConditionHash' do
+  describe 'ConditionCache' do
     before(:all) { class TestFSM < CFSM; end }
-    subject(:condition_hash) { ConditionHash.new }
+    subject(:condition_hash) { ConditionCache.new }
     let!( :event_condition1 ) { EventCondition.new(:==, EventAttribute.new('attribute'), 5.0) }
     let!( :event_condition2 ) { EventCondition.new(:==, EventAttribute.new('attribute'), 5.0 ) }
     let!( :event_condition3 ) { EventCondition.new(:<, EventAttribute.new('attribute'), 5.0) }

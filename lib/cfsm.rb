@@ -3,9 +3,6 @@
 
 require 'cfsm_classes/event_processor'
 
-class NoInitialState < Exception; end
-class ConflictingInitialStates < Exception; end
-
 class CFSM
   # This holds for each namespace an EventProcessor that does the heavy lifting.  The user
   # can partition their system of communicating FSMs into independent sub-systems by placing
@@ -32,17 +29,16 @@ class CFSM
     result.empty? ? 'Global' : result
   end
 
-  # the core function that does the heavy lifting.
+  # The core function that does the heavy lifting.  Delegates the real work to the EventProcessor object.
+  #
   # @return [Object]
-  def self.state(state, other_parameters, &exec_block)
-    # Make sure the key mandatory parameters are defined in other_parameters
-    raise OnMissing unless other_parameters[:on]
-    raise TransitionMissing unless other_parameters[:transition]
+  # @param [Symbol] state
+  # @param [Hash] other_parameters
+  # @param [Proc] specs
+  def self.state(state, other_parameters = {}, &specs)
+    event_processor = ( @@eventprocessors[self.namespace] ||= CfsmClasses::EventProcessor.new(self.namespace) )
 
-    event_processor = (@@eventprocessors[self.namespace] ||= CfsmClasses::EventProcessor.new)
-
-    event_processor.register_initial_state( self, state ) if other_parameters[:initial]
-    event_processor.register_event( other_parameters[:on], self, state, other_parameters[:transition] )
+    event_processor.register_events( self, state, other_parameters, &specs )
   end
 
   ##
@@ -66,6 +62,9 @@ class CFSM
     end
 
     processors.each { |processor| @@eventprocessors[processor].run( options ) }
+
+    # We have successfully started each processor.  Therefore we have no need for the parser.
+    CfsmClasses::EventProcessor.shutdown_parser
   end
 
   # Used to post an event to all CFSM systems that need to know about it.
@@ -78,6 +77,6 @@ class CFSM
   # @param [Class] fsm_class
   # @return [Array<CFSM>]
   def self.state_machines( fsm_class )
-    # code here
+    @@eventprocessors[ fsm_class.namespace ][ fsm_class ]
   end
 end

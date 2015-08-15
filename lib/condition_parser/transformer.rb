@@ -21,7 +21,7 @@ module ConditionParser
     # Recurse down the tree, replacing each EventCondition with an integer number.  Used to help make
     # the manipulation of the condition trees easier.
     #
-    # @param [ConditionHash] cache
+    # @param [ConditionCache] cache
     # @param [Hash,Array,EventCondition] tree
     # @return [Hash,Array,Fixnum]
     def self.cache_conditions( cache, tree )

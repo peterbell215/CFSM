@@ -13,4 +13,6 @@ class CfsmEvent
     # @src = src
     @prio = prio
   end
+
+  attr_reader :event_class
 end

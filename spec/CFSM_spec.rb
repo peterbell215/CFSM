@@ -1,8 +1,35 @@
 require 'rspec'
+
 require 'cfsm'
 require 'cfsm_event'
 
+class TestFSM_A < CFSM
+  state( :a, :initial => true ) { on :event1, :transition => :b }
+end
+
+module TestModule
+  class TestFSM_B < CFSM
+    state :d, :initial => true do
+      on :event1, :transition => :e
+    end
+  end
+  class TestFSM_C < CFSM
+    state( :a, :initial => true ) { on :event1, :transition => :b }
+  end
+end
+
 describe CFSM do
+  describe '#state_machines' do
+
+    it 'should test something' do
+      pending
+
+      fail
+
+      fsm = TestFSM_A.new
+    end
+  end
+
   describe '#start' do
     context 'namespace option' do
       it 'should start a single CFSM system' do
@@ -52,10 +79,13 @@ describe CFSM do
     end
   end
 
+
   context 'running the FSMs' do
     it 'should create a simple state machine' do
       class TestFSM < CFSM
-        state :a, :on => :event1, :transition => :b, :initial => true
+        state :a do
+          on :event1, :transition => :b
+        end
       end
       fsm = TestFSM.new
 
@@ -63,9 +93,20 @@ describe CFSM do
 
       CFSM.start :async => false
 
-      CFSM.post( CfsmEvent.new(:event1, self) )
+      CFSM.post( CfsmEvent.new(:event1) )
 
       expect( fsm.state ).to eq( :b )
+    end
+
+    it 'should advance only one state machine of a class if the second is in the wrong state' do
+      class TestFSM < CFSM
+        state :a do
+          on :event1, :transition => :b
+        end
+
+      end
+      pending
+
     end
   end
 

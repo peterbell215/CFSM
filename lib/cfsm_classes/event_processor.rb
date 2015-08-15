@@ -5,7 +5,7 @@ require 'cfsm_classes/transition'
 require 'condition_parser/parser'
 require 'condition_parser/fsm_state_variable'
 require 'condition_parser/transformer'
-require 'condition_parser/condition_hash'
+require 'condition_parser/condition_cache'
 require 'condition_optimisation/condition_graph'
 require 'condition_optimisation/condition_permutations'
 
@@ -21,13 +21,17 @@ module CfsmClasses
     include ConditionOptimisation::ConditionPermutations
 
     # Constructor.  Creates an instance of EventProcessor.
-    def initialize
+    # @param [String] namespace
+    def initialize( namespace )
+      # keep a record of the namespace.
+      @namespace = namespace
+
       # Used to store runtime options.  Key one at the moment is :async => False which prevents CFSM from creating
       # a separate thread to process events.
       @options = nil
 
       ##
-      # This variable holds a list of all instantiated FSMs within the namespace. It holds the data as a hash of namespace to
+      # This variable holds a list of all instantiated FSMs within the namespace. It holds the data as a hash of class to
       # an array of all instantiated FSMs.
       @cfsms = {}
 
@@ -36,12 +40,12 @@ module CfsmClasses
       # class to state.
       @cfsm_initial_state = {}
 
-      # Hash that provides the collection of if_conditions that need to be evaluated for a given event type.
+      # Hash that provides the collection of parameters that need to be evaluated for a given event type.
       #
       # While the CFSMs are being constructed, the hash will point to an array of EventTrees.  Each
       # event tree represents a condition tree and the transition that will produced.  Example:
       #
-      #   @if_conditions[ :event_a ] =
+      #   @parameters[ :event_a ] =
       #     EventTree[0] = <
       #       @condition_tree = { :and => [
       #         StateCheck( FsmA, :state_a ), ConditionNode( :==, 'a', 'Peter' ) },
@@ -56,9 +60,25 @@ module CfsmClasses
       # together with the transitions.  Details in condition_graph.rb
       @conditions = {}
 
-      # In order to facilitate faster manipulation of the if_conditions during the optimisation we cache the
-      # if_conditions in this Hash together with an integer.  The Caches are in turn hashed onto the EventConditions.
+      # In order to facilitate faster manipulation of the parameters during the optimisation we cache the
+      # parameters in this Hash together with an integer.  The Caches are in turn hashed onto the EventConditions.
       @condition_cache = {}
+    end
+
+    # TODO: add description plus rpsec tests
+    def register_events( klass, state, other_params, &exec_block)
+      @klass_being_defined = klass
+      @state_being_defined = state
+
+      # if an initial state has not been set, then set it. In practice, means the first state defintion
+      # gets the initial state.
+      @cfsm_initial_state[ klass ] = state unless @cfsm_initial_state[ klass ]
+
+      # Evaluate the transition definitions
+      self.instance_eval( &exec_block )
+
+      @klass_being_defined = nil
+      @state_being_defined = nil
     end
 
     ##
@@ -66,48 +86,29 @@ module CfsmClasses
     #
     # @api private
     #
-    # @param name [Class,symbol] the event that we are reacting too.
-    # @param current_state [Symbol] the state in which the FSM needs to be when receiving this event
-    # @param next_state [Symbol] the state to which the FSM will transition on receiving the event and if the if_conditions are met
-    # @param if_conditions [String] the if_conditions that the FSM must meet to
+    # @param event [Class,symbol] the event that we are reacting too.
+    # @param parameters [String] the parameters that the FSM must meet to
     # @param proc [Proc] a method to be executed as part of the state transition
-    def register_event( name, fsm_class, current_state, next_state, if_conditions = {}, &proc)
+    def on( event, parameters = {}, &proc )
       # Create an array to hold the condition trees and their respective transitions.
-      @conditions[ name ] ||= Array.new
+      @conditions[ event ] ||= Array.new
 
       # Make sure we have not yet passed the point of turning this into a ConditionGraph.
-      raise TooLateToRegisterEvent if @conditions[ name ].is_a? ConditionOptimisation::ConditionGraph
+      raise TooLateToRegisterEvent if @conditions[ event ].is_a? ConditionOptimisation::ConditionGraph
 
       # Create a parse tree with at least a state check.
-      fsm_check = ConditionParser::EventCondition::fsm_state_checker(fsm_class, current_state)
-      if_tree = unless if_conditions[:if].nil?
-                  { :and => [ fsm_check, @@transformer.apply( @@parser.parse( if_conditions[:if] ) ) ] }
+      fsm_check = ConditionParser::EventCondition::fsm_state_checker(@klass_being_defined, @state_being_defined)
+      if_tree = unless parameters[:if].nil?
+                  { :and => [ fsm_check, @@transformer.apply( @@parser.parse( parameters[:if] ) ) ] }
                 else
                   fsm_check
                 end
 
       # Create the transition object
-      transition = CfsmClasses::Transition.new( fsm_class, next_state )
-
-      # TODO: deal with the Proc argument
+      transition = CfsmClasses::Transition.new( @klass_being_defined, parameters[:transition], &proc )
 
       # Store the event.
-      @conditions[name].push Struct::EventTree.new( if_tree, transition )
-    end
-
-    # Method used to register with the event processor what the initial state is for a class of
-    # communicating FSMs.
-    #
-    # @api private
-    #
-    # @param [Class] cfsm_class
-    # @param [Symbol] initial_state
-    # @return [Symbol] returns the initial state
-    # @raises ConflictingInitialStates if the initial state is already set for this state machine
-    def register_initial_state(cfsm_class, initial_state)
-      # check if an initial state is indicated.
-      raise ConflictingInitialStates if @cfsm_initial_state[ cfsm_class ]
-      @cfsm_initial_state[ cfsm_class ] = initial_state
+      @conditions[event].push Struct::EventTree.new( if_tree, transition )
     end
 
     # Retrieves the initial state for this class of FSM.  If it is not defined, raises an error.
@@ -117,7 +118,7 @@ module CfsmClasses
     # @param [Class] cfsm_class
     # @return [Symbol]
     def initial_state( cfsm_class )
-      @cfsm_initial_state[ cfsm_class ] || raise( NoInitialState )
+      @cfsm_initial_state[ cfsm_class ]
     end
 
     # Registers an instance of a CFSM with the event processor.  Used by the constructor of the CFSM.
@@ -127,7 +128,15 @@ module CfsmClasses
     # @param [CFSM] cfsm
     # @return [Symbol] initial state for the FSM
     def register_cfsm( cfsm )
-      ( @cfsms[ cfsm.class ] ||= Array.new ).push( self )
+      ( @cfsms[ cfsm.class ] ||= Array.new ).push( cfsm )
+    end
+
+    # Returns an array of instantiated FSMs for the specific class.
+    #
+    # @param [Class] cfsm
+    # @return [Array<CFSM>] array of FSMs of correct type
+    def []( cfsm )
+      @cfsms[ cfsm ]
     end
 
     # Creates the queue for this event processor.  If the event processor is to operate in async mode, also
@@ -151,9 +160,9 @@ module CfsmClasses
     # for that event we stick it into the queue for processing.  If we are not operating in async mode,
     # then we also process the event.
     def post( event )
-      if @conditions[ event.class ]
+      if @conditions[ event.event_class ]
         @event_queue.push event
-        self.process_event unless @thread
+        process_event unless @thread
       end
     end
 
@@ -164,7 +173,7 @@ module CfsmClasses
     # @api private
     def cache_conditions
       @conditions.each_pair do |event, condition_trees|
-        @condition_cache[event] ||= ConditionParser::ConditionHash.new
+        @condition_cache[event] ||= ConditionParser::ConditionCache.new
         condition_trees.each do |tree|
           tree.condition_tree = ConditionParser::Transformer.cache_conditions(@condition_cache[event], tree.condition_tree)
         end
@@ -205,14 +214,24 @@ module CfsmClasses
       event = @event_queue.pop
 
       # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
-      fsms = nil
-      @conditions[ event.class ].condition_tree.execute do |c|
-        fsms = @condition_cache[ event.class ][ c ].evaluate( fsms, event )
+      transitions = @conditions[ event.event_class ].execute do |c, fsms|
+        fsms = @condition_cache[ event.event_class ][ c ].evaluate( fsms, event )
+      end
+
+      transitions.each do |t|
+        if !t.proc || t.proc && t.fsm.instance_exec( t.proc )
+          t.fsm.state = t.next_state
+        end
       end
     end
 
     # Create single instances of the parser and the transformer.
     @@parser =  ConditionParser::Parser.new
+
+    # In order to save memory, we remove the parser, once we have parsed and converted all trees.
+    def self.shutdown_parser
+      self.remove_class_variable :@@parser
+    end
 
     # Used to hold the condition tree and transition descriptions in the @@event_processors hash.
     Struct.new('EventTree', :condition_tree, :transition )
