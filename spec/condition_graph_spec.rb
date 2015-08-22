@@ -1,6 +1,7 @@
 # @author Peter Bell
-# Licensed under MIT2
+# Licensed under MIT
 
+require 'cfsm'
 require 'set'
 require 'condition_optimisation/condition_graph'
 require 'logger'
@@ -154,6 +155,28 @@ module ConditionOptimisation
     end
 
     context 'dealing with condition sets' do
+      # We use a simplified representation for testing: conditions are represented as Fixnums
+      # and transitions as symbols.  In other to ensure that EventProcessor still works correctly
+      # we have to monkey patch both classes to behave similar enough to ConditionNode and Transition.
+      class ::Fixnum
+        include RSpec::Matchers
+
+        # We use a slight of hand here.  The correct evaluate is passed the event for evaluation.
+        # Instead, we pass the set of conditions that have not yet been evaluated in the event field.
+        # This way we can keep track of what conditons have been evaluated without needing to interfere
+        # in any way with EventProcessor::execute.  A rather extreme example of duck typing.
+        def evaluate( fsms, conditions_not_tested_yet )
+          expect( conditions_not_tested_yet.delete? self ).to be_truthy
+          fsms
+        end
+      end
+
+      class ::Symbol
+        def instantiate( included_fsms )
+          [ self ]
+        end
+      end
+
       let!( :set_a ){ Set.new( [1, 2, 7, 8]) }
       let!( :set_b ){ Set.new( [1, 2, 3, 4, 5, 6] ) }
       let!( :set_c ){ Set.new( [3, 4, 5, 6] ) }
@@ -163,27 +186,24 @@ module ConditionOptimisation
       subject( :simple_graph ) { ConditionGraph.new.add_conditions( set_a, :fsm_a ) }
 
       describe '#execute' do
-        it 'should yield to evaluate a set of conditions' do
+        it 'should evaluate each condition only once' do
           conditions_not_tested_yet = set_a.clone
 
-          simple_graph.execute do |c|
-            expect( conditions_not_tested_yet.delete? c ).to be_truthy
-            true
-          end
+          simple_graph.execute( conditions_not_tested_yet )
 
           expect( conditions_not_tested_yet ).to be_empty
         end
 
         it 'should return return the correct transition' do
-          expect( simple_graph.execute { |_| true } ).to contain_exactly :fsm_a
+          expect( simple_graph.execute { |_, fsms| true } ).to contain_exactly :fsm_a
         end
 
         it 'should only return :fsm_a if conditons 3 to 6 are false ' do
-          expect( graph.execute { |c, fsms| set_a.member? c } ).to contain_exactly( :fsm_a )
+          expect( graph.execute { |c, fsms| set_a.member? c; fsms } ).to contain_exactly( :fsm_a )
         end
 
         it 'should only return :fsm_b and :fsm_c for conditons 1 to 6' do
-          expect( graph.execute { |c| set_b.member? c } ).to contain_exactly( :fsm_b, :fsm_c )
+          expect( graph.execute { |c, fsms| set_b.member? c; fsms } ).to contain_exactly( :fsm_b, :fsm_c )
         end
       end
 

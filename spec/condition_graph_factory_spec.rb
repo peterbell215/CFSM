@@ -27,7 +27,7 @@ module ConditionOptimisation
       # Now test that for every condition set we get the correct
       conditions_sets.each_pair do |condition_set, transition|
         log.debug "#{condition_set.inspect} => #{transition}"
-        expect( graph.execute { |c| condition_set.member? c } ).to include( transition )
+        expect( graph.execute { |c, fsms| condition_set.member? c; fsms } ).to include( transition )
       end
 
       # TODO: test the negative: i.e. sets of conditions that are not covered

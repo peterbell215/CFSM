@@ -214,13 +214,11 @@ module CfsmClasses
       event = @event_queue.pop
 
       # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
-      transitions = @conditions[ event.event_class ].execute do |c, fsms|
-        fsms = @condition_cache[ event.event_class ][ c ].evaluate( fsms, event )
-      end
+      transitions = @conditions[ event.event_class ].execute( event )
 
       transitions.each do |t|
         if !t.proc || t.proc && t.fsm.instance_exec( t.proc )
-          t.fsm.state = t.next_state
+          t.fsm.set_state( t.new_state )
         end
       end
     end

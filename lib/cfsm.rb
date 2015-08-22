@@ -68,8 +68,15 @@ class CFSM
   end
 
   # Used to post an event to all CFSM systems that need to know about it.
-  def self.post( event )
-    @@eventprocessors.each_value { |processor| processor.post( event ) }
+  #
+  # @param [CfsmEvent] event
+  # @param [Fixnum] delay in milliseconds before the event goes live
+  def self.post( event, delay = 0 )
+    @@eventprocessors.each_value { |processor| processor.post( event, delay ) }
+  end
+
+  def self.cancel( event )
+    raise NotImplementedError
   end
 
   # Given a class of FSMs, this returns an array of instantiated FSMs of that class.
@@ -78,5 +85,17 @@ class CFSM
   # @return [Array<CFSM>]
   def self.state_machines( fsm_class )
     @@eventprocessors[ fsm_class.namespace ][ fsm_class ]
+  end
+
+  private
+
+  ##
+  # Set the state - used by EventProcessor.  Use fsm.instance_exec( state ) { |s| set_state(s) } for
+  # the event processor to set the state.
+  #
+  # @api private
+  # @param [Symbol] s new state
+  def set_state( s )
+    @state = s
   end
 end

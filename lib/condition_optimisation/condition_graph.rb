@@ -117,37 +117,37 @@ module ConditionOptimisation
     ##
     # Executes the graph.  When it needs to evaluate a condition it yields to the caller to evalulate
     # the condition.
-    def execute
+    # @param [CfsmEvent] event
+    def execute( event )
       transitions = Set.new      # list of transitions that can be executed.
 
       self.each_with_index do |condition_node, current|
         if condition_node.start_node
-          stack = []            # stack used to keep track of different branches for evaluation.
+          stack = [current, :all]            # stack used to keep track of different branches for evaluation.
 
-          loop do
+          begin
+            # Retrieve next condition set to evaluate, and the fsms to use.
+            current, fsms = stack.pop(2)
+
             # At this point self[current] points to a ConditionNode.  This has a set of conditions which we
             # need to evaluate in turn. *fsms* keeps a list of all finite state machines that are still in play.
-            fsms = self[current].conditions.inject( :all ) do |f, c|
-              break unless ( f = yield(c, f) )
+            fsms = self[current].conditions.inject( fsms ) do |f, c|
+              break unless ( f = c.evaluate( f, event ) )
               f
             end
 
             if fsms
-              # all the conditions evalulated to true. Therefore, add any transitions assciated with this node.
-              # However, the generic transition of the graph needs to be replaced with the specific fsm here.
-              fsms.each do |fsm|
-                self[current].transitions.each do |transition|
-                  transitions.add transition.clone.tap { |t| t.fsm = fsm } if transition.fsm==fsm.class
-                end
-              end
-              # Now push the follow ons onto the stack.
-              stack.concat self[current].edges.to_a
-            end
+              # fsms is either :all or a list of FSMs that meet the criteria. We now have to apply the specified
+              # transitions to those fsms in the list, or all if the list is still :all.
+              transitions +=
+                  self[current].transitions.inject([]) do |trans_to_exec, transition|
+                    trans_to_exec += transition.instantiate(fsms)
+                  end
 
-            # If the stack is empty we are done.
-            break if stack.empty?
-            current = stack.pop
-          end
+              # Now push the follow ons onto the stack, with the list fof instantiated fsms still in pla
+              self[current].edges.each { |follow_on| stack << [ follow_on, fsms ] }
+            end
+          end until stack.empty? # If the stack is empty we are done.
         end
       end
       #return the transitions
