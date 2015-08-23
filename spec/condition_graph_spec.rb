@@ -13,12 +13,11 @@ module ConditionOptimisation
 
     describe 'graph to/and from strings' do
       subject(:graph) do
-        ConditionGraph.new(
-            [
-                ConditionOptimisation::ConditionsNode.new([1, 2], [], [1, 2], true), # 0
-                ConditionOptimisation::ConditionsNode.new([7, 8], [:fsm_c, :fsm_b], [], false), # 1
-                ConditionOptimisation::ConditionsNode.new([3, 4, 5, 6], [:fsm_a], [], false), # 2
-            ])
+        ConditionGraph.new([
+                               ConditionOptimisation::ConditionsNode.new([1, 2], [], [1, 2]), # 0
+                               ConditionOptimisation::ConditionsNode.new([7, 8], [:fsm_c, :fsm_b], []), # 1
+                               ConditionOptimisation::ConditionsNode.new([3, 4, 5, 6], [:fsm_a], [] ) ], # 2
+                           [0] )
       end
 
       let(:graph_as_string_with_newline) do
@@ -48,15 +47,17 @@ module ConditionOptimisation
 
     describe '#clone' do
       it 'should make a deep copy including of the sets.' do
-        graph = ConditionGraph.new ( [
-                                     ConditionsNode.new( [1, 2], [], [1, 2], true ),           # 0
-                                     ConditionsNode.new( [7, 8], [:fsm_c], [], false ),        # 1
-                                     ConditionsNode.new( [3, 4, 5, 6], [:fsm_a], [], false ),  # 2
-                                 ] )
+        graph = ConditionGraph.new( [
+                                     ConditionsNode.new( [1, 2], [], [1, 2] ),         # 0
+                                     ConditionsNode.new( [7, 8], [:fsm_c], [] ),       # 1
+                                     ConditionsNode.new( [3, 4, 5, 6], [:fsm_a], [] )  # 2
+                                 ], [0] )
 
         copy = graph.clone
 
         expect( graph.length ).to eq( copy.length )
+        expect( graph.start_array ).to match_array( copy.start_array )
+
         (0..graph.length-1).each do |index|
           expect( graph[index].conditions ).to match( copy[index].conditions )
           expect( graph[index].conditions ).not_to be( copy[index].conditions )
@@ -64,7 +65,6 @@ module ConditionOptimisation
           expect( graph[index].transitions ).not_to be( copy[index].transitions.object_id )
           expect( graph[index].edges ).to match( copy[index].edges )
           expect( graph[index].edges ).not_to be( copy[index].edges )
-          expect( graph[index].start_node ).to eq( copy[index].start_node )
         end
       end
     end
@@ -73,16 +73,16 @@ module ConditionOptimisation
       before(:each) do
         # Create the same graph twice/
         @graphs = Array.new(2) do
-          ConditionGraph.new ( [
-            ConditionsNode.new( [1, 2, 3, 4], [:fsm_a], [5, 7], true ),     # 0
-            ConditionsNode.new( [4, 5, 6, 7], [:fsm_b], [3], true ),        # 1
-            ConditionsNode.new( [8, 9, 10, 11], [:fsm_c], [3], true ),      # 2
-            ConditionsNode.new( [13, 14, 15], [:fsm_e], [4], false ),       # 3
-            ConditionsNode.new( [16], [:fsm_f], [], false ),                # 4
-            ConditionsNode.new( [17, 18, 19], [:fsm_g], [6], false ),       # 5
-            ConditionsNode.new( [20], [:fsm_h], [], false ),                # 6
-            ConditionsNode.new( [21, 22, 23], [:fsm_i], [], false )         # 7
-          ] )
+          ConditionGraph.new([
+                                 ConditionsNode.new([1, 2, 3, 4], [:fsm_a], [5, 7]), # 0
+                                 ConditionsNode.new([4, 5, 6, 7], [:fsm_b], [3]), # 1
+                                 ConditionsNode.new([8, 9, 10, 11], [:fsm_c], [3]), # 2
+                                 ConditionsNode.new([13, 14, 15], [:fsm_e], [4]), # 3
+                                 ConditionsNode.new([16], [:fsm_f], []), # 4
+                                 ConditionsNode.new([17, 18, 19], [:fsm_g], [6]), # 5
+                                 ConditionsNode.new([20], [:fsm_h], []), # 6
+                                 ConditionsNode.new([21, 22, 23], [:fsm_i], []) # 7
+                             ], [0, 1, 2])
         end
       end
 
@@ -105,7 +105,6 @@ module ConditionOptimisation
       it 'should accept a single condition chain' do
         graph = ConditionGraph.new.add_conditions( [1, 2, 3, 4], :fsm1 )
 
-        expect( graph[ 0 ].start_node ).to be true
         expect( graph[ 0 ].conditions.to_a ).to contain_exactly 1, 2, 3, 4
         expect( graph[ 0 ].transitions.to_a ).to contain_exactly :fsm1
       end
@@ -113,7 +112,7 @@ module ConditionOptimisation
       it 'should create two condition chains in sequence if the 2nd is full subset of the 1st' do
         graph = ConditionGraph::from_string 'start: 0;0: {1, 2} [fsm_1] -> 1;1: {3, 4} [fsm_2] -> end;'
 
-        expect( graph.add_conditions(Set.new( [1, 2, 5, 6 ] ), :fsm_3 ) ).to eq(
+        expect( graph.add_conditions( [1, 2, 5, 6 ], :fsm_3 ) ).to eq(
           ConditionGraph::from_string 'start: 0;0: {1, 2} [fsm_1] -> 1, 2;1: {3, 4} [fsm_2] -> end;2: {5, 6} [fsm_3] -> end;' )
       end
 
@@ -256,6 +255,8 @@ module ConditionOptimisation
 
       describe '#add_conditions' do
         it 'should add one condition set at a time correctly' do
+          fail
+
           # noinspection RubyResolve
           conditions_sets_as_array = complex_conditions_set.keys
 
@@ -273,7 +274,7 @@ module ConditionOptimisation
               condition_set_under_test = conditions_sets_as_array[i]
               expected_transition = complex_conditions_set[ condition_set_under_test ]
               log.debug "Testing #{i}: #{condition_set_under_test.inspect} => #{expected_transition}"
-              expect( graph.execute { |c| condition_set_under_test.member? c } ).to include( expected_transition )
+#              expect( graph.execute { |c| condition_set_under_test.member? c } ).to include( expected_transition )
             end
           end
         end
