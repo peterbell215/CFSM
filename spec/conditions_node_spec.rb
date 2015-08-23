@@ -7,7 +7,7 @@ require 'condition_optimisation/conditions_node'
 module ConditionOptimisation
   describe ConditionsNode do
     before(:each) do
-      @conditions_node = Array.new(2) { ConditionsNode.new( [1, 2, 3, 4], [:fsm1], [1, 2], false ) }
+      @conditions_node = Array.new(2) { ConditionsNode.new( [1, 2, 3, 4], [:fsm1], [1, 2] ) }
     end
 
     describe '#=' do

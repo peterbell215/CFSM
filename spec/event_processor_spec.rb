@@ -2,6 +2,8 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
+# TODO do the specs.
+
 require 'rspec'
 
 describe 'My behaviour' do

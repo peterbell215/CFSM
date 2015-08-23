@@ -9,15 +9,21 @@ module ConditionOptimisation
   # TODO: Replace the current start_node mechanism with a simpler array.
 
   class ConditionGraph < Array
+    def initialize(condition_array = [], start_array = [])
+      super( condition_array )
+      @start_array = start_array
+    end
 
+    attr_reader :start_array
     alias :nr_nodes :length
 
     # We need clone to be deep.
     def clone
-      ConditionGraph.new( self.length ) { |index| self[index].clone }
+      new_graph = ConditionGraph.new( self.length ) { |index| self[index].clone }
+      new_graph.instance_exec( self.start_array ) { |start_array| @start_array = start_array.clone }
+      new_graph
     end
 
-    ##
     # A chain is a hash of one element containing a set of conditions, and
     # a transition description.  So a chain might be:
     #
@@ -68,45 +74,46 @@ module ConditionOptimisation
       if self.empty?
         # First condition to be added to the graph.
         self.push( ConditionsNode.new( anded_conditions, [transition] ) )
+        @start_array.push( 0 )
       else
         # Search through the array to see if the new conditions are
         # already contained in array graph as a condition node.
         catch :added_conditions do
-          self.each_with_index do |obj, index|
-            if obj.start_node
-              if anded_conditions == obj.conditions
-                # the two are the same.  Therefore, simply add transition to the set
-                # of transitions on this node.
-                self[index].transitions.add( transition )
-                throw :added_conditions
-              elsif anded_conditions < obj.conditions
-                # the new conditions are a subset of the existing conditions.  Therefore,
-                # split the existing conditions into those shared with the new conditions
-                # and those that come later.
-                self[ index ] = ConditionsNode.new( anded_conditions, [transition], [ self.length ], true )
-                obj.conditions = obj.conditions - anded_conditions
-                obj.start_node = false
-                self.push( obj )
-                throw :added_conditions
-              elsif obj.conditions < anded_conditions
-                # New conditions super-set of existing conditions.  Therefore, we simply add the missing conditions on
-                # as a new branch.
-                obj.edges << self.length
-                self.push( ConditionsNode.new( anded_conditions - obj.conditions, [transition], [], false ) )
-                throw :added_conditions
-              elsif obj.conditions.intersect?( anded_conditions )
-                # The two sets of conditions have conditions in common, but both have unique conditions.
-                intersect = obj.conditions.intersection anded_conditions
-                self.push( ConditionsNode.new( obj.conditions - intersect, obj.transitions, obj.edges, false ))
-                self.push( ConditionsNode.new( anded_conditions - intersect, [transition], [], false ))
-                self[ index ] = ConditionsNode.new( intersect, [], [ self.length-2, self.length-1 ], true )
-                throw :added_conditions
-              end
+          @start_array.each do |index|
+            obj = self[index]
+
+            if anded_conditions == obj.conditions
+              # the two are the same.  Therefore, simply add transition to the set
+              # of transitions on this node.
+              self[index].transitions.add( transition )
+              throw :added_conditions
+            elsif anded_conditions < obj.conditions
+              # the new conditions are a subset of the existing conditions.  Therefore,
+              # split the existing conditions into those shared with the new conditions
+              # and those that come later.
+              self[ index ] = ConditionsNode.new( anded_conditions, [transition], [ self.length ] )
+              obj.conditions = obj.conditions - anded_conditions
+              self.push( obj )
+              throw :added_conditions
+            elsif obj.conditions < anded_conditions
+              # New conditions super-set of existing conditions.  Therefore, we simply add the missing conditions on
+              # as a new branch.
+              obj.edges << self.length
+              self.push( ConditionsNode.new( anded_conditions - obj.conditions, [transition], [] ) )
+              throw :added_conditions
+            elsif obj.conditions.intersect?( anded_conditions )
+              # The two sets of conditions have conditions in common, but both have unique conditions.
+              intersect = obj.conditions.intersection anded_conditions
+              self.push( ConditionsNode.new( obj.conditions - intersect, obj.transitions, obj.edges ))
+              self.push( ConditionsNode.new( anded_conditions - intersect, [transition], [] ))
+              self[ index ] = ConditionsNode.new( intersect, [], [ self.length-2, self.length-1 ] )
+              throw :added_conditions
             end
           end
           # if we reach here, we have not been able to add the new conditions
           # to an existing chain. Therefore, we simply add them as a new node
           # in their own right.
+          @start_array.push( self.nr_nodes )
           self.push( ConditionsNode.new( anded_conditions, [transition] ) )
         end
       end
@@ -120,34 +127,32 @@ module ConditionOptimisation
     def execute( event )
       transitions = Set.new      # list of transitions that can be executed.
 
-      self.each_with_index do |condition_node, current|
-        if condition_node.start_node
-          stack = [current, :all]            # stack used to keep track of different branches for evaluation.
+      @start_array.each do |current|
+        stack = [current, :all]           # stack used to keep track of different branches for evaluation.
 
-          begin
-            # Retrieve next condition set to evaluate, and the fsms to use.
-            current, fsms = stack.pop(2)
+        begin
+          # Retrieve next condition set to evaluate, and the fsms to use.
+          current, fsms = stack.pop(2)
 
-            # At this point self[current] points to a ConditionNode.  This has a set of conditions which we
-            # need to evaluate in turn. *fsms* keeps a list of all finite state machines that are still in play.
-            fsms = self[current].conditions.inject( fsms ) do |f, c|
-              break unless ( f = c.evaluate( f, event ) )
-              f
-            end
+          # At this point self[current] points to a ConditionNode.  This has a set of conditions which we
+          # need to evaluate in turn. *fsms* keeps a list of all finite state machines that are still in play.
+          fsms = self[current].conditions.inject( fsms ) do |f, c|
+            break unless ( f = c.evaluate( f, event ) )
+            f
+          end
 
-            if fsms
-              # fsms is either :all or a list of FSMs that meet the criteria. We now have to apply the specified
-              # transitions to those fsms in the list, or all if the list is still :all.
-              transitions +=
-                  self[current].transitions.inject([]) do |trans_to_exec, transition|
-                    trans_to_exec += transition.instantiate(fsms)
-                  end
+          if fsms
+            # fsms is either :all or a list of FSMs that meet the criteria. We now have to apply the specified
+            # transitions to those fsms in the list, or all if the list is still :all.
+            transitions +=
+                self[current].transitions.inject([]) do |trans_to_exec, transition|
+                  trans_to_exec += transition.instantiate(fsms)
+                end
 
-              # Now push the follow ons onto the stack, with the list fof instantiated fsms still in pla
-              self[current].edges.each { |follow_on| stack << [ follow_on, fsms ] }
-            end
-          end until stack.empty? # If the stack is empty we are done.
-        end
+            # Now push the follow ons onto the stack, with the list fof instantiated fsms still in pla
+            self[current].edges.each { |follow_on| stack << [ follow_on, fsms ] }
+          end
+        end until stack.empty? # If the stack is empty we are done.
       end
       #return the transitions
       transitions
@@ -176,7 +181,7 @@ module ConditionOptimisation
     # this is marked by the word 'end'.
     def inspect
       # Print the list of starters
-      string = 'start: ' << (0..self.length-1).to_a.reject { |i| !self[i].start_node }.join(', ') << "\n"
+      string = 'start: ' << @start_array.join(', ') << "\n"
 
       # Print each line
       self.each_with_index do |obj,ind|
@@ -196,21 +201,19 @@ module ConditionOptimisation
     # any sophisticated error handling and is only intended to help with testing.
     def self.from_string( input_string )
       graph = ConditionGraph.new
-      start_array = nil
+      @start_array = nil
 
       input_string.split(/[\n;]/).each do |line|
         if ( starts = @@start_matcher.match(line) )
-          start_array = starts[1].split(', ').map! { |s| s.to_i }
+          @start_array = starts[1].split(', ').map! { |s| s.to_i }
         elsif elements = @@line_matcher.match(line)
           conditions = Set.new elements[2].split(', ').map! { |n| n.to_i }
           transitions = Set.new elements[3].split(', ').map! { |s| s.to_sym }
           edges = elements[4] == 'end' ? nil : Set.new( elements[4].split(', ').map! { |n| n.to_i } )
 
-          graph[ elements[1].to_i ] = ConditionsNode.new( conditions, transitions, edges, false )
+          graph[ elements[1].to_i ] = ConditionsNode.new( conditions, transitions, edges )
         end
       end
-
-      start_array.each { |s| graph[s].start_node = true }
 
       graph
     end
@@ -287,9 +290,10 @@ module ConditionOptimisation
       (0..self.length-1).each do |i|
         new_graph[ nodemap[i] ] = ConditionsNode.new( self[i].conditions,
           self[i].transitions,
-          Set.new( self[i].edges ) { |e| nodemap[ e ] },
-          self[i].start_node )
+          Set.new( self[i].edges ) { |e| nodemap[ e ] } )
       end
+
+      @start_array.each { |start_node| new_graph.start_array.push nodemap[start_node] }
 
       new_graph
     end

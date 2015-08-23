@@ -31,7 +31,6 @@ module ConditionOptimisation
     def similar( cond_node2 )
       self.conditions == cond_node2.conditions &&
         self.transitions == cond_node2.transitions &&
-        self.start_node == cond_node2.start_node &&
         self.edges.length == cond_node2.edges.length
     end
 
@@ -42,7 +41,6 @@ module ConditionOptimisation
     end
 
     attr_reader :conditions
-    attr_accessor :start_node
     attr_accessor :transitions
     attr_accessor :edges
   end
