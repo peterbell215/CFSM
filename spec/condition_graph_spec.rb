@@ -1,5 +1,6 @@
 # @author Peter Bell
-# Licensed under MIT
+# @copyright 2015
+# Licensed under MIT.  See License file in top level directory.
 
 require 'cfsm'
 require 'set'
@@ -186,24 +187,42 @@ module ConditionOptimisation
       subject( :simple_graph ) { ConditionGraph.new.add_conditions( set_a, :fsm_a ) }
 
       describe '#execute' do
-        it 'should evaluate each condition only once' do
-          conditions_not_tested_yet = set_a.clone
+        it 'should evaluate each condition only once and return the correct transition' do
+          # We use a simplified representation for testing: conditions are represented as Fixnums
+          # and transitions as symbols.  In other to ensure that EventProcessor still works correctly
+          # we have to monkey patch both classes to behave similar enough to ConditionNode and Transition.
+          class ::Fixnum
+            include RSpec::Matchers
 
-          simple_graph.execute( conditions_not_tested_yet )
+            # We use a slight of hand here.  The correct evaluate is passed the event for evaluation.
+            # Instead, we pass the set of conditions that have not yet been evaluated in the event field.
+            # This way we can keep track of what conditons have been evaluated without needing to interfere
+            # in any way with EventProcessor::execute.  A rather extreme example of duck typing.
+            def evaluate( fsms, conditions_not_tested_yet )
+              expect( conditions_not_tested_yet.delete? self ).to be_truthy
+              fsms
+            end
+          end
 
-          expect( conditions_not_tested_yet ).to be_empty
+          expect( simple_graph.execute( set_a ) ).to contain_exactly :fsm_a
+          expect( set_a ).to be_empty
         end
 
-        it 'should return return the correct transition' do
-          expect( simple_graph.execute { |_, fsms| true } ).to contain_exactly :fsm_a
-        end
+        context 'some conditions are true' do
+          # See comment above about need to monkey patch Fixnum to support testing.
+          class ::Fixnum
+            def evaluate(fsms, set_of_conds_pass)
+              set_of_conds_pass.member? self ? fsms : nil
+            end
+          end
 
-        it 'should only return :fsm_a if conditons 3 to 6 are false ' do
-          expect( graph.execute { |c, fsms| set_a.member? c; fsms } ).to contain_exactly( :fsm_a )
-        end
+          it 'should only return :fsm_a if conditons 3 to 6 are false ' do
+            expect( graph.execute( set_a ) ).to contain_exactly( :fsm_a )
+          end
 
-        it 'should only return :fsm_b and :fsm_c for conditons 1 to 6' do
-          expect( graph.execute { |c, fsms| set_b.member? c; fsms } ).to contain_exactly( :fsm_b, :fsm_c )
+          it 'should only return :fsm_b and :fsm_c for conditons 1 to 6' do
+            expect( graph.execute( set_b ) ).to contain_exactly( :fsm_b, :fsm_c )
+          end
         end
       end
 

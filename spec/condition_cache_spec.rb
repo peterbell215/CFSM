@@ -1,3 +1,6 @@
+# @author Peter Bell
+# @copyright 2015
+# Licensed under MIT.  See License file in top level directory.
 
 require 'cfsm'
 require 'condition_parser/condition_cache'

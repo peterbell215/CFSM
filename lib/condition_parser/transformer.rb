@@ -1,3 +1,8 @@
+# @author Peter Bell
+# @copyright 2015
+# Licensed under MIT.  See License file in top level directory.
+
+# @note
 # Part of the parslet family.  Transforms the condition tree into a linear array of ComparisonNode's and BranchNodes
 # Each ComparisonNode will evaluate a condition.  BranchNodes are used to evaluate OR conditions.  So the 
 

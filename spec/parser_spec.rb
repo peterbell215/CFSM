@@ -1,5 +1,6 @@
 # @author Peter Bell
-# Licensed under MIT2
+# @copyright 2015
+# Licensed under MIT.  See License file in top level directory.
 
 require 'parslet'
 require 'cfsm'

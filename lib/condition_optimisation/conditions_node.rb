@@ -1,12 +1,13 @@
 # @author Peter Bell
-# Licensed under MIT2.
+# @copyright 2015
+# Licensed under MIT.  See License file in top level directory.
+
 
 module ConditionOptimisation
   ##
   # Uses to represent a condition node within a directed graph of conditions.
   # The directed graph shows the RETE decision tree.
   class ConditionsNode
-    ##
     # Constructor for a condition node.
     #
     # @param conditions [Set] defines the set of conditions all of which must be true for the condition node to be true
@@ -14,15 +15,14 @@ module ConditionOptimisation
     # @param edges [Set<Fixnum>] defines the set of follow conditions within the graph
     # @param start_node [Set<Fixnum.] defines whether this node is a starting node
     # @return [ConditionsNode]
-    def initialize( conditions, transitions, edges = [], start_node = true )
-      @start_node = start_node
+    def initialize( conditions, transitions, edges = [] )
       @conditions = Set.new( conditions ) # make a copy
       @transitions = Set.new( transitions ) # make a copy
       @edges = Set.new( edges ) # make a copy
     end
 
     def clone
-      ConditionsNode.new( self.conditions, self.transitions, self.edges, self.start_node )
+      ConditionsNode.new( self.conditions, self.transitions, self.edges )
     end
 
     ##

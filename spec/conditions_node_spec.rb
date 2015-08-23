@@ -1,4 +1,6 @@
 # @author Peter Bell
+# @copyright 2015
+# Licensed under MIT.  See License file in top level directory.
 
 require 'condition_optimisation/conditions_node'
 

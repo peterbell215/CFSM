@@ -1,6 +1,6 @@
-# CFSM Project.
-# Author: peter.bell215@gmail.com
-# Licensed under MIT.
+# @author Peter Bell
+# @copyright 2015
+# Licensed under MIT.  See License file in top level directory.
 
 require 'condition_optimisation/conditions_node'
 require 'condition_optimisation/condition_permutations'
@@ -12,7 +12,6 @@ module ConditionOptimisation
 
     alias :nr_nodes :length
 
-    ##
     # We need clone to be deep.
     def clone
       ConditionGraph.new( self.length ) { |index| self[index].clone }
