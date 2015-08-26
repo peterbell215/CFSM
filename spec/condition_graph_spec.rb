@@ -237,6 +237,19 @@ module ConditionOptimisation
     end
 
     context 'should handle a complex set of conditions' do
+      # See comment above about need to monkey patch Fixnum to support testing.
+      class ::Fixnum
+        def evaluate(fsms, condition_set )
+          condition_set.member?( self ) ? fsms : nil
+        end
+      end
+
+      class ::Symbol
+        def instantiate( included_fsms )
+          [ self ]
+        end
+      end
+
       subject( :graph ) { ConditionGraph.new }
       let( :complex_conditions_set ) do
         {
@@ -255,42 +268,31 @@ module ConditionOptimisation
 
       describe '#add_conditions' do
         it 'should add one condition set at a time correctly' do
-          fail
-
           # noinspection RubyResolve
           conditions_sets_as_array = complex_conditions_set.keys
 
           conditions_sets_as_array.each_with_index do |conds, index|
-            log.debug "iteration #{index}: adding #{conds.inspect} => #{complex_conditions_set[conds]}"
-
             # add the next condition set with transition into the graph.
             graph.add_conditions( conds, complex_conditions_set[conds] )
 
-            log.debug "resulting graph: #{graph.inspect}"
-
-            # now test if we have broken anything by lopping through each condition set
+            # now test if we have broken anything by looping through each condition set
             # we have added to far, and making sure that they each execute correctly.
             (0..index).each do |i|
               condition_set_under_test = conditions_sets_as_array[i]
               expected_transition = complex_conditions_set[ condition_set_under_test ]
-              log.debug "Testing #{i}: #{condition_set_under_test.inspect} => #{expected_transition}"
-#              expect( graph.execute { |c| condition_set_under_test.member? c } ).to include( expected_transition )
+              expect( graph.execute( condition_set_under_test ) ).to include( expected_transition )
             end
           end
         end
       end
 
-
       describe '#add_condition_sets' do
         it 'should build a graph correctly.' do
           graph = ConditionGraph.new.add_condition_sets complex_conditions_set
 
-          log.debug graph.inspect
-
-          # Now test that for every condition set we get the correct
+          # Now test that for every condition_set we get the correct transition.
           complex_conditions_set.each_pair do |condition_set, transition|
-            log.debug "#{condition_set.inspect} => #{transition}"
-            expect( graph.execute { |c| condition_set.member? c } ).to include( transition )
+            expect( graph.execute( condition_set ) ).to include( transition )
           end
         end
       end
