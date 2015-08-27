@@ -8,6 +8,15 @@ require 'condition_optimisation/condition_graph'
 require 'logger'
 
 module ConditionOptimisation
+  # This is generic across all tests within this test script.  In the simplified test cases we represent
+  # a transition with a symbol.  This simply allows the symbol of the transition to be added to the list of valid
+  # transitions.
+  class ::Symbol
+    def instantiate( included_fsms )
+      [ self ]
+    end
+  end
+
   describe ConditionGraph do
     let(:log) { Logger.new( 'condition_graph.txt' ).tap { |l| l.level = Logger::DEBUG } }
 
@@ -99,6 +108,20 @@ module ConditionOptimisation
 
         expect( @graphs[0] ).to_not eq( @graphs[1] )
       end
+      
+      it 'should fail to match two graphs where the start nodes are different' do
+        graph_0 = ConditionGraph.new( [
+                                        ConditionsNode.new( [1, 2], [], [1, 2] ),         # 0
+                                        ConditionsNode.new( [7, 8], [:fsm_c], [] ),       # 1
+                                        ConditionsNode.new( [3, 4, 5, 6], [:fsm_a], [] )  # 2
+                                    ], [0] )
+        graph_1 = ConditionGraph.new( [
+                                         ConditionsNode.new( [1, 2], [], [1, 2] ),         # 0
+                                         ConditionsNode.new( [7, 8], [:fsm_c], [] ),       # 1
+                                         ConditionsNode.new( [3, 4, 5, 6], [:fsm_a], [] )  # 2
+                                     ], [1] )
+        expect( graph_0 ).to_not eq( graph_1 )
+      end
     end
 
     describe '#add_conditions' do
@@ -155,28 +178,6 @@ module ConditionOptimisation
     end
 
     context 'dealing with condition sets' do
-      # We use a simplified representation for testing: conditions are represented as Fixnums
-      # and transitions as symbols.  In other to ensure that EventProcessor still works correctly
-      # we have to monkey patch both classes to behave similar enough to ConditionNode and Transition.
-      class ::Fixnum
-        include RSpec::Matchers
-
-        # We use a slight of hand here.  The correct evaluate is passed the event for evaluation.
-        # Instead, we pass the set of conditions that have not yet been evaluated in the event field.
-        # This way we can keep track of what conditons have been evaluated without needing to interfere
-        # in any way with EventProcessor::execute.  A rather extreme example of duck typing.
-        def evaluate( fsms, conditions_not_tested_yet )
-          expect( conditions_not_tested_yet.delete? self ).to be_truthy
-          fsms
-        end
-      end
-
-      class ::Symbol
-        def instantiate( included_fsms )
-          [ self ]
-        end
-      end
-
       let!( :set_a ){ Set.new( [1, 2, 7, 8]) }
       let!( :set_b ){ Set.new( [1, 2, 3, 4, 5, 6] ) }
       let!( :set_c ){ Set.new( [3, 4, 5, 6] ) }
@@ -186,32 +187,40 @@ module ConditionOptimisation
       subject( :simple_graph ) { ConditionGraph.new.add_conditions( set_a, :fsm_a ) }
 
       describe '#execute' do
-        it 'should evaluate each condition only once and return the correct transition' do
-          # We use a simplified representation for testing: conditions are represented as Fixnums
-          # and transitions as symbols.  In other to ensure that EventProcessor still works correctly
-          # we have to monkey patch both classes to behave similar enough to ConditionNode and Transition.
-          class ::Fixnum
-            include RSpec::Matchers
+        context 'check that each condition is evaluated exactly once' do
+          before(:each) do
+            # We use a simplified representation for testing: conditions are represented as Fixnums
+            # and transitions as symbols.  In other to ensure that EventProcessor still works correctly
+            # we have to monkey patch both classes to behave similar enough to ConditionNode and Transition.
+            class ::Fixnum
+              include RSpec::Matchers
 
-            # We use a slight of hand here.  The correct evaluate is passed the event for evaluation.
-            # Instead, we pass the set of conditions that have not yet been evaluated in the event field.
-            # This way we can keep track of what conditons have been evaluated without needing to interfere
-            # in any way with EventProcessor::execute.  A rather extreme example of duck typing.
-            def evaluate( fsms, conditions_not_tested_yet )
-              expect( conditions_not_tested_yet.delete? self ).to be_truthy
-              fsms
+              # TODO: the correct class is not always called.
+
+              # We use a slight of hand here.  The correct evaluate is passed the event for evaluation.
+              # Instead, we pass the set of conditions that have not yet been evaluated in the event field.
+              # This way we can keep track of what conditions have been evaluated without needing to interfere
+              # in any way with EventProcessor::execute.  A rather extreme example of duck typing.
+              def evaluate( fsms, conditions_not_tested_yet )
+                expect( conditions_not_tested_yet.delete? self ).to be_truthy
+                fsms
+              end
             end
           end
 
-          expect( simple_graph.execute( set_a ) ).to contain_exactly :fsm_a
-          expect( set_a ).to be_empty
+          it 'should evaluate each condition only once and return the correct transition' do
+            expect( simple_graph.execute( set_a ) ).to contain_exactly :fsm_a
+            expect( set_a ).to be_empty
+          end
         end
 
         context 'some conditions are true' do
-          # See comment above about need to monkey patch Fixnum to support testing.
-          class ::Fixnum
-            def evaluate(fsms, set_of_conds_pass)
-              set_of_conds_pass.member? self ? fsms : nil
+          before( :each ) do
+            # See comment above about need to monkey patch Fixnum to support testing.
+            class ::Fixnum
+              def evaluate(fsms, set_of_conds_pass)
+                set_of_conds_pass.member?( self ) ? fsms : nil
+              end
             end
           end
 
@@ -237,16 +246,12 @@ module ConditionOptimisation
     end
 
     context 'should handle a complex set of conditions' do
-      # See comment above about need to monkey patch Fixnum to support testing.
-      class ::Fixnum
-        def evaluate(fsms, condition_set )
-          condition_set.member?( self ) ? fsms : nil
-        end
-      end
-
-      class ::Symbol
-        def instantiate( included_fsms )
-          [ self ]
+      before(:each) do
+        # See comment above about need to monkey patch Fixnum to support testing.
+        class ::Fixnum
+          def evaluate( fsms, condition_set )
+            condition_set.member?( self ) ? fsms : nil
+          end
         end
       end
 

@@ -67,6 +67,12 @@ module CfsmClasses
     end
 
     # TODO: add description plus rpsec tests
+    # This does the heavy lifting for when the programmer defines a state.
+    #
+    # @param [Class] klass is the class of FSMs for which this event is being defined
+    # @param [Symbol] state
+    # @param [Object] other_params
+    # @param [Object] exec_block
     def register_events( klass, state, other_params, &exec_block)
       @klass_being_defined = klass
       @state_being_defined = state

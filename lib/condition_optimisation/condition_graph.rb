@@ -6,8 +6,6 @@ require 'condition_optimisation/conditions_node'
 require 'condition_optimisation/condition_permutations'
 
 module ConditionOptimisation
-  # TODO: Replace the current start_node mechanism with a simpler array.
-
   class ConditionGraph < Array
     def initialize(condition_array = [], start_array = [])
       super( condition_array )
@@ -231,13 +229,14 @@ module ConditionOptimisation
       # Check that they are the same length.
       return false if self.nr_nodes != graph2.nr_nodes
 
-      self.each do |cond_node1|
+      self.each_with_index do |cond_node1, index_1|
         catch :do_match do
           # Now for this condition_node, see if we can find the same node in second
           # graph
-          graph2.each do |cond_node2|
+          graph2.each_with_index do |cond_node2, index_2|
             catch :dont_match do
-              if cond_node1.similar( cond_node2 )
+              if self.start_array.member?(index_1) == graph2.start_array.member?(index_2) &&
+                  cond_node1.similar( cond_node2 )
                 # make a copy of the edge list for cond_node2
                 edge_list2 = Set.new cond_node2.edges
 
@@ -256,7 +255,7 @@ module ConditionOptimisation
           end
           # if we get to here, then we have failed to find for cond_node1 an
           # equivalent node in graph2.  Therefore the two graphs do not match.
-          # we break out hee.
+          # we break out here.
           return nil
         end
         # if we get here, then its because we executed the :do_match.

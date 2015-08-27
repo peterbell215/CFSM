@@ -6,14 +6,16 @@
 
 require 'rspec'
 
-describe 'My behaviour' do
+module CfsmClasses
+  describe EventProcessor do
 
-  it 'should do something' do
-    # TODO:
-    true.should == false
-  end
+    it 'should do something' do
+      # TODO:
+      true.should == false
+    end
 
-  describe 'register_cfsm' do
+    describe 'register_cfsm' do
 
+    end
   end
 end

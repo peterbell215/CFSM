@@ -33,11 +33,6 @@ module ConditionOptimisation
         @conditions_node[1].transitions = [ 1 ]
         expect( @conditions_node[ 0 ].similar( @conditions_node[ 1 ] ) ).to be false
       end
-
-      it 'does not match nodes where the start condition differs' do
-        @conditions_node[1].start_node = true
-        expect( @conditions_node[ 0 ].similar( @conditions_node[ 1 ] ) ).to be false
-      end
     end
   end
 end
