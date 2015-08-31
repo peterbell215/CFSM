@@ -181,8 +181,18 @@ module CfsmClasses
         @thread = nil
       end
 
+      # This unloads any classes derived from CFSM.  It does this by looking at all currently loaded classes,
+      # and checking if they are derived from CFSM.  IF they are, we split them into the module reference and
+      # the class name as a symbol.  We then use remove_const to get rid of them.
       ObjectSpace.each_object( Class ).select do |klass|
-        Object.send(:remove_const, klass.to_s.to_sym) if klass < CFSM
+        if klass < CFSM
+          module_name = klass.to_s.split('::')[0..-2].join('::')
+          module_ref = module_name.empty? ? Object : Object.const_get( module_name )
+          class_sym = klass.to_s.split('::')[-1].to_sym
+          if module_ref.constants.index class_sym
+            module_ref.instance_exec( class_sym ) { |k| remove_const( k ) }
+          end
+        end
       end
     end
 

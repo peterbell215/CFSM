@@ -30,7 +30,7 @@ describe CfsmEvent do
   end
 
   context '#delayed events' do
-    before(:all) do
+    before(:each) do
       class TestFSM < CFSM
         state :a do
           on :delayed_event, :transition => :b
@@ -45,7 +45,7 @@ describe CfsmEvent do
 
       test_fsm = TestFSM.new
       CFSM.start( :async => :true )
-      test_event = CfsmEvent.new( :delayed_event, {}, 0, 10)
+      test_event = CfsmEvent.new( :delayed_event, :delay => 10 )
       CFSM.post( test_event )
 
       expect( test_fsm.state ).to eql( :a )
@@ -60,7 +60,7 @@ describe CfsmEvent do
 
       test_fsm = TestFSM.new
       CFSM.start( :async => :true )
-      test_event = CfsmEvent.new( :delayed_event, {}, 0, 10)
+      test_event = CfsmEvent.new( :delayed_event, :delay => 10 )
       CFSM.post( test_event )
 
       expect( test_fsm.state ).to eql( :a )
