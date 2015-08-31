@@ -7,6 +7,7 @@ require 'rspec'
 require 'cfsm_classes/prio_queue'
 
 # To make life a little easier we use a simplified class in this RSpec.
+=begin
 class CfsmEvent
   def initialize( event, opts )
     @prio = opts[:prio] || 0
@@ -20,6 +21,7 @@ class CfsmEvent
   attr_reader :prio
   attr_reader :element
 end
+=end
 
 module CfsmClasses
   describe PrioQueue do
@@ -27,13 +29,13 @@ module CfsmClasses
 
     context 'basic queue behaviour' do
       it 'should stack and unstack in the correct order for same priority' do
-        (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :data => i ) }
+        (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :data => { :element => i } ) }
         (0..10).each { |i| expect( queue.pop.element ).to eq( i ) }
       end
 
       it 'should stack and unstack in the correct order for different priorities' do
         prio_map = (0..10).to_a.shuffle
-        (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :prio => prio_map[i], :data => i ) }
+        (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :prio => prio_map[i], :data => { :element =>  i } ) }
         (0..10).each do |i|
           event = queue.pop
           expect( prio_map[event.element] ).to eq( event.prio )
@@ -47,7 +49,7 @@ module CfsmClasses
       end
 
       it 'should return the correct size for a queue with elements' do
-        (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :prio => rand(10), :data =>  rand(10) ) }
+        (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :prio => rand(10), :data => { :element =>  rand(10) } ) }
         expect( queue.size ).to eq(11)
       end
     end
@@ -55,7 +57,7 @@ module CfsmClasses
     describe '#remove' do
       it 'should remove elements in the queue' do
         data = (0..10).to_a.shuffle!
-        events = Array.new(11) { CfsmEvent.new :test_event, :prio => rand(6), :data =>  data.pop }
+        events = Array.new(11) { CfsmEvent.new :test_event, :prio => rand(6), :data => { :element => data.pop } }
 
         events.each { |e| queue.push( e ) }
 
@@ -68,14 +70,14 @@ module CfsmClasses
 
       it 'should return nil if attempting to remove an element not in the queue' do
         data = (0..10).to_a.shuffle!
-        11.times { |i| queue.push( CfsmEvent.new :test_event, :prio => rand(6), :data =>  data.pop ) }
+        11.times { |i| queue.push( CfsmEvent.new :test_event, :prio => rand(6), :data => { :element => data.pop } ) }
 
-        expect( queue.remove( CfsmEvent.new :test_event, :prio => rand(6), :data => 15 ) ).to be_nil
+        expect( queue.remove( CfsmEvent.new :test_event, :prio => rand(6), :data => { :element => 15 } ) ).to be_nil
         expect( queue.size ).to eq( 11 )
       end
 
       it 'should return nil if attempting to remove from empty queue' do
-        expect( queue.remove( CfsmEvent.new :test_event, :prio => rand(6), :data => 15 ) ).to be_nil
+        expect( queue.remove( CfsmEvent.new :test_event, :prio => rand(6), :data => { :element => 15 } ) ).to be_nil
       end
     end
 
@@ -84,7 +86,7 @@ module CfsmClasses
         data = (0..10).to_a.shuffle
         prio = (0..10).to_a.reverse!
 
-        (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :prio => prio[i], :data =>  data[i] ) }
+        (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :prio => prio[i], :data => { :element =>  data[i] } ) }
 
         queue.to_a.each_with_index do |item, index|
           expect(item.element).to eq(data[index])
@@ -98,7 +100,7 @@ module CfsmClasses
         data = (0..10).to_a.shuffle
         prio = (0..10).to_a.reverse!
 
-        (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :prio => prio[i], :data =>  data[i] ) }
+        (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :prio => prio[i], :data => { :element => data[i] } ) }
 
         index = 0
 
@@ -120,23 +122,23 @@ module CfsmClasses
         (0..10).each do |i|
           # keepting sleeping till the thread status is "sleep" i.e. waiting for input
           sleep 0.001 while t.status != 'sleep'
-          queue.push(CfsmEvent.new :test_event, :data => i)
+          queue.push(CfsmEvent.new :test_event, :data => {:element => i} )
         end
       end
 
       describe '#wait_for_new_element' do
         it 'should wait for a new element to arrive even it the queue has content' do
-          (0..5).each { |i| queue.push( CfsmEvent.new :test_event, :prio => rand(10), :data =>  rand(10) ) }
+          (0..5).each { |i| queue.push( CfsmEvent.new :test_event, :prio => rand(10), :data => {:element => rand(10) } ) }
 
           expect( queue.size ).to eq( 6 )
 
           t = Thread.new do
-            queue.wait_for_new_element
+            queue.wait_for_new_event
             expect( queue.size ).to eq( 7 )
           end
 
           sleep 0.001 while t.status != 'sleep'
-          queue.push(CfsmEvent.new :test_event, :data => 8)
+          queue.push(CfsmEvent.new :test_event, :data => { :element => 8 } )
         end
       end
     end

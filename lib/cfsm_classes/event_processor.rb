@@ -16,7 +16,6 @@ module CfsmClasses
 
   # This class hides the implementation complexities of the Communicating FSM system.  It is really only to be invoked from
   # methods within the CFSM class
-  # TODO Need to replace the current Queue class from the standard library with a prioritised thread safe queue.
   #
   # @api private
   class EventProcessor
@@ -28,8 +27,7 @@ module CfsmClasses
       # keep a record of the namespace.
       @namespace = namespace
 
-      # Used to store runtime options.  Key one at the moment is :async => False which prevents CFSM from creating
-      # a separate thread to process events.
+      # Used to store runtime options.
       @options = nil
 
       ##
@@ -166,7 +164,11 @@ module CfsmClasses
       @delayed_event_mutex = Mutex.new
 
       # If running in async mode, then create a thread with an infinite loop to process incoming events.
-      @thread = Thread.new { loop { process_event } } if @options[:async].nil? || @options[:async]
+      unless @options[:sync]
+        @thread = Thread.new do
+          loop { @event_queue.wait_for_new_event unless @thread unless process_event }
+        end
+      end
     end
 
     # Used in the context of CFSM.reset to close down this event processor in a clean manner.  Should
@@ -208,13 +210,13 @@ module CfsmClasses
             # wait for the delay to expire in the thread.
             sleep event.delay
             # Avoid race conditions by preventing any other threads updating the delayed_event_hash
-            @delayed_event_mutex.lock
-            # If the event still exists in the delayed_event_hash, remove it and post it into the main queue.
-            if @delayed_event_hash.delete(event)
-              @event_queue.push event
-              set_event_status(event, :pending )
+            @delayed_event_mutex.synchronize do
+              # If the event still exists in the delayed_event_hash, remove it and post it into the main queue.
+              if @delayed_event_hash.delete(event)
+                @event_queue.push event
+                set_event_status(event, :pending )
+              end
             end
-            @delayed_event_mutex.unlock
           end
         else
           set_event_status(event, :pending )
@@ -232,15 +234,19 @@ module CfsmClasses
     def cancel( event )
       event_cancelled = false
 
-      # TODO: should allow cancel of queued event/
-      @delayed_event_mutex.lock
-      if ( thread = @delayed_event_hash.delete(event) )
-        thread.kill
-        event_cancelled = true
+      case event.status
+        when :delayed
+          @delayed_event_mutex.synchronize do
+            if ( thread = @delayed_event_hash.delete(event) )
+              thread.kill
+              set_event_status(event, :cancelled)
+              true
+            end
+          end
+        when :pending
+          set_event_status(event, :cancelled)
+          return @event_queue.remove( event )
       end
-      @delayed_event_mutex.unlock
-
-      event_cancelled
     end
 
     # Normally, we shut the parser down once we have evaluated all state machine descriptions.  If we are running
@@ -292,28 +298,31 @@ module CfsmClasses
       self
     end
 
-    # Look at the next event from the queue and executes the condition graph to see if the event can be
-    # processed.
-    # TODO: need ability to peek
+    # Look at each event in priority order until it can find one to process. If it can, then it removes that
+    # event from the queue and executes the transitions.  Returns the identified event.  If no events can be found
+    # returns nil to allow the calling method to perform a wait_for_next_event.
     def process_event
-      @event_queue.each_pop do |event|
+      @event_queue.peek_each do |event|
         # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
         transitions = @conditions[ event.event_class ].execute( event )
 
         unless transitions.empty?
+          @event_queue.remove( event )
+
           # we have a number of transactions to process, so lets do the state transitions.
           transitions.each do |t|
             if !t.proc || t.proc && t.fsm.instance_exec( t.proc )
               t.fsm.set_state( t.new_state )
             end
           end
+
           # we have managed to process the event, so exit process event.
-          return
-        else
-          # No transitions where found.  Therefore, the system is not yet ready to consume the event.
-          @event_queue.push event
+          return event
         end
       end
+      # if we get to here, we have been through all events in the queue and cannot process any.  Need to
+      # wait for something to change.
+      nil
     end
 
     # Create single instances of the parser and the transformer.

@@ -68,7 +68,7 @@ class CFSM
   #
   # @param [Hash] options defines various options for the start command
   # @option options [Array<Module>,Module] :namespace defines the namespace that should be started.  If missing all namespaces are started.
-  # @option options [True,False] :async defines whether the execution of the namespaces should be run async,
+  # @option options [True,False] :sync defines whether the execution of the namespaces should be run synchronous,
   def self.start( options = {} )
     raise OnlyStartOnCFSMClass if self != CFSM
 

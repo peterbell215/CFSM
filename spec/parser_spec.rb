@@ -49,6 +49,7 @@ module ConditionParser
       end
 
       it 'should return true for two elements' do
+        # TODO
         pending
 
         expect( false ).to be_truthy

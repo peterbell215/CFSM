@@ -36,7 +36,7 @@ module CfsmClasses
     end
 
     # Allows the calling thread to wait for a new element to have been added.
-    def wait_for_new_element
+    def wait_for_new_event
       @mutex.synchronize { @queue_wait.wait( @mutex ) }
     end
 

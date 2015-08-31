@@ -92,9 +92,9 @@ module ConditionParser
 
           expect( result ).to have_parse_tree( {:and=>[0, {:or=>[1, 2]}]} )
 
-          expect( cache[ConditionParser::EventCondition.new( :==, EventAttribute.new( 'a' ), 4.0)] ).to eq 0
-          expect( cache[ConditionParser::EventCondition.new( :==, FsmStateVariable.new( TestFSM, 'b' ), 'Peter' )] ).to eq 1
-          expect( cache[ConditionParser::EventCondition.new( :<, EventAttribute.new('c'), 5.0 )] ).to eq 2
+          expect( cache[0] ).to eq ConditionParser::EventCondition.new( :==, EventAttribute.new( 'a' ), 4.0)
+          expect( cache[1] ).to eq ConditionParser::EventCondition.new( :==, FsmStateVariable.new( TestFSM, 'b' ), 'Peter' )
+          expect( cache[2] ).to eq ConditionParser::EventCondition.new( :<, EventAttribute.new('c'), 5.0 )
         end
       end
     end

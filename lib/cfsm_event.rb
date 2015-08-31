@@ -42,6 +42,8 @@ class CfsmEvent
     self
   end
 
+  # @!attribute [r] status
+  #   @return [:created, :delayed, :pending, :processed] status of the event within its lifecycle
   attr_reader :status
   attr_reader :src
   attr_reader :event_class

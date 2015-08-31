@@ -7,24 +7,28 @@ require 'rspec'
 require 'cfsm'
 require 'cfsm_event'
 
-class TestFSM_A < CFSM
-  state(:a) { on :event1, :transition => :b }
-
-  def test_method
-    'Test method invoked'
-  end
-end
-
-module TestModule
-  class TestFSM_B < CFSM
-    state(:d) { on :event1, :transition => :e }
-  end
-  class TestFSM_C < CFSM
-    state(:a) { on :event1, :transition => :b }
-  end
-end
-
 describe CFSM do
+  before(:each) do
+    CFSM.reset
+
+    class TestFSM_A < CFSM
+      state(:a) { on :event1, :transition => :b }
+
+      def test_method
+        'Test method invoked'
+      end
+    end
+
+    module TestModule
+      class TestFSM_B < CFSM
+        state(:d) { on :event1, :transition => :e }
+      end
+      class TestFSM_C < CFSM
+        state(:a) { on :event1, :transition => :b }
+      end
+    end
+  end
+
   describe '::reset' do
     it 'should allow the state machine system to be reset.' do
       test_fsm_a = TestFSM_A.new
@@ -36,7 +40,7 @@ describe CFSM do
 
       event = CfsmEvent.new(:event1, :delay => 2 )
 
-      CFSM.start :async => true
+      CFSM.start :sync => false
       CFSM.post( event )
 
       # At this point the CFSM is running.  Now reset.
@@ -155,7 +159,7 @@ describe CFSM do
 
       expect( fsm.state ).to eq( :a )
 
-      CFSM.start :async => false
+      CFSM.start :sync => true
 
       CFSM.post( CfsmEvent.new(:event1) )
 

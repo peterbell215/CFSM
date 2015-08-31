@@ -7,20 +7,24 @@ require 'cfsm_classes/transition'
 
 require 'rspec'
 
-class TestFSM_A < CFSM
-  state :a do
-    on :event1, :transition => :b
-  end
-end
-
-class TestFSM_B < CFSM
-  state :b do
-    on :event1, :transition => :b
-  end
-end
-
 module CfsmClasses
   describe Transition do
+    before(:each) do
+      CFSM.reset
+
+      class TestFSM_A < CFSM
+        state :a do
+          on :event1, :transition => :b
+        end
+      end
+
+      class TestFSM_B < CFSM
+        state :b do
+          on :event1, :transition => :b
+        end
+      end
+    end
+
     describe '#instantiate' do
       # Note the use of let! - needed as lazy evaluation would otherwise mean that the FSM has not been registered
       # when the expect is executed.

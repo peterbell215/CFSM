@@ -3,16 +3,15 @@
 # Licensed under MIT.  See License file in top level directory.
 
 module ConditionParser
-  ##
   # Holds an event condition that needs to be evaluated.  Takes the form of:
+  # - comparator (<. =, >, etc)
   # - attribute (either of an event or of a FSM)
-  # -
+  # - value either a constant or another expression.
   class EventCondition
     attr_reader :comparator
     attr_reader :attribute
     attr_reader :value
 
-    ##
     # Constructor
     #
     # @param comparator [Symbol] the comparison to be undertaken
@@ -25,7 +24,6 @@ module ConditionParser
       self
     end
 
-    ##
     # Factory method to provide a convenient way of creating an EventCondition to
     # check the current state of the FSM.
     #
@@ -39,7 +37,6 @@ module ConditionParser
     # This will evaluate for whether the condition has been met.
     # @param [Array<CFSM>] cfsms is the array of FSMs to be evaluated.
     # @return [Array<CFSM>] is the array of FSMs that match the evaluated condition.
-
     def evaluate( cfsms, event )
       if @attribute.is_a? FsmStateVariable
         # if cfsms remains nil then this particular namespace has not FSMs instantiated,
@@ -60,7 +57,6 @@ module ConditionParser
       end
     end
 
-    ##
     # Override the standard hash key so that different instances that are == generate the same hash
     # key
     # @return [Fixnum]
@@ -68,6 +64,7 @@ module ConditionParser
       self.comparator.object_id ^ self.attribute.hash ^ self.value.hash
     end
 
+    # Check if two EventConditions are equal.
     # @param [EventCondition] object2
     # @return [True,False]
     def ==(object2)
