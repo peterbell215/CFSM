@@ -2,9 +2,8 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
-require 'pqueue'
-
 require 'cfsm_classes/transition'
+require 'cfsm_classes/prio_queue'
 require 'condition_parser/parser'
 require 'condition_parser/fsm_state_variable'
 require 'condition_parser/transformer'
@@ -157,7 +156,7 @@ module CfsmClasses
       convert_sets_to_graph
 
       # For each event CFSM namespace, we also have a queue to hold unprocessed events.
-      @event_queue ||= PQueue.new { |e1,e2| e1.prio > e2.prio }
+      @event_queue ||= PrioQueue.new
 
       # We also create a Hash to a mapping between delayed events and the thread that is used to
       # wait.
@@ -203,16 +202,22 @@ module CfsmClasses
     def post( event )
       if @conditions[ event.event_class ]
         if event.delay > 0
+          # TODO rather than have one thread per delayed event, we should have a sorted queue with a single thread
           @delayed_event_hash[ event ] = Thread.new do
+            set_event_status(event, :delayed )
             # wait for the delay to expire in the thread.
             sleep event.delay
             # Avoid race conditions by preventing any other threads updating the delayed_event_hash
             @delayed_event_mutex.lock
             # If the event still exists in the delayed_event_hash, remove it and post it into the main queue.
-            @event_queue.push event if @delayed_event_hash.delete(event)
+            if @delayed_event_hash.delete(event)
+              @event_queue.push event
+              set_event_status(event, :pending )
+            end
             @delayed_event_mutex.unlock
           end
         else
+          set_event_status(event, :pending )
           @event_queue.push event
         end
         process_event unless @thread
@@ -223,7 +228,7 @@ module CfsmClasses
     # be used to cancel an event that is in the main queue, but has not yet been acted on.
     #
     # @param [CfsmEvent] event
-    # @return [true,false] whether the event has been cancelled.
+    # @return [true,false] whether the event was still around to be cancelled.
     def cancel( event )
       event_cancelled = false
 
@@ -287,17 +292,26 @@ module CfsmClasses
       self
     end
 
-    # Removes the next event from the queue and executes the condition graph to see if the event can be
+    # Look at the next event from the queue and executes the condition graph to see if the event can be
     # processed.
+    # TODO: need ability to peek
     def process_event
-      event = @event_queue.pop
+      @event_queue.each_pop do |event|
+        # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
+        transitions = @conditions[ event.event_class ].execute( event )
 
-      # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
-      transitions = @conditions[ event.event_class ].execute( event )
-
-      transitions.each do |t|
-        if !t.proc || t.proc && t.fsm.instance_exec( t.proc )
-          t.fsm.set_state( t.new_state )
+        unless transitions.empty?
+          # we have a number of transactions to process, so lets do the state transitions.
+          transitions.each do |t|
+            if !t.proc || t.proc && t.fsm.instance_exec( t.proc )
+              t.fsm.set_state( t.new_state )
+            end
+          end
+          # we have managed to process the event, so exit process event.
+          return
+        else
+          # No transitions where found.  Therefore, the system is not yet ready to consume the event.
+          @event_queue.push event
         end
       end
     end
@@ -308,6 +322,12 @@ module CfsmClasses
     # In order to save memory, we remove the parser, once we have parsed and converted all trees.
     def self.shutdown_parser
       self.remove_class_variable :@@parser
+    end
+
+    # The status is something that should only be set by EventProcessor.  Therefore, it is a private method
+    # on CfsmEvent.  This helper function allows us to set the status.
+    def set_event_status( event, status )
+      event.instance_eval { @status = status }
     end
 
     # Used to hold the condition tree and transition descriptions in the @@event_processors hash.

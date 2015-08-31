@@ -42,9 +42,15 @@ class CfsmEvent
     self
   end
 
-  attr_accessor :status
+  attr_reader :status
   attr_reader :src
   attr_reader :event_class
   attr_reader :prio
   attr_reader :delay
+
+  private
+
+  def status=(s)
+    @status = s
+  end
 end
