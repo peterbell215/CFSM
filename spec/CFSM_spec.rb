@@ -9,6 +9,10 @@ require 'cfsm_event'
 
 class TestFSM_A < CFSM
   state(:a) { on :event1, :transition => :b }
+
+  def test_method
+    puts 'Test method invoked'
+  end
 end
 
 module TestModule
@@ -21,7 +25,48 @@ module TestModule
 end
 
 describe CFSM do
-  describe '#namespace' do
+  describe '::reset' do
+    it 'should allow the state machine system to be reset.' do
+      test_fsm_a = TestFSM_A.new
+      test_fsm_b1 = TestModule::TestFSM_B.new
+      test_fsm_b2 = TestModule::TestFSM_B.new
+      test_fsm_c = TestModule::TestFSM_C.new
+
+      expect( test_fsm_a.state ).to eq( :a )
+
+      event = CfsmEvent.new(:event1, :delay => 2 )
+
+      CFSM.start :async => true
+      CFSM.post( event )
+
+      # At this point the CFSM is running.  Now reset.
+      CFSM.reset
+
+      # Having killed the CFSMs, the queues should have been emptied.  Therefore,
+      # *event* should always remain in the *delayed* status.
+      sleep( 2 )
+      expect( event.status ).to eq( :delayed )
+
+      # Check that the various state machines have disappeared from the CFSM system
+      expect( CFSM.state_machines( TestFSM_A ) ).to be_nil
+      expect( CFSM.state_machines( TestModule::TestFSM_B ) ).to be_nil
+      expect { TestFSM_A.new }.to raise_error( NameError )
+      expect { TestModule::TestFSM_B.new }.to raise_error( NameError )
+
+      class TestFSM_A < CFSM
+        state(:a) { on :event1, :transition => :b }
+
+        def test_method
+          puts 'New test method invoked'
+        end
+      end
+
+      test_fsm_new_a = TestFSM_A.new
+      expect( test_fsm_new_a.test_method ).to eq( 'New test method invoked' )
+    end
+  end
+
+  describe '::namespace' do
     it 'should return the correct namespaces' do
       expect( TestFSM_A.namespace ).to eql( 'Global' )
       expect( TestModule::TestFSM_B.namespace ).to eql( 'TestModule' )
@@ -29,7 +74,7 @@ describe CFSM do
     end
   end
 
-  describe '#state_machines' do
+  describe '::state_machines' do
     it 'should return all instantiated state machines for that class' do
       test_fsm_a = TestFSM_A.new
       test_fsm_b1 = TestModule::TestFSM_B.new
@@ -50,7 +95,7 @@ describe CFSM do
     end
   end
 
-  describe '#start' do
+  describe '::start' do
     context 'namespace option' do
       it 'should start a single CFSM system' do
         pending

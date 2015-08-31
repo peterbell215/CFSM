@@ -42,6 +42,23 @@ class CFSM
     event_processor.register_events( self, state, other_parameters, &specs )
   end
 
+  # The system is designed on the premise that a number of state machine classes are created, FSMS instantiated,
+  # and that these FSMS then run until the system terminates.  The system does not expect new classes of FSMs to
+  # be added once the CFSM.start method is invoked.  This is not the case, when we are unit testing using Rspec.
+  # This method allows us to reset the CFSM system to allow new state machines to be defined.
+  def self.reset
+    @@eventprocessors.each_value do |processor|
+      processor.reset
+    end
+    @@eventprocessors = {}
+
+    # We have successfully started each processor.  Therefore we have no need for the parser.
+    CfsmClasses::EventProcessor.restart_parser
+
+    # Forece a gargage collection.
+    GC.start(:full_mark => :true)
+  end
+
   ##
   # Starts the communicating finite state machine system.  The main action is to compile all the condition trees
   # into sets of RETE graphs for easier processing.  The standard approach to running the CFSM systems is async.
@@ -71,13 +88,12 @@ class CFSM
   # Used to post an event to all CFSM systems that need to know about it.
   #
   # @param [CfsmEvent] event
-  # @param [Fixnum] delay in milliseconds before the event goes live
-  def self.post( event, delay = 0 )
-    @@eventprocessors.each_value { |processor| processor.post( event, delay ) }
+  def self.post( event )
+    @@eventprocessors.each_value { |processor| processor.post( event ) }
   end
 
   def self.cancel( event )
-    raise NotImplementedError
+    @@eventprocessors.each_value { |processor| processor.cancel( event ) }
   end
 
   # Given a class of FSMs, this returns an array of instantiated FSMs of that class.

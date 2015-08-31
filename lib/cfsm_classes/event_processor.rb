@@ -2,6 +2,8 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
+require 'pqueue'
+
 require 'cfsm_classes/transition'
 require 'condition_parser/parser'
 require 'condition_parser/fsm_state_variable'
@@ -66,7 +68,6 @@ module CfsmClasses
       @condition_cache = {}
     end
 
-    # TODO: add description plus rpsec tests
     # This does the heavy lifting for when the programmer defines a state.
     #
     # @param [Class] klass is the class of FSMs for which this event is being defined
@@ -82,13 +83,12 @@ module CfsmClasses
       @cfsm_initial_state[ klass ] = state unless @cfsm_initial_state[ klass ]
 
       # Evaluate the transition definitions
-      self.instance_eval( &exec_block )
+      self.instance_eval( &exec_block ) if exec_block
 
       @klass_being_defined = nil
       @state_being_defined = nil
     end
 
-    ##
     # Class method to register that a FSM reacting to an event while in a defined state and transitioning to a new state.
     #
     # @api private
@@ -157,20 +157,81 @@ module CfsmClasses
       convert_sets_to_graph
 
       # For each event CFSM namespace, we also have a queue to hold unprocessed events.
-      @event_queue ||= Queue.new
+      @event_queue ||= PQueue.new { |e1,e2| e1.prio > e2.prio }
+
+      # We also create a Hash to a mapping between delayed events and the thread that is used to
+      # wait.
+      @delayed_event_hash = {}
+
+      # In order to avoid race conditions on the delayed_event_hash we also declare a mutex.
+      @delayed_event_mutex = Mutex.new
 
       # If running in async mode, then create a thread with an infinite loop to process incoming events.
       @thread = Thread.new { loop { process_event } } if @options[:async].nil? || @options[:async]
     end
 
+    # Used in the context of CFSM.reset to close down this event processor in a clean manner.  Should
+    # only be used with RSpec when running a new set of state machine tests.
+    def reset
+      @delayed_event_hash.each_key { |event| self.cancel( event ) } if @delayed_event_hash
+      @delayed_event_mutex = nil
+
+      if @thread
+        @thread.kill
+        @thread = nil
+      end
+
+      ObjectSpace.each_object( Class ).select do |klass|
+        Object.send(:remove_const, klass.to_s.to_sym) if klass < CFSM
+      end
+    end
+
     # Receives an event for consideration by the event processor.  So long as we have a ConditionGraph
     # for that event we stick it into the queue for processing.  If we are not operating in async mode,
     # then we also process the event.
+    # @param [CfsmEvent] event - the event being posted.
     def post( event )
       if @conditions[ event.event_class ]
-        @event_queue.push event
+        if event.delay > 0
+          @delayed_event_hash[ event ] = Thread.new do
+            # wait for the delay to expire in the thread.
+            sleep event.delay
+            # Avoid race conditions by preventing any other threads updating the delayed_event_hash
+            @delayed_event_mutex.lock
+            # If the event still exists in the delayed_event_hash, remove it and post it into the main queue.
+            @event_queue.push event if @delayed_event_hash.delete(event)
+            @delayed_event_mutex.unlock
+          end
+        else
+          @event_queue.push event
+        end
         process_event unless @thread
       end
+    end
+
+    # Cancel a posted event.  Mainly used to cancel events due at point in the future.  However, can also
+    # be used to cancel an event that is in the main queue, but has not yet been acted on.
+    #
+    # @param [CfsmEvent] event
+    # @return [true,false] whether the event has been cancelled.
+    def cancel( event )
+      event_cancelled = false
+
+      # TODO: should allow cancel of queued event/
+      @delayed_event_mutex.lock
+      if ( thread = @delayed_event_hash.delete(event) )
+        thread.kill
+        event_cancelled = true
+      end
+      @delayed_event_mutex.unlock
+
+      event_cancelled
+    end
+
+    # Normally, we shut the parser down once we have evaluated all state machine descriptions.  If we are running
+    # RSpec then we may need to restart it.
+    def self.restart_parser
+      @@parser = ConditionParser::Parser.new
     end
 
     private
@@ -182,7 +243,8 @@ module CfsmClasses
       @conditions.each_pair do |event, condition_trees|
         @condition_cache[event] ||= ConditionParser::ConditionCache.new
         condition_trees.each do |tree|
-          tree.condition_tree = ConditionParser::Transformer.cache_conditions(@condition_cache[event], tree.condition_tree)
+          tree.condition_tree = ConditionParser::Transformer.cache_conditions(@condition_cache[event],
+                                                                              tree.condition_tree)
         end
       end
     end

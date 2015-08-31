@@ -2,6 +2,8 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
+require 'set'
+
 require('condition_optimisation/condition_graph')
 
 module ConditionOptimisation
@@ -74,7 +76,7 @@ module ConditionOptimisation
 
       # This is mainly here for testing purposes.  Allows us to not have to explicitely create a set when creating
       # the test data.
-      condition_sets.keys.keep_if { |c| c.is_a? Array }.each { |c| condition_sets[ Set.new( c )] = condition_sets.delete( c ) }
+      condition_sets.keys.keep_if { |c| c.is_a? Array }.each { |c| condition_sets[ ::Set.new( c )] = condition_sets.delete( c ) }
 
       if condition_sets.size > 6
         (1..40).each do
