@@ -10,20 +10,6 @@ require 'logger'
 
 module ConditionOptimisation
   describe 'evaluate multiple graphs' do
-    # TODO should we move this into a separate file to keep the code DRY?
-    # See comment above about need to monkey patch Fixnum to support testing.
-    class ::Fixnum
-      def evaluate(fsms, condition_set )
-        condition_set.member?( self ) ? fsms : nil
-      end
-    end
-
-    class ::Symbol
-      def instantiate( included_fsms )
-        [ self ]
-      end
-    end
-
     let(:log) { Logger.new( 'condition_graph_factory.txt' ).tap { |l| l.level = Logger::DEBUG } }
 
     subject( :condition_graph_factory ) { ConditionGraphFactory.new }
@@ -37,7 +23,7 @@ module ConditionOptimisation
 
       log.debug conditions_sets.inspect
 
-      graph = condition_graph_factory.build conditions_sets
+      graph = condition_graph_factory.build( conditions_sets )
 
       # See what we have done.
       log.debug graph.inspect
@@ -45,10 +31,13 @@ module ConditionOptimisation
       # Now test that for every condition set we get the correct
       conditions_sets.each_pair do |condition_set, transition|
         log.debug "#{condition_set.inspect} => #{transition}"
-        expect( graph.execute( condition_set ) ).to include( transition )
+        expect( graph.execute(condition_set,
+                             ->(condition, fsms) { condition_set.member?(self) ? fsms : nil },
+                             ->(transition, included_fsms) { [transiton] } ) ).to include( transition )
       end
 
       # TODO: test the negative: i.e. sets of conditions that are not covered
     end
   end
+
 end

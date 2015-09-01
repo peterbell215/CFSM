@@ -132,6 +132,7 @@ describe CFSM do
         expect { Test1.start }.to raise_error( OnlyStartOnCFSMClass )
       end
     end
+
     context 'async option' do
       it 'should create a separate thread when async' do
         pending
@@ -171,9 +172,8 @@ describe CFSM do
         state :a do
           on :event1, :transition => :b
         end
-
       end
-      pending
+# todo
 
     end
   end

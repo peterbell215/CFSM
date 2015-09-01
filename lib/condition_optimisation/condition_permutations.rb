@@ -4,10 +4,9 @@
 
 require 'set'
 
-require('condition_optimisation/condition_graph')
+require 'condition_optimisation/condition_graph'
 
 module ConditionOptimisation
-  ##
   # We are exploring the permutations of all possible ways that we can combine the different anded
   # conditions into a condition execution graph in order to find the most efficient one.  As this
   # could potentially be a vary large number of permutations, we try and keep the amount of work

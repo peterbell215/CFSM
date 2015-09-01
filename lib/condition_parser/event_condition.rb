@@ -37,7 +37,7 @@ module ConditionParser
     # This will evaluate for whether the condition has been met.
     # @param [Array<CFSM>] cfsms is the array of FSMs to be evaluated.
     # @return [Array<CFSM>] is the array of FSMs that match the evaluated condition.
-    def evaluate( cfsms, event )
+    def evaluate( event, cfsms )
       if @attribute.is_a? FsmStateVariable
         # if cfsms remains nil then this particular namespace has not FSMs instantiated,
         # therefore return []

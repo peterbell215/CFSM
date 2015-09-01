@@ -11,7 +11,6 @@ class CFSM
   # hash maps from the module onto the individual event_processor.
   @@eventprocessors = {}
 
-  ##
   # Create the FSM.
   def initialize
     processor = @@eventprocessors[ self.class.namespace ]

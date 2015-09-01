@@ -31,6 +31,8 @@ describe CfsmEvent do
 
   context '#delayed events' do
     before(:each) do
+      CFSM.reset
+
       class TestFSM < CFSM
         state :a do
           on :delayed_event, :transition => :b
@@ -41,32 +43,28 @@ describe CfsmEvent do
     end
 
     it 'should allow a delayed event to become active after a certain time.' do
-      CFSM.reset
-
       test_fsm = TestFSM.new
-      CFSM.start( :async => :true )
-      test_event = CfsmEvent.new( :delayed_event, :delay => 10 )
+      CFSM.start
+      test_event = CfsmEvent.new( :delayed_event, :delay => 0.10 )
       CFSM.post( test_event )
 
       expect( test_fsm.state ).to eql( :a )
-      sleep( 5 )
+      sleep( 0.05 )
       expect( test_fsm.state ).to eql( :a )
-      sleep( 6 )
+      sleep( 0.06 )
       expect( test_fsm.state ).to eql( :b )
     end
 
     it 'should do allow a delayed event to be cancelled.' do
-      CFSM.reset
-
       test_fsm = TestFSM.new
-      CFSM.start( :async => :true )
-      test_event = CfsmEvent.new( :delayed_event, :delay => 10 )
+      CFSM.start
+      test_event = CfsmEvent.new( :delayed_event, :delay => 0.10 )
       CFSM.post( test_event )
 
       expect( test_fsm.state ).to eql( :a )
-      sleep( 5 )
-      expect( CFSM.cancel( :delayed_event) ).to be_truthy
-      sleep( 6 )
+      sleep( 0.05 )
+      expect( CFSM.cancel( test_event ) ).to be_truthy
+      sleep( 0.06 )
       expect( test_fsm.state ).to eql( :a )
     end
 

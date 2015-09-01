@@ -109,7 +109,7 @@ module CfsmClasses
                 end
 
       # Create the transition object
-      transition = CfsmClasses::Transition.new( @klass_being_defined, parameters[:transition], &proc )
+      transition = CfsmClasses::Transition.new( @klass_being_defined, parameters[:transition], proc )
 
       # Store the event.
       @conditions[event].push Struct::EventTree.new( if_tree, transition )
@@ -304,15 +304,17 @@ module CfsmClasses
     def process_event
       @event_queue.peek_each do |event|
         # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
-        transitions = @conditions[ event.event_class ].execute( event )
+        transitions = @conditions[ event.event_class ].execute( event,
+        ->(condition, fsms) { @condition_cache[event.event_class][condition].evaluate(event, fsms) }, # condition evaluation
+        ->(transition, fsms) { transition.instantiate(fsms) } ) # transition instantiation
 
         unless transitions.empty?
           @event_queue.remove( event )
 
           # we have a number of transactions to process, so lets do the state transitions.
           transitions.each do |t|
-            if !t.proc || t.proc && t.fsm.instance_exec( t.proc )
-              t.fsm.set_state( t.new_state )
+            if t.transition_proc.nil? || t.transition_proc && t.fsm.instance_exec( t.transition_proc.call )
+              t.fsm.instance_exec( t.new_state ) { |s| set_state(s) }
             end
           end
 

@@ -32,7 +32,7 @@ module CfsmClasses
       let!( :test_b ){ TestFSM_A.new }
       let!( :test_c ){ TestFSM_B.new }
 
-      subject( :transition ){ Transition.new( TestFSM_A, :a ) }
+      subject( :transition ){ Transition.new( TestFSM_A, :a, nil ) }
 
       it 'should instantiate transitions for all state machines' do
         # Note, that test_c is missing from the array since its FSM is not referenced in the transition.
