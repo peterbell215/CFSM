@@ -32,8 +32,8 @@ module ConditionOptimisation
       conditions_sets.each_pair do |condition_set, transition|
         log.debug "#{condition_set.inspect} => #{transition}"
         expect( graph.execute(condition_set,
-                             ->(condition, fsms) { condition_set.member?(self) ? fsms : nil },
-                             ->(transition, included_fsms) { [transiton] } ) ).to include( transition )
+                             ->(condition_set, condition, fsms) { condition_set.member?(self) ? fsms : nil },
+                             ->(transition, included_fsms) { [transition] } ) ).to include( transition )
       end
 
       # TODO: test the negative: i.e. sets of conditions that are not covered

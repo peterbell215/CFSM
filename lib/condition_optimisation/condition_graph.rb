@@ -137,7 +137,7 @@ module ConditionOptimisation
           # At this point self[current] points to a ConditionNode.  This has a set of conditions which we
           # need to evaluate in turn. *fsms* keeps a list of all finite state machines that are still in play.
           fsms = self[current].conditions.inject( fsms ) do |f, c|
-            break unless (f = condition_eval_lambda.call(c, f))
+            break unless (f = condition_eval_lambda.call(event, c, f))
             f
           end
 

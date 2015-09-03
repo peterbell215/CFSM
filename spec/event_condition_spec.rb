@@ -50,7 +50,7 @@ module ConditionParser
 
       context 'state evaluation' do
         it 'should match the correct FSM.' do
-          expect( fsm_condition1.evaluate( :all, test_event ) ).to match_array test_fsm1_1
+          expect( fsm_condition1.evaluate( test_event, :all ) ).to match_array test_fsm1_1
         end
       end
 

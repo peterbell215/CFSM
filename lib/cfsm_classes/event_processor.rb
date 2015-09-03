@@ -305,7 +305,7 @@ module CfsmClasses
       @event_queue.peek_each do |event|
         # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
         transitions = @conditions[ event.event_class ].execute( event,
-        ->(condition, fsms) { @condition_cache[event.event_class][condition].evaluate(event, fsms) }, # condition evaluation
+        ->(event, condition, fsms) { @condition_cache[event.event_class][condition].evaluate(event, fsms) }, # condition evaluation
         ->(transition, fsms) { transition.instantiate(fsms) } ) # transition instantiation
 
         unless transitions.empty?
