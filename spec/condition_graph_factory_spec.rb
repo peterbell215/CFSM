@@ -32,7 +32,7 @@ module ConditionOptimisation
       conditions_sets.each_pair do |condition_set, transition|
         log.debug "#{condition_set.inspect} => #{transition}"
         expect( graph.execute(condition_set,
-                             ->(condition_set, condition, fsms) { condition_set.member?(self) ? fsms : nil },
+                             ->(condition_set, condition, fsms) { condition_set.member?(condition) ? fsms : nil },
                              ->(transition, included_fsms) { [transition] } ) ).to include( transition )
       end
 

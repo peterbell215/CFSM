@@ -36,13 +36,16 @@ module CfsmClasses
 
       it 'should instantiate transitions for all state machines' do
         # Note, that test_c is missing from the array since its FSM is not referenced in the transition.
-        expect( transition.instantiate( :all ) ).to match_array [test_a, test_b]
+        fsms = [test_a, test_b]
+
+        transition.instantiate( :all ).each { |transition| expect(fsms.delete(transition.fsm)).to equal(transition.fsm) }
+        expect( fsms ).to be_empty
       end
 
       it 'should instantiate transitions for a subset of state machines' do
         # Note, that test_b is missing since it is not in the list of FSMs to instantiate.
         # test_c is missing from the array since its FSM is not referenced in the transition.
-        expect( transition.instantiate( [test_a, test_c] ) ).to match_array [ test_a ]
+        expect( transition.instantiate( [test_a, test_c] )[0].fsm ).to equal( test_a )
       end
     end
   end
