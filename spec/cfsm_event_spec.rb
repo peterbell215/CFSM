@@ -51,7 +51,7 @@ describe CfsmEvent do
       expect( test_fsm.state ).to eql( :a )
       sleep( 0.05 )
       expect( test_fsm.state ).to eql( :a )
-      sleep( 0.06 )
+      sleep( 0.10 )
       expect( test_fsm.state ).to eql( :b )
     end
 

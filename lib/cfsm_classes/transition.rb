@@ -32,7 +32,7 @@ module CfsmClasses
         end
         transitions
       end
-      # note transitions returned from loop, so implicitely returned from method
+      # note transitions returned from loop, so implicitly returned from method
     end
   end
 end

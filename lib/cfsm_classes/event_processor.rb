@@ -166,7 +166,7 @@ module CfsmClasses
       # If running in async mode, then create a thread with an infinite loop to process incoming events.
       unless @options[:sync]
         @thread = Thread.new do
-          loop { @event_queue.wait_for_new_event unless @thread unless process_event }
+          loop { @event_queue.wait_for_new_event unless process_event }
         end
       end
     end
@@ -213,8 +213,8 @@ module CfsmClasses
             @delayed_event_mutex.synchronize do
               # If the event still exists in the delayed_event_hash, remove it and post it into the main queue.
               if @delayed_event_hash.delete(event)
-                @event_queue.push event
                 set_event_status(event, :pending )
+                @event_queue.push event
               end
             end
           end
@@ -304,9 +304,16 @@ module CfsmClasses
     def process_event
       @event_queue.peek_each do |event|
         # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
-        transitions = @conditions[ event.event_class ].execute( event,
-        ->(event, condition, fsms) { @condition_cache[event.event_class][condition].evaluate(event, fsms) }, # condition evaluation
-        ->(transition, fsms) { transition.instantiate(fsms) } ) # transition instantiation
+        transitions =
+            @conditions[event.event_class].execute(event,
+                                                   ->(event, condition, fsms) do
+                                                     # condition evaluation
+                                                     @condition_cache[event.event_class][condition].evaluate(event, fsms)
+                                                   end,
+                                                   ->(transition, fsms) do
+                                                     # transition instantiation
+                                                     transition.instantiate( fsms )
+                                                   end)
 
         unless transitions.empty?
           @event_queue.remove( event )
