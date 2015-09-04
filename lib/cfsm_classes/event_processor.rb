@@ -40,10 +40,10 @@ module CfsmClasses
       # class to state.
       @cfsm_initial_state = {}
 
-      # Hash that provides the collection of parameters that need to be evaluated for a given event type.
+      # Hash that provides the collection of parameters that need to be evaluated for a given event_class type.
       #
       # While the CFSMs are being constructed, the hash will point to an array of EventTrees.  Each
-      # event tree represents a condition tree and the transition that will produced.  Example:
+      # event_class tree represents a condition tree and the transition that will produced.  Example:
       #
       #   @parameters[ :event_a ] =
       #     EventTree[0] = <
@@ -67,7 +67,7 @@ module CfsmClasses
 
     # This does the heavy lifting for when the programmer defines a state.
     #
-    # @param [Class] klass is the class of FSMs for which this event is being defined
+    # @param [Class] klass is the class of FSMs for which this event_class is being defined
     # @param [Symbol] state
     # @param [Object] other_params
     # @param [Object] exec_block
@@ -86,24 +86,24 @@ module CfsmClasses
       @state_being_defined = nil
     end
 
-    # Class method to register that a FSM reacting to an event while in a defined state and transitioning to a new state.
+    # Class method to register that a FSM reacting to an event_class while in a defined state and transitioning to a new state.
     #
     # @api private
     #
-    # @param event [Class,symbol] the event that we are reacting too.
+    # @param event_class [Class,symbol] the event_class that we are reacting too.
     # @param parameters [String] the parameters that the FSM must meet to
     # @param proc [Proc] a method to be executed as part of the state transition
-    def on( event, parameters = {}, &proc )
+    def on( event_class, parameters = {}, &proc )
       # Create an array to hold the condition trees and their respective transitions.
-      @conditions[ event ] ||= Array.new
+      @conditions[ event_class ] ||= Array.new
 
       # Make sure we have not yet passed the point of turning this into a ConditionGraph.
-      raise TooLateToRegisterEvent if @conditions[ event ].is_a? ConditionOptimisation::ConditionGraph
+      raise TooLateToRegisterEvent if @conditions[ event_class ].is_a? ConditionOptimisation::ConditionGraph
 
       # Create a parse tree with at least a state check.
       fsm_check = ConditionParser::EventCondition::fsm_state_checker(@klass_being_defined, @state_being_defined)
       if_tree = unless parameters[:if].nil?
-                  { :and => [ fsm_check, @@transformer.apply( @@parser.parse( parameters[:if] ) ) ] }
+                  { :and => [ fsm_check, @@parser.process_if(parameters[:if], event_class, @klass_being_defined) ] }
                 else
                   fsm_check
                 end
@@ -111,8 +111,8 @@ module CfsmClasses
       # Create the transition object
       transition = CfsmClasses::Transition.new( @klass_being_defined, parameters[:transition], proc )
 
-      # Store the event.
-      @conditions[event].push Struct::EventTree.new( if_tree, transition )
+      # Store the event_class.
+      @conditions[event_class].push Struct::EventTree.new( if_tree, transition )
     end
 
     # Retrieves the initial state for this class of FSM.  If it is not defined, raises an error.
@@ -125,7 +125,7 @@ module CfsmClasses
       @cfsm_initial_state[ cfsm_class ]
     end
 
-    # Registers an instance of a CFSM with the event processor.  Used by the constructor of the CFSM.
+    # Registers an instance of a CFSM with the event_class processor.  Used by the constructor of the CFSM.
     #
     # @api private
     #
@@ -143,7 +143,7 @@ module CfsmClasses
       @cfsms[ cfsm ]
     end
 
-    # Creates the queue for this event processor.  If the event processor is to operate in async mode, also
+    # Creates the queue for this event_class processor.  If the event_class processor is to operate in async mode, also
     # creates the processing thread and starts waiting for events to be queued.
     def run( options )
       @options = options
@@ -153,7 +153,7 @@ module CfsmClasses
       convert_trees_to_sets
       convert_sets_to_graph
 
-      # For each event CFSM namespace, we also have a queue to hold unprocessed events.
+      # For each event_class CFSM namespace, we also have a queue to hold unprocessed events.
       @event_queue ||= PrioQueue.new
 
       # We also create a Hash to a mapping between delayed events and the thread that is used to
@@ -171,7 +171,7 @@ module CfsmClasses
       end
     end
 
-    # Used in the context of CFSM.reset to close down this event processor in a clean manner.  Should
+    # Used in the context of CFSM.reset to close down this event_class processor in a clean manner.  Should
     # only be used with RSpec when running a new set of state machine tests.
     def reset
       @delayed_event_hash.each_key { |event| self.cancel( event ) } if @delayed_event_hash
@@ -197,21 +197,21 @@ module CfsmClasses
       end
     end
 
-    # Receives an event for consideration by the event processor.  So long as we have a ConditionGraph
-    # for that event we stick it into the queue for processing.  If we are not operating in async mode,
-    # then we also process the event.
-    # @param [CfsmEvent] event - the event being posted.
+    # Receives an event_class for consideration by the event_class processor.  So long as we have a ConditionGraph
+    # for that event_class we stick it into the queue for processing.  If we are not operating in async mode,
+    # then we also process the event_class.
+    # @param [CfsmEvent] event_class - the event_class being posted.
     def post( event )
       if @conditions[ event.event_class ]
         if event.delay > 0
-          # TODO rather than have one thread per delayed event, we should have a sorted queue with a single thread
+          # TODO rather than have one thread per delayed event_class, we should have a sorted queue with a single thread
           @delayed_event_hash[ event ] = Thread.new do
             set_event_status(event, :delayed )
             # wait for the delay to expire in the thread.
             sleep event.delay
             # Avoid race conditions by preventing any other threads updating the delayed_event_hash
             @delayed_event_mutex.synchronize do
-              # If the event still exists in the delayed_event_hash, remove it and post it into the main queue.
+              # If the event_class still exists in the delayed_event_hash, remove it and post it into the main queue.
               if @delayed_event_hash.delete(event)
                 set_event_status(event, :pending )
                 @event_queue.push event
@@ -226,11 +226,11 @@ module CfsmClasses
       end
     end
 
-    # Cancel a posted event.  Mainly used to cancel events due at point in the future.  However, can also
-    # be used to cancel an event that is in the main queue, but has not yet been acted on.
+    # Cancel a posted event_class.  Mainly used to cancel events due at point in the future.  However, can also
+    # be used to cancel an event_class that is in the main queue, but has not yet been acted on.
     #
     # @param [CfsmEvent] event
-    # @return [true,false] whether the event was still around to be cancelled.
+    # @return [true,false] whether the event_class was still around to be cancelled.
     def cancel( event )
       event_cancelled = false
 
@@ -290,7 +290,7 @@ module CfsmClasses
     # On calling each entry in the @conditions hash is a Hash of a condition set to a Transition.  This then
     # uses the permutation optimiser to construct the optimal graph for each entry.  On leaving @conditions
     # is a Hash from Event onto ConditionGraph.  Each ConditionGraph can then be executed on receiving the
-    # event to determine if the transition should happen.
+    # event_class to determine if the transition should happen.
     def convert_sets_to_graph
       @conditions.each_pair do | event, condition_sets |
         @conditions[event] = self.permutate_graphs( condition_sets ).find_optimal
@@ -298,8 +298,8 @@ module CfsmClasses
       self
     end
 
-    # Look at each event in priority order until it can find one to process. If it can, then it removes that
-    # event from the queue and executes the transitions.  Returns the identified event.  If no events can be found
+    # Look at each event_class in priority order until it can find one to process. If it can, then it removes that
+    # event_class from the queue and executes the transitions.  Returns the identified event_class.  If no events can be found
     # returns nil to allow the calling method to perform a wait_for_next_event.
     def process_event
       @event_queue.peek_each do |event|
@@ -325,7 +325,7 @@ module CfsmClasses
             end
           end
 
-          # we have managed to process the event, so exit process event.
+          # we have managed to process the event_class, so exit process event_class.
           return event
         end
       end
