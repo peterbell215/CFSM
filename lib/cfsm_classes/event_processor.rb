@@ -160,6 +160,9 @@ module CfsmClasses
       # wait.
       @delayed_event_hash = {}
 
+      # Ensure only one thread is actually in the process_event method.
+      @process_mutex = Mutex.new
+
       # In order to avoid race conditions on the delayed_event_hash we also declare a mutex.
       @delayed_event_mutex = Mutex.new
 
@@ -255,6 +258,46 @@ module CfsmClasses
       @@parser = ConditionParser::Parser.new
     end
 
+    # Look at each event_class in priority order until it can find one to process. If it can, then it removes that
+    # event_class from the queue and executes the transitions.  Returns the identified event_class.  If no events can be found
+    # returns nil to allow the calling method to perform a wait_for_next_event.
+    def process_event
+      @process_mutex.synchronize do
+        @event_queue.peek_each do |event|
+          # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
+          transitions =
+              @conditions[event.event_class].execute(event,
+                                                     ->(event, condition, fsms) do
+                                                       # condition evaluation
+                                                       @condition_cache[event.event_class][condition].evaluate(event, fsms)
+                                                     end,
+                                                     ->(transition, fsms) do
+                                                       # transition instantiation
+                                                       transition.instantiate( fsms )
+                                                     end)
+
+          unless transitions.empty?
+            @event_queue.remove( event )
+
+            # we have a number of transactions to process, so lets do the state transitions.
+            transitions.each do |t|
+              if t.transition_proc.nil? || t.transition_proc && t.fsm.instance_exec( t.transition_proc.call )
+                t.fsm.instance_exec( t.new_state ) { |s| set_state(s) }
+              end
+            end
+
+            set_event_status( event, :processed )
+
+            # we have managed to process the event_class, so exit process event_class.
+            return event
+          end
+        end
+        # if we get to here, we have been through all events in the queue and cannot process any.  Need to
+        # wait for something to change.
+        return nil
+      end
+    end
+
     private
 
     # Take all the condition trees associated with this EventProcessor and populate the @conditions_cache
@@ -296,44 +339,6 @@ module CfsmClasses
         @conditions[event] = self.permutate_graphs( condition_sets ).find_optimal
       end
       self
-    end
-
-    # Look at each event_class in priority order until it can find one to process. If it can, then it removes that
-    # event_class from the queue and executes the transitions.  Returns the identified event_class.  If no events can be found
-    # returns nil to allow the calling method to perform a wait_for_next_event.
-    def process_event
-      @event_queue.peek_each do |event|
-        # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
-        transitions =
-            @conditions[event.event_class].execute(event,
-                                                   ->(event, condition, fsms) do
-                                                     # condition evaluation
-                                                     @condition_cache[event.event_class][condition].evaluate(event, fsms)
-                                                   end,
-                                                   ->(transition, fsms) do
-                                                     # transition instantiation
-                                                     transition.instantiate( fsms )
-                                                   end)
-
-        unless transitions.empty?
-          @event_queue.remove( event )
-
-          # we have a number of transactions to process, so lets do the state transitions.
-          transitions.each do |t|
-            if t.transition_proc.nil? || t.transition_proc && t.fsm.instance_exec( t.transition_proc.call )
-              t.fsm.instance_exec( t.new_state ) { |s| set_state(s) }
-            end
-          end
-
-          set_event_status( event, :processed )
-
-          # we have managed to process the event_class, so exit process event_class.
-          return event
-        end
-      end
-      # if we get to here, we have been through all events in the queue and cannot process any.  Need to
-      # wait for something to change.
-      nil
     end
 
     # Create single instances of the parser and the transformer.

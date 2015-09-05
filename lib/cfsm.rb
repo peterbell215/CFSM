@@ -82,6 +82,15 @@ class CFSM
     @@eventprocessors.each_value { |processor| processor.post( event ) }
   end
 
+  # Use to inform the system of a change in either a FSM's internal state, or an event's internal variables.
+  def self.eval( obj )
+    if obj.is_a? CFSM
+      @@eventprocessors.each_value { |processor| processor.process_event if processor[ obj.class ] }
+    elsif obj.is_a? CfsmEvent
+      @@eventprocessors[ obj ].process_event
+    end
+  end
+
   # Used to cancel an event posted into the system.
   #
   # @param [CfsmEvent] event cancel the event in the queue

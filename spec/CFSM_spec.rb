@@ -189,14 +189,14 @@ describe CFSM do
       fsm_1 = TestFSM.new( :c )
 
       CFSM.start :sync => true
-      CFSM.post( e = CfsmEvent.new(:event1) )
+      CFSM.post( CfsmEvent.new(:event1) )
 
       expect( fsm_0.state ).to eq( :b )
       expect( fsm_1.state ).to eq( :c )
     end
 
     context 'if processing' do
-      it 'should not advance if a state variable is not correctly set' do
+      before( :each ) do
         class TestFSM < CFSM
           state :a do
             on :event1, :transition => :b, :if => '@test==1'
@@ -209,15 +209,28 @@ describe CFSM do
 
           attr_accessor :test
         end
+      end
 
-        fsm = TestFSM.new
+      let!( :fsm ) { TestFSM.new }
 
+      it 'should not advance if a state variable is not correctly set' do
+        fsm.test = 1
         CFSM.start :sync => true
 
         expect( fsm.state ).to eq( :a )
         CFSM.post( CfsmEvent.new(:event1) )
+        expect( fsm.state ).to eq( :b )
+      end
+
+      it "should advance once the FSM's member variable is correctly set" do
+        CFSM.start :sync => true
+
+        expect( fsm.state ).to eq( :a )
+        event = CfsmEvent.new(:event1)
+        CFSM.post( event )
         expect( fsm.state ).to eq( :a )
         fsm.test = 1
+        CFSM.eval( fsm )
         expect( fsm.state ).to eq( :b )
       end
     end

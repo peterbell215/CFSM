@@ -46,7 +46,16 @@ module ConditionParser
         if cfsms && !cfsms.empty?
           cfsms.each do |fsm|
             # TODO: @value could be complex.  Need something to deal with that case.
-            cfsms.delete(fsm) unless fsm.send( @attribute.state_var ).send( @comparator, @value )
+
+            # We need to coerce the two args to be the same class before we send to the comparator
+            left_arg = fsm.send( @attribute.state_var )
+            if left_arg.respond_to?( :coerce )
+              left_arg, right_arg = left_arg.coerce( @value )
+            else
+              right_arg = @value
+            end
+
+            cfsms.delete(fsm) unless left_arg.send( @comparator, right_arg )
           end
 
           cfsms
