@@ -5,12 +5,6 @@
 require 'cfsm_classes/event_processor'
 
 class CFSM
-  # This holds for each namespace an EventProcessor that does the heavy lifting.  The user
-  # can partition their system of communicating FSMs into independent sub-systems by placing
-  # groups of FSMs into a module.  Each module has its own event_processor.  The following
-  # hash maps from the module onto the individual event_processor.
-  @@eventprocessors = {}
-
   # Create the FSM.
   def initialize
     processor = @@eventprocessors[ self.class.namespace ]
@@ -31,14 +25,14 @@ class CFSM
 
   # The core function that does the heavy lifting.  Delegates the real work to the EventProcessor object.
   #
-  # @return [Object]
-  # @param [Symbol] state
-  # @param [Hash] other_parameters
-  # @param [Proc] specs
+  # @param state [Symbol] the state being defined
+  # @param other_parameters [Hash] can be used to specify other parameters for the state machine.  For future expansion
+  # @param specs [Proc] the body of the class definitions.  Contains the *on* calls.  Executed by the EventProcessor.
+  # @return [CFSM] returns the CFSM object itself
   def self.state(state, other_parameters = {}, &specs)
     event_processor = ( @@eventprocessors[self.namespace] ||= CfsmClasses::EventProcessor.new(self.namespace) )
-
     event_processor.register_events( self, state, other_parameters, &specs )
+    self
   end
 
   # The system is designed on the premise that a number of state machine classes are created, FSMS instantiated,
@@ -46,19 +40,16 @@ class CFSM
   # be added once the CFSM.start method is invoked.  This is not the case, when we are unit testing using Rspec.
   # This method allows us to reset the CFSM system to allow new state machines to be defined.
   def self.reset
-    @@eventprocessors.each_value do |processor|
-      processor.reset
-    end
+    @@eventprocessors.each_value { |processor| processor.reset }
     @@eventprocessors = {}
 
     # We have successfully started each processor.  Therefore we have no need for the parser.
     CfsmClasses::EventProcessor.restart_parser
 
-    # Forece a gargage collection.
+    # Force a garbage collection.
     GC.start(:full_mark => :true)
   end
 
-  ##
   # Starts the communicating finite state machine system.  The main action is to compile all the condition trees
   # into sets of RETE graphs for easier processing.  The standard approach to running the CFSM systems is async.
   # Here each CFSM system has a separate thread waiting on the input queue.  When an event is posted, control to
@@ -91,8 +82,14 @@ class CFSM
     @@eventprocessors.each_value { |processor| processor.post( event ) }
   end
 
+  # Used to cancel an event posted into the system.
+  #
+  # @param [CfsmEvent] event cancel the event in the queue
+  # @return [true,false] returns whether cancelling of the event was successful
   def self.cancel( event )
-    @@eventprocessors.each_value { |processor| processor.cancel( event ) }
+    result = true
+    @@eventprocessors.each_value { |processor| result &&= processor.cancel( event ) }
+    return result
   end
 
   # Given a class of FSMs, this returns an array of instantiated FSMs of that class.
@@ -105,7 +102,12 @@ class CFSM
 
   private
 
-  ##
+  # This holds for each namespace an EventProcessor that does the heavy lifting.  The user
+  # can partition their system of communicating FSMs into independent sub-systems by placing
+  # groups of FSMs into a module.  Each module has its own event_processor.  The following
+  # hash maps from the module onto the individual event_processor.
+  @@eventprocessors = {}
+
   # Set the state - used by EventProcessor.  Use fsm.instance_exec( state ) { |s| set_state(s) } for
   # the event processor to set the state.
   #

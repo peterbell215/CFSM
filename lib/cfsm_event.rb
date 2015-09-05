@@ -11,8 +11,6 @@
 # @example Creating an event without a sub-class
 #   Cfsm.Event.new( :car_arrived, :data> { :from => :N, :lane => 2}, :prio => 2, :delay => 10 )
 class CfsmEvent
-  # TODO : introduce a status for an event: {created, delayed, pending, no_matches, processed}
-
   # @param [Symbol,Class] event_class
   # @param [Hash] opts the options for this event.
   # @option opts [Hash] :data provides the data for the event.

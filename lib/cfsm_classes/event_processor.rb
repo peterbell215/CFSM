@@ -240,7 +240,7 @@ module CfsmClasses
             if ( thread = @delayed_event_hash.delete(event) )
               thread.kill
               set_event_status(event, :cancelled)
-              true
+              return true
             end
           end
         when :pending
@@ -324,6 +324,8 @@ module CfsmClasses
               t.fsm.instance_exec( t.new_state ) { |s| set_state(s) }
             end
           end
+
+          set_event_status( event, :processed )
 
           # we have managed to process the event_class, so exit process event_class.
           return event

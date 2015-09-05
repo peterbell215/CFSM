@@ -188,8 +188,8 @@ describe CFSM do
       fsm_0 = TestFSM.new( :a )
       fsm_1 = TestFSM.new( :c )
 
-      CFSM.start
-      CFSM.post( CfsmEvent.new(:event1) )
+      CFSM.start :sync => true
+      CFSM.post( e = CfsmEvent.new(:event1) )
 
       expect( fsm_0.state ).to eq( :b )
       expect( fsm_1.state ).to eq( :c )
@@ -199,10 +199,11 @@ describe CFSM do
       it 'should not advance if a state variable is not correctly set' do
         class TestFSM < CFSM
           state :a do
-            on :event1, :transition => :b, :if => '@test==0'
+            on :event1, :transition => :b, :if => '@test==1'
           end
 
           def initialize
+            super
             @test = 0
           end
 

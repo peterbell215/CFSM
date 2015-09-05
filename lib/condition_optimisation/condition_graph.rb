@@ -141,7 +141,7 @@ module ConditionOptimisation
             f
           end
 
-          if fsms && !fsms.empty
+          if fsms && !fsms.empty?
             # fsms is either :all or a list of FSMs that meet the criteria. We now have to apply the specified
             # transitions to those fsms in the list, or all if the list is still :all.
             transitions +=
