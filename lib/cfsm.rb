@@ -85,7 +85,9 @@ class CFSM
   # Use to inform the system of a change in either a FSM's internal state, or an event's internal variables.
   def self.eval( obj )
     if obj.is_a? CFSM
-      @@eventprocessors.each_value { |processor| processor.process_event if processor[ obj.class ] }
+      @@eventprocessors.each_value do |processor|
+        processor.process_event if processor[obj.class]
+      end
     elsif obj.is_a? CfsmEvent
       @@eventprocessors[ obj ].process_event
     end

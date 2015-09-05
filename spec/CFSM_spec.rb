@@ -175,10 +175,6 @@ describe CFSM do
           on :event1, :transition => :b
         end
 
-        state :c do
-          on :event1, :transition => :d
-        end
-
         def initialize( initial_state )
           super()
           self.instance_exec( initial_state ) { |s| set_state(s) }
@@ -224,7 +220,6 @@ describe CFSM do
 
       it "should advance once the FSM's member variable is correctly set" do
         CFSM.start :sync => true
-
         expect( fsm.state ).to eq( :a )
         event = CfsmEvent.new(:event1)
         CFSM.post( event )

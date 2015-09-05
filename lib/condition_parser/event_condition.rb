@@ -41,7 +41,7 @@ module ConditionParser
       if @attribute.is_a? FsmStateVariable
         # if cfsms remains nil then this particular namespace has not FSMs instantiated,
         # therefore return []
-        cfsms = CFSM.state_machines( @attribute.fsm_class ) if cfsms == :all
+        cfsms = CFSM.state_machines( @attribute.fsm_class ).dup if cfsms == :all
 
         if cfsms && !cfsms.empty?
           cfsms.each do |fsm|
