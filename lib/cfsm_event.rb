@@ -33,6 +33,7 @@ class CfsmEvent
     @src = caller(1, 1)[0]
     @prio = opts[ :prio ] || 0
     @delay = opts[ :delay ] || 0
+    # TODO: status needs to be stored on a per namespace basis.
     @status = :created
 
     CFSM.post( self ) if opts[:autopost]

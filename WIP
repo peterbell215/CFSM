@@ -1,9 +1,2 @@
-Main focus has been so far on the condition parser.  So far, I am able to parse some very simple expressions such as "a.b ==  6 or a.c > 6".
 
-Got it now so that on a simple expression we can run RSpec and evaluate the parse tree.  Working on the OR and AND versions next.
-
-Parsing fairly complex expressions.  Need to expand tests to cover more cases.
-
-Moved on to optimising the condition graph.  Currently Rspec on condition_graph fails.  Seems to be mix of the matcher failing to spot
-equivalence and some mistakes in combining new elements into existing graph.  More work to do.
 

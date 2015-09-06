@@ -63,7 +63,7 @@ class CFSM
     raise OnlyStartOnCFSMClass if self != CFSM
 
     namespaces =
-        if ( ns = options.delete( :namespace ) )
+        if ( ns = options[:namespace])
           namespaces.is_a?(Array) ? ns : [ns]
         else
           @@eventprocessors.keys

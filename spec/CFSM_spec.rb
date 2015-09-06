@@ -23,10 +23,12 @@ describe CFSM do
         end
       end
 
-      module TestModule
+      module TestModuleB
         class TestFSM_B < CFSM
           state(:d) { on :event1, :transition => :e }
         end
+      end
+      module TestModuleC
         class TestFSM_C < CFSM
           state(:a) { on :event1, :transition => :b }
         end
@@ -34,9 +36,9 @@ describe CFSM do
     end
 
     let!( :test_fsm_a) { TestFSM_A.new }
-    let!( :test_fsm_b1) { TestModule::TestFSM_B.new }
-    let!( :test_fsm_b2) { TestModule::TestFSM_B.new }
-    let!( :test_fsm_c) { TestModule::TestFSM_C.new }
+    let!( :test_fsm_b1) { TestModuleB::TestFSM_B.new }
+    let!( :test_fsm_b2) { TestModuleB::TestFSM_B.new }
+    let!( :test_fsm_c) { TestModuleC::TestFSM_C.new }
 
     describe '::reset' do
       it 'should allow the state machine system to be reset.' do
@@ -57,8 +59,9 @@ describe CFSM do
 
         # Check that the various state machines have disappeared from the CFSM system
         expect { TestFSM_A.new }.to raise_error( NameError )
-        expect { TestModule::TestFSM_B.new }.to raise_error( NameError )
+        expect { TestModuleB::TestFSM_B.new }.to raise_error( NameError )
 
+        # redefine the class from above to check that it will be newly loaded.
         class TestFSM_A < CFSM
           state(:c) { on :event1, :transition => :d }
 
@@ -75,16 +78,16 @@ describe CFSM do
     describe '::namespace' do
       it 'should return the correct namespaces' do
         expect( TestFSM_A.namespace ).to eql( 'Global' )
-        expect( TestModule::TestFSM_B.namespace ).to eql( 'TestModule' )
-        expect( TestModule::TestFSM_C.namespace ).to eql( 'TestModule' )
+        expect( TestModuleB::TestFSM_B.namespace ).to eql( 'TestModuleB' )
+        expect( TestModuleC::TestFSM_C.namespace ).to eql( 'TestModuleC' )
       end
     end
 
     describe '::state_machines' do
       it 'should return all instantiated state machines for that class' do
         expect( CFSM.state_machines( TestFSM_A ) ).to match_array [ test_fsm_a ]
-        expect( CFSM.state_machines( TestModule::TestFSM_B ) ).to match_array [ test_fsm_b1, test_fsm_b2 ]
-        expect( CFSM.state_machines( TestModule::TestFSM_C ) ).to match_array [ test_fsm_c ]
+        expect( CFSM.state_machines( TestModuleB::TestFSM_B ) ).to match_array [ test_fsm_b1, test_fsm_b2 ]
+        expect( CFSM.state_machines( TestModuleC::TestFSM_C ) ).to match_array [ test_fsm_c ]
       end
     end
 
@@ -95,45 +98,41 @@ describe CFSM do
     end
 
     describe '::start' do
-      context 'namespace option' do
-        it 'should start a single CFSM system' do
-          # TODO handle both sync and async.
-          expect( test_fsm_a.state ).to eql( :a )
-          expect( test_fsm_b1.state ).to eql( :d )
-          expect( test_fsm_c.state ).to eql( :a )
+      context 'starting one, two or all namespaces in either sync or async mode' do
+        {:all => 'all namespaces',
+         :TestModuleB => 'one namespace',
+         [:TestModuleA, :TestModuleB] => 'two namespaces'}.each_pair do |namespace, namespace_string|
+          {true => 'sync mode', false => 'async mode'}.each_pair do |sync_mode, sync_string|
+            it "should start #{namespace_string} in #{sync_string}" do
+              options = {}
+              options[:namespace] = namespace unless namespace == :all
+              options[:sync] = true if sync_mode
 
-          CFSM.start :namespace => TestModule, :sync => true
+              expect(test_fsm_a.state).to eql(:a)
+              expect(test_fsm_b1.state).to eql(:d)
+              expect(test_fsm_c.state).to eql(:a)
 
-          CFSM.post( CfsmEvent.new(:event1) )
+              CFSM.start options
+              CFSM.post(event = CfsmEvent.new(:event1))
 
-          expect( test_fsm_a.state ).to eql( :a )
-          expect( test_fsm_b1.state ).to eql( :e )
-          expect( test_fsm_c.state ).to eql( :b )
+              # If we are operating in async mode, then wait for the event to have been processed.
+              # TODO: the event.status needs to be on a per namespace basis.
+              unless options[:sync]
+                sleep 0.01 until event.status==:processed
+              end
+
+              expect(test_fsm_a.state).to eql(options[:namespace] ? :a : :b)                  # only progresses if all namespaces executed
+              expect(test_fsm_b1.state).to eql(:e)                                            # always progresses
+              expect(test_fsm_c.state).to eql(options[:namespace] == :TestModuleB ? :a : :b)  # doesn't progress if only TestModuleB run
+            end
+          end
         end
+      end
 
-        it 'should start multiple CFSM systems' do
-          pending
+      it 'should raise an error if we try to start on a namespace' do
+        pending
 
-          fail
-
-          CFSM.start :namespace => [Test1, Test2]
-        end
-
-        it 'should start all CFSM systems' do
-          pending
-
-          fail
-
-          CFSM.start
-        end
-
-        it 'should raise an error if we try to start on a namespace' do
-          pending
-
-          fail
-
-          expect { Test1.start }.to raise_error( OnlyStartOnCFSMClass )
-        end
+        expect { Test1.start }.to raise_error( OnlyStartOnCFSMClass )
       end
 
       context 'async option' do
@@ -159,6 +158,7 @@ describe CFSM do
           on :event1, :transition => :b
         end
       end
+      # noinspection RubyArgCount
       fsm = TestFSM.new
 
       expect( fsm.state ).to eq( :a )
@@ -199,6 +199,7 @@ describe CFSM do
           end
 
           def initialize
+            # noinspection RubyArgCount
             super
             @test = 0
           end
@@ -207,6 +208,7 @@ describe CFSM do
         end
       end
 
+      # noinspection RubyArgCount
       let!( :fsm ) { TestFSM.new }
 
       it 'should not advance if a state variable is not correctly set' do
