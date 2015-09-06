@@ -166,12 +166,9 @@ module CfsmClasses
       # In order to avoid race conditions on the delayed_event_hash we also declare a mutex.
       @delayed_event_mutex = Mutex.new
 
-      # If running in async mode, then create a thread with an infinite loop to process incoming events.
-      unless @options[:sync]
-        @thread = Thread.new do
-          loop { @event_queue.wait_for_new_event unless process_event }
-        end
-      end
+      # If running in sync mode, we set @thread to true to indiciate the EventProcessor has been set to
+      # run.  If we are running in async mode then create a thread with an infinite loop to process incoming events.
+      @thread = @options[:sync] || Thread.new { loop { @event_queue.wait_for_new_event; process_event } }
     end
 
     # Used in the context of CFSM.reset to close down this event_class processor in a clean manner.  Should
@@ -180,10 +177,8 @@ module CfsmClasses
       @delayed_event_hash.each_key { |event| self.cancel( event ) } if @delayed_event_hash
       @delayed_event_mutex = nil
 
-      if @thread
-        @thread.kill
-        @thread = nil
-      end
+      @thread.kill if @thread.is_a? Thread
+      @thread = nil
 
       # This unloads any classes derived from CFSM.  It does this by looking at all currently loaded classes,
       # and checking if they are derived from CFSM.  IF they are, we split them into the module reference and
@@ -200,12 +195,13 @@ module CfsmClasses
       end
     end
 
-    # Receives an event_class for consideration by the event_class processor.  So long as we have a ConditionGraph
+    # Receives an event_class for consideration by the event_class processor.  So long as the EventProcessor has
+    # been started and we have a ConditionGraph
     # for that event_class we stick it into the queue for processing.  If we are not operating in async mode,
     # then we also process the event_class.
-    # @param [CfsmEvent] event_class - the event_class being posted.
+    # @param event [CfsmEvent] the event being posted.
     def post( event )
-      if @conditions[ event.event_class ]
+      if @thread && @conditions[ event.event_class ]
         if event.delay > 0
           # TODO rather than have one thread per delayed event_class, we should have a sorted queue with a single thread
           @delayed_event_hash[ event ] = Thread.new do
@@ -225,7 +221,7 @@ module CfsmClasses
           set_event_status(event, :pending )
           @event_queue.push event
         end
-        process_event unless @thread
+        process_event if @thread==true
       end
     end
 

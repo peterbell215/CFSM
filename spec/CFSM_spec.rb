@@ -33,13 +33,13 @@ describe CFSM do
       end
     end
 
+    let!( :test_fsm_a) { TestFSM_A.new }
+    let!( :test_fsm_b1) { TestModule::TestFSM_B.new }
+    let!( :test_fsm_b2) { TestModule::TestFSM_B.new }
+    let!( :test_fsm_c) { TestModule::TestFSM_C.new }
+
     describe '::reset' do
       it 'should allow the state machine system to be reset.' do
-        test_fsm_a = TestFSM_A.new
-        test_fsm_b1 = TestModule::TestFSM_B.new
-        test_fsm_b2 = TestModule::TestFSM_B.new
-        test_fsm_c = TestModule::TestFSM_C.new
-
         expect( test_fsm_a.state ).to eq( :a )
 
         event = CfsmEvent.new(:event1, :delay => 2 )
@@ -82,11 +82,6 @@ describe CFSM do
 
     describe '::state_machines' do
       it 'should return all instantiated state machines for that class' do
-        test_fsm_a = TestFSM_A.new
-        test_fsm_b1 = TestModule::TestFSM_B.new
-        test_fsm_b2 = TestModule::TestFSM_B.new
-        test_fsm_c = TestModule::TestFSM_C.new
-
         expect( CFSM.state_machines( TestFSM_A ) ).to match_array [ test_fsm_a ]
         expect( CFSM.state_machines( TestModule::TestFSM_B ) ).to match_array [ test_fsm_b1, test_fsm_b2 ]
         expect( CFSM.state_machines( TestModule::TestFSM_C ) ).to match_array [ test_fsm_c ]
@@ -95,8 +90,6 @@ describe CFSM do
 
     describe '#set_state' do
       it 'should not be possible to externally set the state of FSM' do
-        test_fsm_a = TestFSM_A.new
-
         expect{ test_fsm_a.set_state() }.to raise_exception( NoMethodError )
       end
     end
@@ -104,11 +97,18 @@ describe CFSM do
     describe '::start' do
       context 'namespace option' do
         it 'should start a single CFSM system' do
-          pending
+          # TODO handle both sync and async.
+          expect( test_fsm_a.state ).to eql( :a )
+          expect( test_fsm_b1.state ).to eql( :d )
+          expect( test_fsm_c.state ).to eql( :a )
 
-          fail
+          CFSM.start :namespace => TestModule, :sync => true
 
-          CFSM.start :namespace => Test1
+          CFSM.post( CfsmEvent.new(:event1) )
+
+          expect( test_fsm_a.state ).to eql( :a )
+          expect( test_fsm_b1.state ).to eql( :e )
+          expect( test_fsm_c.state ).to eql( :b )
         end
 
         it 'should start multiple CFSM systems' do

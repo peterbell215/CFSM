@@ -62,14 +62,16 @@ class CFSM
   def self.start( options = {} )
     raise OnlyStartOnCFSMClass if self != CFSM
 
-    namespaces = options.delete( :namespace )
-    if namespaces
-      processors = namespaces.is_a? Array ? namespaces : [ namespaces ]
-    else
-      processors = @@eventprocessors.keys
-    end
+    namespaces =
+        if ( ns = options.delete( :namespace ) )
+          namespaces.is_a?(Array) ? ns : [ns]
+        else
+          @@eventprocessors.keys
+        end
 
-    processors.each { |processor| @@eventprocessors[processor].run( options ) }
+    namespaces.each do |namespace|
+      @@eventprocessors[namespace.to_s].run(options)
+    end
 
     # We have successfully started each processor.  Therefore we have no need for the parser.
     CfsmClasses::EventProcessor.shutdown_parser
