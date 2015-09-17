@@ -68,9 +68,9 @@ module CfsmClasses
     end
 
     def inspect
-      result = ''
-      @queues.each_with_index do |queue, prio|
-        result << "prio #{prio}: #{queue.inspect}\n"
+      result = "queue:\n"
+      self.peek_each do |obj|
+        result << "#{obj.inspect}\n"
       end
       result
     end

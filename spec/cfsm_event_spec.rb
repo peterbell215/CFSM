@@ -29,6 +29,14 @@ describe CfsmEvent do
     end
   end
 
+  describe '#inspect' do
+    it 'should return a string describing the event' do
+      expect( CfsmEvent.new( :test_event, :prio => 1,
+                             :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym } ).inspect ).to \
+      eq('{ test_event: prio = 1, status = created, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
+    end
+  end
+
   context '#delayed events' do
     before(:each) do
       CFSM.reset

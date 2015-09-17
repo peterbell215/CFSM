@@ -6,12 +6,14 @@ require 'cfsm_classes/event_processor'
 
 class CFSM
   # Create the FSM.
-  def initialize
-    processor = @@eventprocessors[ self.class.namespace ]
+  def initialize( name = nil )
+    processor = @@event_processors[ self.class.namespace ]
     processor.register_cfsm( self )
+    @name = name || caller(1, 1)[0].split('/')[-1]
     @state = processor.initial_state( self.class )
   end
 
+  attr_reader :name
   attr_reader :state
 
   # Related FSMs can be grouped into modules.  All FSMs that are part of the same module are deemed to be part of the
@@ -30,7 +32,7 @@ class CFSM
   # @param specs [Proc] the body of the class definitions.  Contains the *on* calls.  Executed by the EventProcessor.
   # @return [CFSM] returns the CFSM object itself
   def self.state(state, other_parameters = {}, &specs)
-    event_processor = ( @@eventprocessors[self.namespace] ||= CfsmClasses::EventProcessor.new(self.namespace) )
+    event_processor = ( @@event_processors[self.namespace] ||= CfsmClasses::EventProcessor.new(self.namespace) )
     event_processor.register_events( self, state, other_parameters, &specs )
     self
   end
@@ -40,8 +42,8 @@ class CFSM
   # be added once the CFSM.start method is invoked.  This is not the case, when we are unit testing using Rspec.
   # This method allows us to reset the CFSM system to allow new state machines to be defined.
   def self.reset
-    @@eventprocessors.each_value { |processor| processor.reset }
-    @@eventprocessors = {}
+    @@event_processors.each_value { |processor| processor.reset }
+    @@event_processors = {}
 
     # We have successfully started each processor.  Therefore we have no need for the parser.
     CfsmClasses::EventProcessor.restart_parser
@@ -66,11 +68,11 @@ class CFSM
         if ( ns = options[:namespace])
           namespaces.is_a?(Array) ? ns : [ns]
         else
-          @@eventprocessors.keys
+          @@event_processors.keys
         end
 
     namespaces.each do |namespace|
-      @@eventprocessors[namespace.to_s].run(options)
+      @@event_processors[namespace.to_s].run(options)
     end
 
     # We have successfully started each processor.  Therefore we have no need for the parser.
@@ -81,18 +83,22 @@ class CFSM
   #
   # @param [CfsmEvent] event
   def self.post( event )
-    @@eventprocessors.each_value { |processor| processor.post( event ) }
+    @@event_processors.each_value { |processor| processor.post( event ) }
   end
 
   # Use to inform the system of a change in either a FSM's internal state, or an event's internal variables.
   def self.eval( obj )
     if obj.is_a? CFSM
-      @@eventprocessors.each_value do |processor|
+      @@event_processors.each_value do |processor|
         processor.process_event if processor[obj.class]
       end
     elsif obj.is_a? CfsmEvent
-      @@eventprocessors[ obj ].process_event
+      @@event_processors[ obj ].process_event
     end
+  end
+
+  def self.status
+    @@event_processors.values.inject( {} ) { |hash, processor| hash[processor.namespace] = processor.status; hash  }
   end
 
   # Used to cancel an event posted into the system.
@@ -101,7 +107,7 @@ class CFSM
   # @return [true,false] returns whether cancelling of the event was successful
   def self.cancel( event )
     result = true
-    @@eventprocessors.each_value { |processor| result &&= processor.cancel( event ) }
+    @@event_processors.each_value { |processor| result &&= processor.cancel( event ) }
     return result
   end
 
@@ -110,7 +116,32 @@ class CFSM
   # @param [Class] fsm_class
   # @return [Array<CFSM>]
   def self.state_machines( fsm_class )
-    @@eventprocessors[ fsm_class.namespace ][ fsm_class ]
+    @@event_processors[ fsm_class.namespace ][ fsm_class ]
+  end
+
+  # Output a string showing the state of the state machines.  This is not called inspect, since CFMS.inspect
+  # is called from below.
+  #
+  # @return [String]
+  def self.dump_to_string
+    result = ''
+    @@event_processors.each_value { |processor| result << processor.inspect }
+    result
+  end
+
+  # Outputs the CFSM's name and state.
+  #
+  # @return [String]
+  def inspect
+    out = case name
+      when String
+        '"' << name << '"'
+      when Symbol
+        ':'<< name.to_s
+      else
+        name.to_s
+    end
+    "<name = #{ out }, state = #{state}>"
   end
 
   private
@@ -119,7 +150,7 @@ class CFSM
   # can partition their system of communicating FSMs into independent sub-systems by placing
   # groups of FSMs into a module.  Each module has its own event_processor.  The following
   # hash maps from the module onto the individual event_processor.
-  @@eventprocessors = {}
+  @@event_processors = {}
 
   # Set the state - used by EventProcessor.  Use fsm.instance_exec( state ) { |s| set_state(s) } for
   # the event processor to set the state.

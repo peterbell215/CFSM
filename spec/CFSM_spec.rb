@@ -3,11 +3,14 @@
 # Licensed under MIT.  See License file in top level directory.
 
 require 'rspec'
+require 'logger'
 
 require 'cfsm'
 require 'cfsm_event'
 
 describe CFSM do
+  let!(:log) { Logger.new( File.new('cfsm_spec.log', 'w') ).tap { |l| l.level = Logger::DEBUG } }
+
   # Reset the CFSM system each time we start an RSpec so we can define an FSM specific to the test
   before(:each) do
     CFSM.reset
@@ -36,9 +39,18 @@ describe CFSM do
     end
 
     let!( :test_fsm_a) { TestFSM_A.new }
-    let!( :test_fsm_b1) { TestModuleB::TestFSM_B.new }
-    let!( :test_fsm_b2) { TestModuleB::TestFSM_B.new }
-    let!( :test_fsm_c) { TestModuleC::TestFSM_C.new }
+    let!( :test_fsm_b1) { TestModuleB::TestFSM_B.new :test_fsm_b1 }
+    let!( :test_fsm_b2) { TestModuleB::TestFSM_B.new :test_fsm_b2 }
+    let!( :test_fsm_c) { TestModuleC::TestFSM_C.new 'test_fsm_c' }
+
+    describe '#initialize' do
+      it 'should create the state machines with the correct names' do
+        expect( test_fsm_a.name ).to eq( "CFSM_spec.rb:41:in `new'" )
+        expect( test_fsm_b1.name ).to eq( :test_fsm_b1 )
+        expect( test_fsm_b2.name ).to eq( :test_fsm_b2 )
+        expect( test_fsm_c.name ).to eq( 'test_fsm_c' )
+      end
+    end
 
     describe '::reset' do
       it 'should allow the state machine system to be reset.' do
@@ -55,7 +67,7 @@ describe CFSM do
         # Having killed the CFSMs, the queues should have been emptied.  Therefore,
         # *event* should always remain in the *delayed* status.
         sleep( 2 )
-        expect( event.status ).to eq( :delayed )
+        expect( event.status ).to eq( :cancelled )
 
         # Check that the various state machines have disappeared from the CFSM system
         expect { TestFSM_A.new }.to raise_error( NameError )
@@ -97,6 +109,46 @@ describe CFSM do
       end
     end
 
+    describe '#inspect' do
+      it 'should convert to a string the internal state correctly' do
+        expect( test_fsm_a.inspect ).to eq( "<name = \"CFSM_spec.rb:41:in `new'\", state = a>" )
+        expect( test_fsm_b1.inspect ).to eq( '<name = :test_fsm_b1, state = d>' )
+        expect( test_fsm_b2.inspect ).to eq( '<name = :test_fsm_b2, state = d>' )
+        expect( test_fsm_c.inspect ).to eq( '<name = "test_fsm_c", state = a>' )
+      end
+    end
+
+    describe '#dump_to_string' do
+      it 'should return a description of the state of the system' do
+        result = CFSM.dump_to_string.split(/\r?\n/)
+        expected_result = <<HEREDOC
+Namespace: Global
+Thread status: not started
+Condition graph: N/A
+Current queue: uninitialised
+Status of each FSM:
+{TestFSM_A=>[<name = "CFSM_spec.rb:41:in `new'", state = a>]}
+**************************
+Namespace: TestModuleB
+Thread status: not started
+Condition graph: N/A
+Current queue: uninitialised
+Status of each FSM:
+{TestModuleB::TestFSM_B=>[<name = :test_fsm_b1, state = d>, <name = :test_fsm_b2, state = d>]}
+**************************
+Namespace: TestModuleC
+Thread status: not started
+Condition graph: N/A
+Current queue: uninitialised
+Status of each FSM:
+{TestModuleC::TestFSM_C=>[<name = "test_fsm_c", state = a>]}
+**************************
+HEREDOC
+        expected_result = expected_result.split(/\r?\n/)
+        0.upto( result.length-1 ).each { |i| expect( result[i] ).to eq( expected_result[i] ) }
+      end
+    end
+
     describe '::start' do
       context 'starting one, two or all namespaces in either sync or async mode' do
         {:all => 'all namespaces',
@@ -104,6 +156,8 @@ describe CFSM do
          [:TestModuleA, :TestModuleB] => 'two namespaces'}.each_pair do |namespace, namespace_string|
           {true => 'sync mode', false => 'async mode'}.each_pair do |sync_mode, sync_string|
             it "should start #{namespace_string} in #{sync_string}" do
+              fail
+              
               options = {}
               options[:namespace] = namespace unless namespace == :all
               options[:sync] = true if sync_mode
@@ -118,7 +172,10 @@ describe CFSM do
               # If we are operating in async mode, then wait for the event to have been processed.
               # TODO: the event.status needs to be on a per namespace basis.
               unless options[:sync]
-                sleep 0.01 until event.status==:processed
+                puts CFSM.inspect
+                while event.status != :processed
+                  sleep 1
+                end
               end
 
               expect(test_fsm_a.state).to eql(options[:namespace] ? :a : :b)                  # only progresses if all namespaces executed

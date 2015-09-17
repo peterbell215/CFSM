@@ -23,7 +23,8 @@ class CfsmEvent
 
     # Retrieve the data held and store as instance variables with suitable accessors
     if opts[:data]
-      opts[:data].each do |k,v|
+      @data = opts[:data]
+      @data.each do |k,v|
         instance_variable_set("@#{k}", v)
         eigenclass = class<<self; self; end
         eigenclass.class_eval { attr_accessor k }
@@ -48,10 +49,16 @@ class CfsmEvent
   attr_reader :event_class
   attr_reader :prio
   attr_reader :delay
+  attr_reader :data
+
+  def inspect
+    "{ #{ self.event_class.to_s }: prio = #{self.prio.to_s}, status = #{self.status.to_s}, data = #{ self.data.inspect } }"
+  end
 
   private
 
   def status=(s)
     @status = s
+    puts "#{event_class.to_s} status = #{@status}"
   end
 end

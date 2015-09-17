@@ -4,6 +4,7 @@
 
 require 'rspec'
 
+require 'cfsm_event'
 require 'cfsm_classes/prio_queue'
 
 module CfsmClasses
@@ -93,6 +94,20 @@ module CfsmClasses
           index += 1
         end
       end
+    end
+
+    describe '#inspect' do
+      it 'should generate a string showing the queue.' do
+        (0..2).each { |i| queue.push( CfsmEvent.new :test_event, :prio => i, :data => { :element => i } ) }
+
+        result = queue.inspect.split("\n")[1..-1]
+
+        (0..2).each do |i|
+          expect( result[i] ).to eq( "{ test_event: prio = #{2-i}, status = created, data = {:element=>#{2-i}} }")
+        end
+      end
+
+
     end
 
     context '#async behaviour' do

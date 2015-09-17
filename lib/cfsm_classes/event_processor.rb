@@ -24,6 +24,8 @@ module CfsmClasses
     # Constructor.  Creates an instance of EventProcessor.
     # @param [String] namespace
     def initialize( namespace )
+      @status = :initialising
+
       # keep a record of the namespace.
       @namespace = namespace
 
@@ -64,6 +66,9 @@ module CfsmClasses
       # parameters in this Hash together with an integer.  The Caches are in turn hashed onto the EventConditions.
       @condition_cache = {}
     end
+
+    attr_reader :status
+    attr_reader :namespace
 
     # This does the heavy lifting for when the programmer defines a state.
     #
@@ -146,6 +151,8 @@ module CfsmClasses
     # Creates the queue for this event_class processor.  If the event_class processor is to operate in async mode, also
     # creates the processing thread and starts waiting for events to be queued.
     def run( options )
+      @status = :running
+
       @options = options
 
       # Do the heavy lifting on converting the condition trees to optimised condition graphs.
@@ -153,7 +160,7 @@ module CfsmClasses
       convert_trees_to_sets
       convert_sets_to_graph
 
-      # For each event_class CFSM namespace, we also have a queue to hold unprocessed events.
+      # For each CFSM namespace, we also have a queue to hold unprocessed events.
       @event_queue ||= PrioQueue.new
 
       # We also create a Hash to a mapping between delayed events and the thread that is used to
@@ -168,7 +175,13 @@ module CfsmClasses
 
       # If running in sync mode, we set @thread to true to indiciate the EventProcessor has been set to
       # run.  If we are running in async mode then create a thread with an infinite loop to process incoming events.
-      @thread = @options[:sync] || Thread.new { loop { @event_queue.wait_for_new_event; process_event } }
+      @thread = @options[:sync] || Thread.new do
+        loop do
+          @status = :waiting_for_event
+          @event_queue.wait_for_new_event
+          process_event
+        end
+      end
     end
 
     # Used in the context of CFSM.reset to close down this event_class processor in a clean manner.  Should
@@ -231,8 +244,6 @@ module CfsmClasses
     # @param [CfsmEvent] event
     # @return [true,false] whether the event_class was still around to be cancelled.
     def cancel( event )
-      event_cancelled = false
-
       case event.status
         when :delayed
           @delayed_event_mutex.synchronize do
@@ -259,6 +270,7 @@ module CfsmClasses
     # returns nil to allow the calling method to perform a wait_for_next_event.
     def process_event
       @process_mutex.synchronize do
+        @status = :process_event
         @event_queue.peek_each do |event|
           # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
           transitions =
@@ -292,6 +304,18 @@ module CfsmClasses
         # wait for something to change.
         return nil
       end
+    end
+
+    def inspect
+<<HEREDOC
+Namespace: #{self.namespace}
+Thread status: #{ thread_status }
+Condition graph: N/A
+Current queue: #{ @event_queue ? '\n' << @event_queue.inspect : 'uninitialised' }
+Status of each FSM:
+#{cfsm_inspect}
+**************************
+HEREDOC
     end
 
     private
@@ -349,6 +373,29 @@ module CfsmClasses
     # on CfsmEvent.  This helper function allows us to set the status.
     def set_event_status( event, status )
       event.instance_eval { @status = status }
+    end
+
+    # This private method returns the status of the event processor's thread as a string.
+    #
+    # @return [String] status of the thread
+    def thread_status
+      if @thread.nil?
+        'not started'
+      elsif @thread==true
+        'sync mode'
+      else
+        @thread.status
+      end
+    end
+
+    # Private method to assemble a string showing state of each CFSM within the namespace.
+    #
+    # @return [String]
+    def cfsm_inspect
+      result = ''
+      @cfsms.each_pair do |klass, cfsms|
+        result << "#{klass.to_s} : #{cfsms.join(', ')}\n"
+      end
     end
 
     # Used to hold the condition tree and transition descriptions in the @@event_processors hash.
