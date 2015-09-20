@@ -15,7 +15,7 @@ describe CfsmEvent do
       expect( event.event_class ).to eq(:test_event)
       expect( event.prio ).to eq( 0 )
       expect( event.delay ).to eq( 0 )
-      expect( event.status ).to eq( :created )
+      expect( event.status ).to be_nil
     end
 
     it 'should create an object with additional data items' do
@@ -25,7 +25,7 @@ describe CfsmEvent do
       expect( event.data_string ).to eq( 'String field' )
       expect( event.data_fixnum ).to eq( 5 )
       expect( event.data_sym ).to eq( :sym )
-      expect( event.status ).to eq( :created )
+      expect( event.status ).to be_nil
     end
   end
 
@@ -33,7 +33,33 @@ describe CfsmEvent do
     it 'should return a string describing the event' do
       expect( CfsmEvent.new( :test_event, :prio => 1,
                              :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym } ).inspect ).to \
-      eq('{ test_event: prio = 1, status = created, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
+      eq('{ test_event: prio = 1, status = nil, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
+    end
+  end
+
+  describe '#set_status' do
+    it 'should create a hash to store the namespaces if set.' do
+      event = CfsmEvent.new :test_event
+      expect( event.status ).to be_nil
+      event.instance_eval { set_status( :delayed ) }
+      expect( event.status ).to eq( :delayed )
+      expect( event.status( 'OtherNamespsace' ) ).to be_nil
+    end
+
+    it 'should remove namespaces correctly.' do
+      event = CfsmEvent.new :test_event
+      event.instance_eval { set_status( :delayed, 'NameSpace1' ) }
+      event.instance_eval { set_status( :pending, 'NameSpace2' ) }
+      expect( event.status('NameSpace1') ).to eq( :delayed )
+      expect( event.status('NameSpace2') ).to eq( :pending )
+
+      event.instance_eval { set_status( :removed, 'NameSpace1' ) }
+      expect( event.status('NameSpace1') ).to be_nil
+      expect( event.status('NameSpace2') ).to eq( :pending )
+
+      event.instance_eval { set_status( :removed, 'NameSpace2' ) }
+      expect( event.status('NameSpace1') ).to be_nil
+      expect( event.status('NameSpace2') ).to be_nil
     end
   end
 
@@ -77,7 +103,9 @@ describe CfsmEvent do
     end
 
     it 'should fail to cancel an already processed event' do
+      pending
 
+      fail
     end
   end
 

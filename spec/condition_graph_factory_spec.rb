@@ -10,8 +10,6 @@ require 'logger'
 
 module ConditionOptimisation
   describe 'evaluate multiple graphs' do
-    let(:log) { Logger.new( 'condition_graph_factory.txt' ).tap { |l| l.level = Logger::DEBUG } }
-
     subject( :condition_graph_factory ) { ConditionGraphFactory.new }
 
     it 'should correctly optimise' do
@@ -21,7 +19,7 @@ module ConditionOptimisation
         |fsm| conditions_sets[ (1..10).to_a.shuffle!.take( rand(2..6) ).sort! ] = "fsm_#{fsm.to_s}".to_sym
       end
 
-      log.debug conditions_sets.inspect
+      CFSM.logger.debug conditions_sets.inspect
 
       graph = condition_graph_factory.build( conditions_sets )
 

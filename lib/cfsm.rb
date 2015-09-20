@@ -2,9 +2,12 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
+require 'logger'
+
 require 'cfsm_classes/event_processor'
 
 class CFSM
+
   # Create the FSM.
   def initialize( name = nil )
     processor = @@event_processors[ self.class.namespace ]
@@ -144,6 +147,12 @@ class CFSM
     "<name = #{ out }, state = #{state}>"
   end
 
+  public
+
+  def self.logger
+    @@logger
+  end
+
   private
 
   # This holds for each namespace an EventProcessor that does the heavy lifting.  The user
@@ -151,6 +160,9 @@ class CFSM
   # groups of FSMs into a module.  Each module has its own event_processor.  The following
   # hash maps from the module onto the individual event_processor.
   @@event_processors = {}
+
+  # Provide a logger to be used throughout the system.
+  @@logger = Logger.new( File.new('cfsm.log', 'w') )
 
   # Set the state - used by EventProcessor.  Use fsm.instance_exec( state ) { |s| set_state(s) } for
   # the event processor to set the state.

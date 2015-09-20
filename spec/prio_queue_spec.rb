@@ -103,7 +103,7 @@ module CfsmClasses
         result = queue.inspect.split("\n")[1..-1]
 
         (0..2).each do |i|
-          expect( result[i] ).to eq( "{ test_event: prio = #{2-i}, status = created, data = {:element=>#{2-i}} }")
+          expect( result[i] ).to eq( "{ test_event: prio = #{2-i}, status = nil, data = {:element=>#{2-i}} }")
         end
       end
 

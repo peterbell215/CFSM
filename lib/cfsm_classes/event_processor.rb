@@ -187,7 +187,7 @@ module CfsmClasses
     # Used in the context of CFSM.reset to close down this event_class processor in a clean manner.  Should
     # only be used with RSpec when running a new set of state machine tests.
     def reset
-      @delayed_event_hash.each_key { |event| self.cancel( event ) } if @delayed_event_hash
+      @delayed_event_hash.each_key { |event| self.remove( event ) } if @delayed_event_hash
       @delayed_event_mutex = nil
 
       @thread.kill if @thread.is_a? Thread
@@ -244,8 +244,10 @@ module CfsmClasses
     # @param [CfsmEvent] event
     # @return [true,false] whether the event_class was still around to be cancelled.
     def cancel( event )
+      CFSM.logger.info( "#{namespace.to_s}: cancelling event #{event.inspect}" )
       case event.status
         when :delayed
+          CFSM.logger.info( "#{namespace.to_s}: cancelling delayed event #{event.inspect}" )
           @delayed_event_mutex.synchronize do
             if ( thread = @delayed_event_hash.delete(event) )
               thread.kill
@@ -254,11 +256,19 @@ module CfsmClasses
             end
           end
         when :pending
+          CFSM.logger.info( "#{namespace.to_s}: cancelling pending event #{event.inspect}" )
           set_event_status(event, :cancelled)
           return @event_queue.remove( event )
+        else
+          CFSM.logger.info( "#{namespace.to_s}: cancelling default event #{event.inspect}" )
+          return set_event_status(event, :cancelled)
       end
     end
 
+    def remove( event )
+      cancel( event )
+      set_event_status(event, :removed)
+    end
     # Normally, we shut the parser down once we have evaluated all state machine descriptions.  If we are running
     # RSpec then we may need to restart it.
     def self.restart_parser
@@ -371,8 +381,11 @@ HEREDOC
 
     # The status is something that should only be set by EventProcessor.  Therefore, it is a private method
     # on CfsmEvent.  This helper function allows us to set the status.
+    # @param [Event] event whose status needs setting
+    # @param [String] namespace the namespace in which the event is being set
+    # @param [Symbol] status the new status
     def set_event_status( event, status )
-      event.instance_eval { @status = status }
+      event.instance_exec( namespace ) { |namespace| set_status(status, namespace) }
     end
 
     # This private method returns the status of the event processor's thread as a string.

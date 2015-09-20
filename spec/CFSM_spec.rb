@@ -3,14 +3,11 @@
 # Licensed under MIT.  See License file in top level directory.
 
 require 'rspec'
-require 'logger'
 
 require 'cfsm'
 require 'cfsm_event'
 
 describe CFSM do
-  let!(:log) { Logger.new( File.new('cfsm_spec.log', 'w') ).tap { |l| l.level = Logger::DEBUG } }
-
   # Reset the CFSM system each time we start an RSpec so we can define an FSM specific to the test
   before(:each) do
     CFSM.reset
@@ -45,7 +42,7 @@ describe CFSM do
 
     describe '#initialize' do
       it 'should create the state machines with the correct names' do
-        expect( test_fsm_a.name ).to eq( "CFSM_spec.rb:41:in `new'" )
+        expect( test_fsm_a.name ).to match( /CFSM\_spec\.rb\:\d+\:in \`new\'/ )
         expect( test_fsm_b1.name ).to eq( :test_fsm_b1 )
         expect( test_fsm_b2.name ).to eq( :test_fsm_b2 )
         expect( test_fsm_c.name ).to eq( 'test_fsm_c' )
@@ -54,6 +51,8 @@ describe CFSM do
 
     describe '::reset' do
       it 'should allow the state machine system to be reset.' do
+        CFSM.logger.level = Logger::DEBUG
+
         expect( test_fsm_a.state ).to eq( :a )
 
         event = CfsmEvent.new(:event1, :delay => 2 )
@@ -65,9 +64,9 @@ describe CFSM do
         CFSM.reset
 
         # Having killed the CFSMs, the queues should have been emptied.  Therefore,
-        # *event* should always remain in the *delayed* status.
+        # *event* should always return to the *created* status.
         sleep( 2 )
-        expect( event.status ).to eq( :cancelled )
+        expect( event.status ).to be_nil
 
         # Check that the various state machines have disappeared from the CFSM system
         expect { TestFSM_A.new }.to raise_error( NameError )
@@ -111,7 +110,7 @@ describe CFSM do
 
     describe '#inspect' do
       it 'should convert to a string the internal state correctly' do
-        expect( test_fsm_a.inspect ).to eq( "<name = \"CFSM_spec.rb:41:in `new'\", state = a>" )
+        expect( test_fsm_a.inspect ).to match( /<name = \"CFSM_spec.rb:\d+:in `new'\", state = a>/ )
         expect( test_fsm_b1.inspect ).to eq( '<name = :test_fsm_b1, state = d>' )
         expect( test_fsm_b2.inspect ).to eq( '<name = :test_fsm_b2, state = d>' )
         expect( test_fsm_c.inspect ).to eq( '<name = "test_fsm_c", state = a>' )
@@ -127,7 +126,7 @@ Thread status: not started
 Condition graph: N/A
 Current queue: uninitialised
 Status of each FSM:
-{TestFSM_A=>[<name = "CFSM_spec.rb:41:in `new'", state = a>]}
+{TestFSM_A=>[<name = "CFSM_spec.rb:38:in `new'", state = a>]}
 **************************
 Namespace: TestModuleB
 Thread status: not started
@@ -232,14 +231,15 @@ HEREDOC
           on :event1, :transition => :b
         end
 
-        def initialize( initial_state )
-          super()
+        def set_initial_state( initial_state )
           self.instance_exec( initial_state ) { |s| set_state(s) }
         end
       end
 
-      fsm_0 = TestFSM.new( :a )
-      fsm_1 = TestFSM.new( :c )
+      fsm_0 = TestFSM.new
+      fsm_0.set_initial_state( :a )
+      fsm_1 = TestFSM.new
+      fsm_1.set_initial_state( :c )
 
       CFSM.start :sync => true
       CFSM.post( CfsmEvent.new(:event1) )

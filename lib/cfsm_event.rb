@@ -34,17 +34,29 @@ class CfsmEvent
     @src = caller(1, 1)[0]
     @prio = opts[ :prio ] || 0
     @delay = opts[ :delay ] || 0
-    # TODO: status needs to be stored on a per namespace basis.
-    @status = :created
 
     CFSM.post( self ) if opts[:autopost]
 
     self
   end
 
+  # This returns the status of the event.
+  #
+  # Because an event may be posted to multiple queues at the same time, the event status is held
+  # per CFSM namespace.  Once posted, the valid statuses are:
+  # o 'nil' when the event has not yet been posted to this CFSM namespace.
+  # o _delayed_ if the event has been posted to become active in the future
+  # o _pending_ if the event can be processed, but some condition of the event is not yet valid.
+  # o _processed_ once the event has been processed in the said namespace.
+  #
+  # @param [String] namespace the namespace in which we are querying the status.  IF not specified, then returned or the Global namespace
+  # @return [Symobol,nil] the status. If the event has not yet been posted to the namespace, then `nil`
+  def status( namespace = 'Global' )
+    @status.is_a?(Hash) ? @status[namespace] : @status
+  end
+
   # @!attribute [r] status
   #   @return [:created, :delayed, :pending, :processed] status of the event within its lifecycle
-  attr_reader :status
   attr_reader :src
   attr_reader :event_class
   attr_reader :prio
@@ -52,13 +64,33 @@ class CfsmEvent
   attr_reader :data
 
   def inspect
-    "{ #{ self.event_class.to_s }: prio = #{self.prio.to_s}, status = #{self.status.to_s}, data = #{ self.data.inspect } }"
+    "{ #{ self.event_class.to_s }: prio = #{self.prio.to_s}, status = #{self.status ? self.status.to_s : 'nil'}, data = #{ self.data.inspect } }"
   end
 
   private
 
-  def status=(s)
-    @status = s
-    puts "#{event_class.to_s} status = #{@status}"
+  # This is a private method to allow `event_processor` to set the status.  The same event can be in multiple
+  # namespaces and can therefore have different statuses for each namespace.  Initially, when an event is created,
+  # it is has an undefined status and nil is returned.  Once the event has been posted to a namespace, then the status
+  # values are stored in a hash to allow efficient mapping of namespace to status.
+  #
+  # Namespaces can also be destroyed.  This should really only be used for testing.  In this case, the event
+  # will be removed from the relevant queue, and the queue destroyed.  We therefore, also remove the namespace
+  # from the hash.
+  #
+  # @api private
+  # @param [Symbol] status is the current status of the event
+  # @param [String] namespace is the namespace in which it applies.  If omitted, the default is 'Global'
+  def set_status(status, namespace = 'Global' )
+    if @status.is_a?(Hash)
+      if status==:removed then
+        @status.delete(namespace)
+        @status = nil if @status.empty?
+      else
+        @status[namespace] = status
+      end
+    else
+      @status = { namespace => status } unless status == :removed
+    end
   end
 end
