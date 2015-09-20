@@ -79,6 +79,14 @@ module CfsmClasses
       end
     end
 
+    describe '#pop_each' do
+      it 'should do something' do
+        pending
+
+        fail
+      end
+    end
+
     describe '#peek_each' do
       it 'should yield the elements in the correct order' do
         data = (0..10).to_a.shuffle

@@ -187,11 +187,14 @@ module CfsmClasses
     # Used in the context of CFSM.reset to close down this event_class processor in a clean manner.  Should
     # only be used with RSpec when running a new set of state machine tests.
     def reset
-      @delayed_event_hash.each_key { |event| self.remove( event ) } if @delayed_event_hash
+      @delayed_event_hash.each_key { |event| self.cancel( event ) } if @delayed_event_hash
       @delayed_event_mutex = nil
 
       @thread.kill if @thread.is_a? Thread
       @thread = nil
+
+      # Remove all pending events from the queue.
+      @event_queue.pop_each { |event| self.cancel( event ) } if @event_queue
 
       # This unloads any classes derived from CFSM.  It does this by looking at all currently loaded classes,
       # and checking if they are derived from CFSM.  IF they are, we split them into the module reference and
@@ -218,6 +221,8 @@ module CfsmClasses
         if event.delay > 0
           # TODO rather than have one thread per delayed event_class, we should have a sorted queue with a single thread
           @delayed_event_hash[ event ] = Thread.new do
+            # TODO: we cant guarantee that this piece of code executes before the main thread moves on.  We need a mechanism
+            # that stops the main thread continuing until the sleep has executed.
             set_event_status(event, :delayed )
             # wait for the delay to expire in the thread.
             sleep event.delay
@@ -245,15 +250,15 @@ module CfsmClasses
     # @return [true,false] whether the event_class was still around to be cancelled.
     def cancel( event )
       CFSM.logger.info( "#{namespace.to_s}: cancelling event #{event.inspect}" )
-      case event.status
+
+      case event.status( namespace )
         when :delayed
           CFSM.logger.info( "#{namespace.to_s}: cancelling delayed event #{event.inspect}" )
           @delayed_event_mutex.synchronize do
-            if ( thread = @delayed_event_hash.delete(event) )
-              thread.kill
-              set_event_status(event, :cancelled)
-              return true
-            end
+            thread = @delayed_event_hash.delete(event)
+            thread.kill if ( thread.is_a?(Thread) )
+            set_event_status(event, :cancelled)
+            return true
           end
         when :pending
           CFSM.logger.info( "#{namespace.to_s}: cancelling pending event #{event.inspect}" )
@@ -265,10 +270,6 @@ module CfsmClasses
       end
     end
 
-    def remove( event )
-      cancel( event )
-      set_event_status(event, :removed)
-    end
     # Normally, we shut the parser down once we have evaluated all state machine descriptions.  If we are running
     # RSpec then we may need to restart it.
     def self.restart_parser

@@ -59,6 +59,13 @@ module CfsmClasses
       end
     end
 
+    def pop_each
+      while self.size>0
+        event = pop
+        yield event
+      end
+    end
+
     def peek_each
       self.to_a.each { |e| yield e }
     end

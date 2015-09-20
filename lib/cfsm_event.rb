@@ -44,7 +44,7 @@ class CfsmEvent
   #
   # Because an event may be posted to multiple queues at the same time, the event status is held
   # per CFSM namespace.  Once posted, the valid statuses are:
-  # o 'nil' when the event has not yet been posted to this CFSM namespace.
+  # o 'nil' when the event has not yet been posted to this CFSM namespace or been cancelled in the namespace
   # o _delayed_ if the event has been posted to become active in the future
   # o _pending_ if the event can be processed, but some condition of the event is not yet valid.
   # o _processed_ once the event has been processed in the said namespace.
@@ -64,7 +64,7 @@ class CfsmEvent
   attr_reader :data
 
   def inspect
-    "{ #{ self.event_class.to_s }: prio = #{self.prio.to_s}, status = #{self.status ? self.status.to_s : 'nil'}, data = #{ self.data.inspect } }"
+    "{ #{ self.event_class.to_s }: prio = #{self.prio.to_s}, status = #{@status ? @status.to_s : 'nil'}, data = #{ self.data.inspect } }"
   end
 
   private
@@ -83,14 +83,15 @@ class CfsmEvent
   # @param [String] namespace is the namespace in which it applies.  If omitted, the default is 'Global'
   def set_status(status, namespace = 'Global' )
     if @status.is_a?(Hash)
-      if status==:removed then
+      if status==:cancelled
         @status.delete(namespace)
         @status = nil if @status.empty?
       else
         @status[namespace] = status
       end
     else
-      @status = { namespace => status } unless status == :removed
+      @status = { namespace => status } unless status == :cancelled
     end
+    @status
   end
 end

@@ -55,16 +55,19 @@ describe CFSM do
 
         expect( test_fsm_a.state ).to eq( :a )
 
-        event = CfsmEvent.new(:event1, :delay => 2 )
+        event = CfsmEvent.new(:event1, :delay => 3600 )
 
         CFSM.start :sync => false
         CFSM.post( event )
+
+        # TODO this sleep is to make sure the processing of the delayed events has completed.  However, we need a better mechanism.
+        sleep( 10 )
 
         # At this point the CFSM is running.  Now reset.
         CFSM.reset
 
         # Having killed the CFSMs, the queues should have been emptied.  Therefore,
-        # *event* should always return to the *created* status.
+        # *event* should always return to the *nil* status.
         sleep( 2 )
         expect( event.status ).to be_nil
 

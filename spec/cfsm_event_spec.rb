@@ -53,11 +53,11 @@ describe CfsmEvent do
       expect( event.status('NameSpace1') ).to eq( :delayed )
       expect( event.status('NameSpace2') ).to eq( :pending )
 
-      event.instance_eval { set_status( :removed, 'NameSpace1' ) }
+      event.instance_eval { set_status( :cancelled, 'NameSpace1' ) }
       expect( event.status('NameSpace1') ).to be_nil
       expect( event.status('NameSpace2') ).to eq( :pending )
 
-      event.instance_eval { set_status( :removed, 'NameSpace2' ) }
+      event.instance_eval { set_status( :cancelled, 'NameSpace2' ) }
       expect( event.status('NameSpace1') ).to be_nil
       expect( event.status('NameSpace2') ).to be_nil
     end
