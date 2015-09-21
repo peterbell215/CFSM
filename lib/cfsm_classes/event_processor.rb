@@ -74,8 +74,8 @@ module CfsmClasses
     #
     # @param [Class] klass is the class of FSMs for which this event_class is being defined
     # @param [Symbol] state
-    # @param [Object] other_params
-    # @param [Object] exec_block
+    # @param [Hash] other_params this is here for future expansion but is not used at the moment.
+    # @param [Proc] exec_block this provides the code that actually defines the behavious in terms of events and how to react to them
     def register_events( klass, state, other_params, &exec_block)
       @klass_being_defined = klass
       @state_being_defined = state
@@ -107,10 +107,10 @@ module CfsmClasses
 
       # Create a parse tree with at least a state check.
       fsm_check = ConditionParser::EventCondition::fsm_state_checker(@klass_being_defined, @state_being_defined)
-      if_tree = unless parameters[:if].nil?
-                  { :and => [ fsm_check, @@parser.process_if(parameters[:if], event_class, @klass_being_defined) ] }
-                else
+      if_tree = if parameters[:if].nil?
                   fsm_check
+                else
+                  {:and => [fsm_check, @@parser.process_if(parameters[:if], event_class, @klass_being_defined)]}
                 end
 
       # Create the transition object
@@ -221,8 +221,6 @@ module CfsmClasses
         if event.delay > 0
           # TODO rather than have one thread per delayed event_class, we should have a sorted queue with a single thread
           @delayed_event_hash[ event ] = Thread.new do
-            # TODO: we cant guarantee that this piece of code executes before the main thread moves on.  We need a mechanism
-            # that stops the main thread continuing until the sleep has executed.
             set_event_status(event, :delayed )
             # wait for the delay to expire in the thread.
             sleep event.delay
@@ -235,6 +233,8 @@ module CfsmClasses
               end
             end
           end
+          # tell the delayed thread to run so that it sets its status and gets to the sleep.
+          Thread.pass
         else
           set_event_status(event, :pending )
           @event_queue.push event

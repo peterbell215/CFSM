@@ -60,9 +60,6 @@ describe CFSM do
         CFSM.start :sync => false
         CFSM.post( event )
 
-        # TODO this sleep is to make sure the processing of the delayed events has completed.  However, we need a better mechanism.
-        sleep( 10 )
-
         # At this point the CFSM is running.  Now reset.
         CFSM.reset
 
