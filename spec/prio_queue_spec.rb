@@ -79,27 +79,21 @@ module CfsmClasses
       end
     end
 
-    describe '#pop_each' do
-      it 'should do something' do
-        pending
+    [ :pop_each, :peek_each ].each do |method|
+      describe "##{method.to_s}" do
+        it 'should yield the elements in the correct order' do
+          data = (0..10).to_a.shuffle
+          prio = (0..10).to_a.reverse!
 
-        fail
-      end
-    end
+          (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :prio => prio[i], :data => { :element => data[i] } ) }
 
-    describe '#peek_each' do
-      it 'should yield the elements in the correct order' do
-        data = (0..10).to_a.shuffle
-        prio = (0..10).to_a.reverse!
+          index = 0
 
-        (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :prio => prio[i], :data => { :element => data[i] } ) }
-
-        index = 0
-
-        queue.peek_each do |item|
-          expect(item.element).to eq(data[index])
-          expect(item.prio).to eq(prio[index])
-          index += 1
+          queue.send( method ) do |item|
+            expect(item.element).to eq(data[index])
+            expect(item.prio).to eq(prio[index])
+            index += 1
+          end
         end
       end
     end

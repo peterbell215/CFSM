@@ -234,7 +234,9 @@ module CfsmClasses
             end
           end
           # tell the delayed thread to run so that it sets its status and gets to the sleep.
-          Thread.pass
+          while @delayed_event_hash[ event ].status!='sleep'
+            Thread.pass
+          end
         else
           set_event_status(event, :pending )
           @event_queue.push event
@@ -253,7 +255,6 @@ module CfsmClasses
 
       case event.status( namespace )
         when :delayed
-          CFSM.logger.info( "#{namespace.to_s}: cancelling delayed event #{event.inspect}" )
           @delayed_event_mutex.synchronize do
             thread = @delayed_event_hash.delete(event)
             thread.kill if ( thread.is_a?(Thread) )
@@ -261,7 +262,6 @@ module CfsmClasses
             return true
           end
         when :pending
-          CFSM.logger.info( "#{namespace.to_s}: cancelling pending event #{event.inspect}" )
           set_event_status(event, :cancelled)
           return @event_queue.remove( event )
         else

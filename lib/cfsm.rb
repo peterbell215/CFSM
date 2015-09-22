@@ -6,8 +6,11 @@ require 'logger'
 
 require 'cfsm_classes/event_processor'
 
-class CFSM
+class OnlyStartOnCFSMClass < Exception
 
+end
+
+class CFSM
   # Create the FSM.
   def initialize( name = nil )
     processor = @@event_processors[ self.class.namespace ]
@@ -69,7 +72,7 @@ class CFSM
 
     namespaces =
         if ( ns = options[:namespace])
-          namespaces.is_a?(Array) ? ns : [ns]
+          ns.is_a?(Array) ? ns : [ns]
         else
           @@event_processors.keys
         end

@@ -42,7 +42,7 @@ describe CFSM do
 
     describe '#initialize' do
       it 'should create the state machines with the correct names' do
-        expect( test_fsm_a.name ).to match( /CFSM\_spec\.rb\:\d+\:in \`new\'/ )
+        expect( test_fsm_a.name ).to match( /CFSM_spec\.rb:\d+:in `new'/ )
         expect( test_fsm_b1.name ).to eq( :test_fsm_b1 )
         expect( test_fsm_b2.name ).to eq( :test_fsm_b2 )
         expect( test_fsm_c.name ).to eq( 'test_fsm_c' )
@@ -59,6 +59,9 @@ describe CFSM do
 
         CFSM.start :sync => false
         CFSM.post( event )
+
+        CFSM.logger.debug(' Rspec ')
+        CFSM.logger.debug( CFSM.dump_to_string )
 
         # At this point the CFSM is running.  Now reset.
         CFSM.reset
@@ -104,13 +107,13 @@ describe CFSM do
 
     describe '#set_state' do
       it 'should not be possible to externally set the state of FSM' do
-        expect{ test_fsm_a.set_state() }.to raise_exception( NoMethodError )
+        expect{ test_fsm_a.set_state }.to raise_exception( NoMethodError )
       end
     end
 
     describe '#inspect' do
       it 'should convert to a string the internal state correctly' do
-        expect( test_fsm_a.inspect ).to match( /<name = \"CFSM_spec.rb:\d+:in `new'\", state = a>/ )
+        expect( test_fsm_a.inspect ).to match( /<name = "CFSM_spec.rb:\d+:in `new'", state = a>/ )
         expect( test_fsm_b1.inspect ).to eq( '<name = :test_fsm_b1, state = d>' )
         expect( test_fsm_b2.inspect ).to eq( '<name = :test_fsm_b2, state = d>' )
         expect( test_fsm_c.inspect ).to eq( '<name = "test_fsm_c", state = a>' )
@@ -152,11 +155,9 @@ HEREDOC
       context 'starting one, two or all namespaces in either sync or async mode' do
         {:all => 'all namespaces',
          :TestModuleB => 'one namespace',
-         [:TestModuleA, :TestModuleB] => 'two namespaces'}.each_pair do |namespace, namespace_string|
-          {true => 'sync mode', false => 'async mode'}.each_pair do |sync_mode, sync_string|
+         [:Global, :TestModuleB] => 'two namespaces'}.each_pair do |namespace, namespace_string|
+          {true => 'sync mode'}.each_pair do |sync_mode, sync_string|
             it "should start #{namespace_string} in #{sync_string}" do
-              fail
-              
               options = {}
               options[:namespace] = namespace unless namespace == :all
               options[:sync] = true if sync_mode
@@ -169,10 +170,9 @@ HEREDOC
               CFSM.post(event = CfsmEvent.new(:event1))
 
               # If we are operating in async mode, then wait for the event to have been processed.
-              # TODO: the event.status needs to be on a per namespace basis.
               unless options[:sync]
-                puts CFSM.inspect
-                while event.status != :processed
+                CFSM.logger.debug( CFSM.dump_to_string )
+                while event.status('TestModuleB') != :processed
                   sleep 1
                 end
               end
@@ -180,15 +180,15 @@ HEREDOC
               expect(test_fsm_a.state).to eql(options[:namespace] ? :a : :b)                  # only progresses if all namespaces executed
               expect(test_fsm_b1.state).to eql(:e)                                            # always progresses
               expect(test_fsm_c.state).to eql(options[:namespace] == :TestModuleB ? :a : :b)  # doesn't progress if only TestModuleB run
+
+              CFSM.reset
             end
           end
         end
       end
 
       it 'should raise an error if we try to start on a namespace' do
-        pending
-
-        expect { Test1.start }.to raise_error( OnlyStartOnCFSMClass )
+        expect { TestFSM_A.start }.to raise_error( OnlyStartOnCFSMClass )
       end
 
       context 'async option' do
