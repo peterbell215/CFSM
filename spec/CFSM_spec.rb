@@ -156,7 +156,7 @@ HEREDOC
         {:all => 'all namespaces',
          :TestModuleB => 'one namespace',
          [:Global, :TestModuleB] => 'two namespaces'}.each_pair do |namespace, namespace_string|
-          {true => 'sync mode'}.each_pair do |sync_mode, sync_string|
+          { true => 'sync mode' }.each_pair do |sync_mode, sync_string|
             it "should start #{namespace_string} in #{sync_string}" do
               options = {}
               options[:namespace] = namespace unless namespace == :all
@@ -177,9 +177,9 @@ HEREDOC
                 end
               end
 
-              expect(test_fsm_a.state).to eql(options[:namespace] ? :a : :b)                  # only progresses if all namespaces executed
+              expect(test_fsm_a.state).to eql(options[:namespace]==:TestModuleB ? :a : :b)    # only progresses if all namespaces executed
               expect(test_fsm_b1.state).to eql(:e)                                            # always progresses
-              expect(test_fsm_c.state).to eql(options[:namespace] == :TestModuleB ? :a : :b)  # doesn't progress if only TestModuleB run
+              expect(test_fsm_c.state).to eql(options[:namespace].nil? ? :b : :a )           # doesn't progress if only TestModuleB run
 
               CFSM.reset
             end

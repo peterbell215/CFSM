@@ -23,12 +23,8 @@ module ConditionOptimisation
 
       graph = condition_graph_factory.build( conditions_sets )
 
-      # See what we have done.
-      log.debug graph.inspect
-
       # Now test that for every condition set we get the correct
       conditions_sets.each_pair do |condition_set, transition|
-        log.debug "#{condition_set.inspect} => #{transition}"
         expect( graph.execute(condition_set,
                              ->(condition_set, condition, fsms) { condition_set.member?(condition) ? fsms : nil },
                              ->(transition, included_fsms) { [transition] } ) ).to include( transition )
