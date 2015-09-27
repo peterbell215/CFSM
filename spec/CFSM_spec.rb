@@ -153,11 +153,8 @@ HEREDOC
 
     describe '::start' do
       context 'starting one, two or all namespaces in either sync or async mode' do
-        {:all => 'all namespaces' #,
-#         :TestModuleB => 'one namespace',
-#         [:Global, :TestModuleB] => 'two namespaces'}
-        }.each_pair do |namespace, namespace_string|
-          { false => 'async mode' }.each_pair do |sync_mode, sync_string|
+        { :all => 'all namespaces', :TestModuleB => 'one namespace', [:Global, :TestModuleB] => 'two namespaces' }.each_pair do |namespace, namespace_string|
+          { false => 'async mode', true => 'sync mode' }.each_pair do |sync_mode, sync_string|
             it "should start #{namespace_string} in #{sync_string}" do
               CFSM.logger.debug "testing start #{namespace_string} in #{sync_string}"
               options = {}
