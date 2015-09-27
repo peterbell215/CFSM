@@ -204,15 +204,15 @@ HEREDOC
 
       context 'async option' do
         it 'should create a separate thread when async' do
-          pending
+          CFSM.start
 
-          fail
+          expect( TestFSM_A.thread_status ).to eq('running').or eq("sleep")
         end
 
         it 'should not create a separate thread when async false' do
-          pending
+          CFSM.start :sync => true
 
-          fail
+          expect( TestFSM_A.thread_status ).to eq('sync mode')
         end
       end
     end

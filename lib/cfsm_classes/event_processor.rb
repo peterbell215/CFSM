@@ -334,6 +334,19 @@ Status of each FSM:
 HEREDOC
     end
 
+    # This method returns the status of the event processor's thread as a string.
+    #
+    # @return [String] status of the thread
+    def thread_status
+      if @thread.nil?
+        'not started'
+      elsif @thread==true
+        'sync mode'
+      else
+        @thread.status
+      end
+    end
+
     private
 
     # Take all the condition trees associated with this EventProcessor and populate the @conditions_cache
@@ -392,19 +405,6 @@ HEREDOC
     # @param [Symbol] status the new status
     def set_event_status( event, status )
       event.instance_exec( namespace ) { |namespace| set_status(status, namespace) }
-    end
-
-    # This private method returns the status of the event processor's thread as a string.
-    #
-    # @return [String] status of the thread
-    def thread_status
-      if @thread.nil?
-        'not started'
-      elsif @thread==true
-        'sync mode'
-      else
-        @thread.status
-      end
     end
 
     # Private method to assemble a string showing state of each CFSM within the namespace.

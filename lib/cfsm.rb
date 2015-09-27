@@ -142,10 +142,15 @@ class CFSM
     "<name = #{ name_as_string }, state = #{state}>"
   end
 
-  public
-
+  # We provide a logger to track how the system is performing.  This is really just a frontend for the Logger
+  # class.
   def self.logger
     @@logger
+  end
+
+  # This function allows the thread status for a specific namespace to be retrieved.
+  def self.thread_status
+    @@event_processors[ self.namespace ].thread_status
   end
 
   private

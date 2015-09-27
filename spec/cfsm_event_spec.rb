@@ -70,6 +70,7 @@ describe CfsmEvent do
       class TestFSM < CFSM
         state :a do
           on :delayed_event, :transition => :b
+          on :event, :transition => :c
         end
 
         state :b
@@ -103,9 +104,18 @@ describe CfsmEvent do
     end
 
     it 'should fail to cancel an already processed event' do
-      pending
+      test_fsm = TestFSM.new
+      CFSM.start
 
-      fail
+      expect( test_fsm.state ).to eql( :a )
+
+      test_event = CfsmEvent.new( :event )
+      CFSM.post( test_event )
+
+      sleep( 0.05 )
+      expect( test_fsm.state ).to eql( :c )
+
+      expect( CFSM.cancel( test_event ) ).to be_falsey
     end
   end
 
