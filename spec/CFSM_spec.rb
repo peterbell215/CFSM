@@ -318,7 +318,6 @@ HEREDOC
         class TestDo < CFSM
           state :a do
             on :event, :transition => :b do |event|
-              CFSM.logger.info 'In on proc'
               # We can't use expectation matchers within this method.  They cause the system to timeout.  Better
               # store the results in a hash and check them later.
               @result = { :name => self.name, :event => event, :state => self.state }
@@ -329,6 +328,7 @@ HEREDOC
 
           def initialize( fail_proc )
             super( :test_do )
+            @result = {}
             @fail_proc = fail_proc
           end
 
@@ -336,21 +336,17 @@ HEREDOC
         end
       end
 
+      let!(:event) { CfsmEvent.new( :event ) }
+
       it 'should transition to new state if do loop returns true' do
         fsm = TestDo.new( true )
-        event = CfsmEvent.new( :event )
         CFSM.start
         CFSM.post( event )
 
-        i = 0
-        while event.status != :processed
+        (0..10).each do |i|
+          break if event.status == :processed
           sleep 1
-          i = i + 1
-          if i > 10
-            CFSM.logger.info "Timing out async test"
-            CFSM.logger.info CFSM.dump_to_string
-            fail 'Timeout on processing events.'
-          end
+          fail 'Timeout on processing events.' if i == 10
         end
 
         expect( fsm.result[:name] ).to eq( :test_do )
