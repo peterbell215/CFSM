@@ -27,6 +27,49 @@ module CfsmClasses
       end
     end
 
+    context 'multi-threading' do
+      it 'should allow one process to push the elements and a second to pull' do
+        t= Thread.new do
+          (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :data => { :element => i } ) }
+        end
+        t.join
+
+        (0..10).each { |i| expect( queue.pop.element ).to eq( i ) }
+      end
+
+      it 'should allow one process to wait until an element is available and then pull' do
+        t= Thread.new do
+          (0..10).each { |i| expect( queue.pop.element ).to eq( i ) }
+        end
+
+        while t.status != 'sleep' do
+          sleep(1)
+        end
+
+        (0..10).each { |i| queue.push( CfsmEvent.new :test_event, :data => { :element => i } ) }
+      end
+
+      it 'should allow random async pushes and pulls' do
+        r = Random.new
+
+        t= Thread.new do
+          (0..50).each do |i|
+            queue.push(CfsmEvent.new :test_event, :data => {:element => i})
+            sleep r.rand( 3.0 )
+          end
+        end
+
+        (0..50).each do |i|
+          expect(queue.pop.element).to eq(i)
+          sleep r.rand( 3.0 )
+        end
+
+        expect( t.join( 6.0 ) ).not_to be_nil
+      end
+
+
+    end
+
     describe '#size' do
       it 'should return zero for an empty queue' do
         expect( queue.size ).to eq(0)

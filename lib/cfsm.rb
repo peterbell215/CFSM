@@ -139,15 +139,7 @@ class CFSM
   #
   # @return [String]
   def inspect
-    out = case name
-      when String
-        '"' << name << '"'
-      when Symbol
-        ':'<< name.to_s
-      else
-        name.to_s
-    end
-    "<name = #{ out }, state = #{state}>"
+    "<name = #{ name_as_string }, state = #{state}>"
   end
 
   public
@@ -173,6 +165,18 @@ class CFSM
   # @api private
   # @param [Symbol] s new state
   def set_state( s )
+    CFSM.logger.info "#{name_as_string} in #{self.class.namespace} transitioning to state #{s.to_s}"
     @state = s
+  end
+
+  def name_as_string
+    case name
+      when String
+        '"' << name << '"'
+      when Symbol
+        ':'<< name.to_s
+      else
+        name.to_s
+    end
   end
 end

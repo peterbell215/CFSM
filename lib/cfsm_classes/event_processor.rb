@@ -173,13 +173,13 @@ module CfsmClasses
       # In order to avoid race conditions on the delayed_event_hash we also declare a mutex.
       @delayed_event_mutex = Mutex.new
 
-      # If running in sync mode, we set @thread to true to indiciate the EventProcessor has been set to
+      # If running in sync mode, we set @thread to true to indicate the EventProcessor has been set to
       # run.  If we are running in async mode then create a thread with an infinite loop to process incoming events.
       @thread = @options[:sync] || Thread.new do
         loop do
           @status = :waiting_for_event
-          @event_queue.wait_for_new_event
           process_event
+          @event_queue.wait_for_new_event
         end
       end
     end
@@ -237,9 +237,11 @@ module CfsmClasses
           while @delayed_event_hash[ event ].status!='sleep'
             Thread.pass
           end
+          CFSM.logger.info "Event #{event.inspect} delayed for #{event.delay} seconds in #{namespace}"
         else
           set_event_status(event, :pending )
           @event_queue.push event
+          CFSM.logger.info "Event #{event.inspect} posted to #{namespace}"
         end
         process_event if @thread==true
       end
@@ -281,6 +283,7 @@ module CfsmClasses
     # returns nil to allow the calling method to perform a wait_for_next_event.
     def process_event
       @process_mutex.synchronize do
+        CFSM.logger.info( "#{namespace.to_s}: checking if events can be processed.  Queue holds #{@event_queue.size} event(s)" )
         @status = :process_event
         @event_queue.peek_each do |event|
           # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
@@ -297,6 +300,8 @@ module CfsmClasses
 
           unless transitions.empty?
             @event_queue.remove( event )
+
+            CFSM.logger.info "#{event.inspect} being processed in #{namespace}"
 
             # we have a number of transactions to process, so lets do the state transitions.
             transitions.each do |t|
@@ -321,8 +326,8 @@ module CfsmClasses
 <<HEREDOC
 Namespace: #{self.namespace}
 Thread status: #{ thread_status }
-Condition graph: N/A
-Current queue: #{ @event_queue ? '\n' << @event_queue.inspect : 'uninitialised' }
+Condition graph: #{ @conditions.inspect }
+Current queue: #{ @event_queue ? ("\n" << @event_queue.inspect) : 'uninitialised' }
 Status of each FSM:
 #{cfsm_inspect}
 **************************

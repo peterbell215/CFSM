@@ -153,11 +153,13 @@ HEREDOC
 
     describe '::start' do
       context 'starting one, two or all namespaces in either sync or async mode' do
-        {:all => 'all namespaces',
-         :TestModuleB => 'one namespace',
-         [:Global, :TestModuleB] => 'two namespaces'}.each_pair do |namespace, namespace_string|
-          { true => 'sync mode' }.each_pair do |sync_mode, sync_string|
+        {:all => 'all namespaces' #,
+#         :TestModuleB => 'one namespace',
+#         [:Global, :TestModuleB] => 'two namespaces'}
+        }.each_pair do |namespace, namespace_string|
+          { false => 'async mode' }.each_pair do |sync_mode, sync_string|
             it "should start #{namespace_string} in #{sync_string}" do
+              CFSM.logger.debug "testing start #{namespace_string} in #{sync_string}"
               options = {}
               options[:namespace] = namespace unless namespace == :all
               options[:sync] = true if sync_mode
@@ -172,8 +174,17 @@ HEREDOC
               # If we are operating in async mode, then wait for the event to have been processed.
               unless options[:sync]
                 CFSM.logger.debug( CFSM.dump_to_string )
+
+                i = 0
                 while event.status('TestModuleB') != :processed
                   sleep 1
+                  i = i + 1
+                  if i > 10
+                    CFSM.logger.info "Timing out async test"
+                    CFSM.logger.info CFSM.dump_to_string
+                    fail 'Timeout on processing events.'
+                  end
+
                 end
               end
 
