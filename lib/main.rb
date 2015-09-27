@@ -45,10 +45,7 @@ class NextStopDisplay < CFSM
   end
   
   state :in_stop_zone do
-    on :exitStopBuffer, :transition => :between_stops, :exec => set_next_stop do |event, nxt_state|
-      @nxtStop = event.nxtStop
-      DisplayEvent.new :displayText => "Next Stop:\n#{@nxtStop.name}"
-    end
+    on :exitStopBuffer, :transition => :between_stops, :exec => set_next_stop
   end
   
   # If the same action is shared between transitions, then this can be captured with :exec

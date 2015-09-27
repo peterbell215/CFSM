@@ -305,7 +305,9 @@ module CfsmClasses
 
             # we have a number of transactions to process, so lets do the state transitions.
             transitions.each do |t|
-              if t.transition_proc.nil? || t.transition_proc && t.fsm.instance_exec( t.transition_proc.call )
+              # the second part of the if clause does some magic so that the block is executed in the context of
+              # the FSM and not the event processor.
+              if t.transition_proc.nil? || t.fsm.instance_exec(event, &t.transition_proc)
                 t.fsm.instance_exec( t.new_state ) { |s| set_state(s) }
               end
             end

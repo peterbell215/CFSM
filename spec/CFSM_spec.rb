@@ -184,7 +184,6 @@ HEREDOC
                     CFSM.logger.info CFSM.dump_to_string
                     fail 'Timeout on processing events.'
                   end
-
                 end
               end
 
@@ -195,6 +194,16 @@ HEREDOC
               CFSM.reset
             end
           end
+        end
+      end
+
+      it 'should raise an error if we try to start a namespace that has no FSMs' do
+        class EmptyFSM < CFSM
+          state :a do
+            on :event, :transition => :b
+          end
+
+          expect { CFSM.start }.to raise_error( EmptyCFSMClass )
         end
       end
 
@@ -296,6 +305,58 @@ HEREDOC
         expect( fsm.state ).to eq( :a )
         fsm.test = 1
         CFSM.eval( fsm )
+        expect( fsm.state ).to eq( :b )
+      end
+    end
+  end
+
+  context 'options for ::on' do
+    describe 'local proc' do
+      before(:each) do
+        CFSM.reset
+
+        class TestDo < CFSM
+          state :a do
+            on :event, :transition => :b do |event|
+              CFSM.logger.info 'In on proc'
+              # We can't use expectation matchers within this method.  They cause the system to timeout.  Better
+              # store the results in a hash and check them later.
+              @result = { :name => self.name, :event => event, :state => self.state }
+              # Set the return based on what we are testing.
+              @fail_proc
+            end
+          end
+
+          def initialize( fail_proc )
+            super( :test_do )
+            @fail_proc = fail_proc
+          end
+
+          attr_reader :result
+        end
+      end
+
+      it 'should transition to new state if do loop returns true' do
+        fsm = TestDo.new( true )
+        event = CfsmEvent.new( :event )
+        CFSM.start
+        CFSM.post( event )
+
+        i = 0
+        while event.status != :processed
+          sleep 1
+          i = i + 1
+          if i > 10
+            CFSM.logger.info "Timing out async test"
+            CFSM.logger.info CFSM.dump_to_string
+            fail 'Timeout on processing events.'
+          end
+        end
+
+        expect( fsm.result[:name] ).to eq( :test_do )
+        expect( fsm.result[:event] ).to equal( event )
+        expect( fsm.result[:state] ).to eq( :a )
+
         expect( fsm.state ).to eq( :b )
       end
     end
