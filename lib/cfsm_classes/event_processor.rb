@@ -11,6 +11,8 @@ require 'condition_parser/condition_cache'
 require 'condition_optimisation/condition_graph'
 require 'condition_optimisation/condition_permutations'
 
+class EmptyCFSMClass < Exception; end
+
 module CfsmClasses
   class TooLateToRegisterEvent < Exception; end
 
@@ -76,7 +78,7 @@ module CfsmClasses
     # @param [Symbol] state
     # @param [Hash] other_params this is here for future expansion but is not used at the moment.
     # @param [Proc] exec_block this provides the code that actually defines the behavious in terms of events and how to react to them
-    def register_events( klass, state, other_params, &exec_block)
+    def register_events(klass, state, other_params, &exec_block)
       @klass_being_defined = klass
       @state_being_defined = state
 
@@ -89,6 +91,7 @@ module CfsmClasses
 
       @klass_being_defined = nil
       @state_being_defined = nil
+      @other_params = other_params
     end
 
     # Class method to register that a FSM reacting to an event_class while in a defined state and transitioning to a new state.
@@ -150,7 +153,14 @@ module CfsmClasses
 
     # Creates the queue for this event_class processor.  If the event_class processor is to operate in async mode, also
     # creates the processing thread and starts waiting for events to be queued.
+    # TODO: documentation for this method is not uptodate
     def run( options )
+      # Check that for every defined class in the system, there is at least one instantiated FSM.  If not
+      # raise an exception.
+      @cfsm_initial_state.each_key do |cfsm|
+        raise EmptyCFSMClass, "#{namespace} has no instantiated FSMs" if @cfsms[cfsm].nil?
+      end
+
       @status = :running
 
       @options = options

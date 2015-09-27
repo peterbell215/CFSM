@@ -202,9 +202,9 @@ HEREDOC
           state :a do
             on :event, :transition => :b
           end
-
-          expect { CFSM.start }.to raise_error( EmptyCFSMClass )
         end
+
+        expect { CFSM.start }.to raise_error( EmptyCFSMClass )
       end
 
       it 'should raise an error if we try to start on a namespace' do
@@ -215,7 +215,7 @@ HEREDOC
         it 'should create a separate thread when async' do
           CFSM.start
 
-          expect( TestFSM_A.thread_status ).to eq('running').or eq("sleep")
+          expect( TestFSM_A.thread_status ).to eq('run').or eq("sleep")
         end
 
         it 'should not create a separate thread when async false' do
@@ -317,13 +317,27 @@ HEREDOC
 
         class TestDo < CFSM
           state :a do
-            on :event, :transition => :b do |event|
+            on :event, :transition => :b do |event, next_state|
               # We can't use expectation matchers within this method.  They cause the system to timeout.  Better
               # store the results in a hash and check them later.
               @result = { :name => self.name, :event => event, :state => self.state }
               # Set the return based on what we are testing.
               @fail_proc
             end
+          end
+
+          state :b do
+            on :event, :transition => :c, :exec => :test_transition
+          end
+
+          def set_initial_state( initial_state )
+            self.instance_exec( initial_state ) { |s| set_state(s) }
+          end
+
+          def test_transition(event, next_state)
+            @result = { :name => self.name, :event => event, :state => self.state }
+            # Set the return based on what we are testing.
+            @fail_proc
           end
 
           def initialize( fail_proc )
@@ -338,22 +352,24 @@ HEREDOC
 
       let!(:event) { CfsmEvent.new( :event ) }
 
-      it 'should transition to new state if do loop returns true' do
-        fsm = TestDo.new( true )
-        CFSM.start
-        CFSM.post( event )
+      [false, true].each do |test_case|
+        it "should #{'not ' unless test_case}transition to new state if do loop returns #{test_case.to_s}" do
+          fsm = TestDo.new( test_case )
+          CFSM.start
+          CFSM.post( event )
 
-        (0..10).each do |i|
-          break if event.status == :processed
-          sleep 1
-          fail 'Timeout on processing events.' if i == 10
+          (0..10).each do |i|
+            break if event.status == :processed
+            sleep 1
+            fail 'Timeout on processing events.' if i == 10
+          end
+
+          expect( fsm.result[:name] ).to eq( :test_do )
+          expect( fsm.result[:event] ).to equal( event )
+          expect( fsm.result[:state] ).to eq( :a )
+
+          expect( fsm.state ).to eq( test_case ? :b : :a)
         end
-
-        expect( fsm.result[:name] ).to eq( :test_do )
-        expect( fsm.result[:event] ).to equal( event )
-        expect( fsm.result[:state] ).to eq( :a )
-
-        expect( fsm.state ).to eq( :b )
       end
     end
   end
