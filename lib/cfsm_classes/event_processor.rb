@@ -12,6 +12,7 @@ require 'condition_optimisation/condition_graph'
 require 'condition_optimisation/condition_permutations'
 
 class EmptyCFSMClass < Exception; end
+class BlockAndExecDefined < Exception; end
 
 module CfsmClasses
   class TooLateToRegisterEvent < Exception; end
@@ -117,6 +118,8 @@ module CfsmClasses
                 end
 
       # Create the transition object
+      raise BlockAndExecDefined if proc && parameters[:exec]
+      proc ||= parameters[:exec]
       transition = CfsmClasses::Transition.new( @klass_being_defined, parameters[:transition], proc )
 
       # Store the event_class.
@@ -317,9 +320,18 @@ module CfsmClasses
             transitions.each do |t|
               # the second part of the if clause does some magic so that the block is executed in the context of
               # the FSM and not the event processor.
-              if t.transition_proc.nil? || t.fsm.instance_exec(event, &t.transition_proc)
-                t.fsm.instance_exec( t.new_state ) { |s| set_state(s) }
-              end
+              do_transition =
+                  case t.transition_proc
+                    when Proc
+                      t.fsm.instance_exec(event, &t.transition_proc)
+                    when Symbol
+                      t.fsm.send(t.transition_proc, event, t.new_state)
+                    when nil
+                      true
+                    else
+                      false
+                  end
+              t.fsm.instance_exec( t.new_state ) { |s| set_state(s) } if do_transition
             end
 
             set_event_status( event, :processed )

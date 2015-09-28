@@ -3,6 +3,7 @@
 # Licensed under MIT.  See License file in top level directory.
 
 require 'rspec'
+require 'rspec/wait'
 
 require 'cfsm'
 require 'cfsm_event'
@@ -129,7 +130,7 @@ Thread status: not started
 Condition graph: N/A
 Current queue: uninitialised
 Status of each FSM:
-{TestFSM_A=>[<name = "CFSM_spec.rb:38:in `new'", state = a>]}
+{TestFSM_A=>[<name = "CFSM_spec.rb:39:in `new'", state = a>]}
 **************************
 Namespace: TestModuleB
 Thread status: not started
@@ -175,16 +176,7 @@ HEREDOC
               unless options[:sync]
                 CFSM.logger.debug( CFSM.dump_to_string )
 
-                i = 0
-                while event.status('TestModuleB') != :processed
-                  sleep 1
-                  i = i + 1
-                  if i > 10
-                    CFSM.logger.info "Timing out async test"
-                    CFSM.logger.info CFSM.dump_to_string
-                    fail 'Timeout on processing events.'
-                  end
-                end
+                wait_for { event.status('TestModuleB') }.to eq( :processed )
               end
 
               expect(test_fsm_a.state).to eql(options[:namespace]==:TestModuleB ? :a : :b)    # only progresses if all namespaces executed
@@ -311,7 +303,7 @@ HEREDOC
   end
 
   context 'options for ::on' do
-    describe 'local proc' do
+    describe 'proc to test transition' do
       before(:each) do
         CFSM.reset
 
@@ -326,8 +318,8 @@ HEREDOC
             end
           end
 
-          state :b do
-            on :event, :transition => :c, :exec => :test_transition
+          state :c do
+            on :event, :transition => :d, :exec => :test_transition
           end
 
           def set_initial_state( initial_state )
@@ -352,23 +344,27 @@ HEREDOC
 
       let!(:event) { CfsmEvent.new( :event ) }
 
-      [false, true].each do |test_case|
-        it "should #{'not ' unless test_case}transition to new state if do loop returns #{test_case.to_s}" do
-          fsm = TestDo.new( test_case )
-          CFSM.start
-          CFSM.post( event )
+      ['block' , 'method'].each do |exec_style|
+        [false, true].each do |test_case|
+          it "should #{'not ' unless test_case}transition to new state if #{exec_style} returns #{test_case.to_s}" do
+            fsm = TestDo.new( test_case )
+            fsm.set_initial_state( :c ) if exec_style=='method'
 
-          (0..10).each do |i|
-            break if event.status == :processed
-            sleep 1
-            fail 'Timeout on processing events.' if i == 10
+            CFSM.start
+            CFSM.post( event )
+
+            wait_for { event.status }.to eq( :processed )
+
+            expect( fsm.result[:name] ).to eq( :test_do )
+            expect( fsm.result[:event] ).to equal( event )
+            expect( fsm.result[:state] ).to eq( :a ) if exec_style=='block'
+            expect( fsm.result[:state] ).to eq( :c ) if exec_style=='method'
+
+            expect( fsm.state ).to eq( :a ) if !test_case && exec_style=='block'
+            expect( fsm.state ).to eq( :b ) if test_case && exec_style=='block'
+            expect( fsm.state ).to eq( :c ) if !test_case && exec_style=='method'
+            expect( fsm.state ).to eq( :d ) if test_case && exec_style=='method'
           end
-
-          expect( fsm.result[:name] ).to eq( :test_do )
-          expect( fsm.result[:event] ).to equal( event )
-          expect( fsm.result[:state] ).to eq( :a )
-
-          expect( fsm.state ).to eq( test_case ? :b : :a)
         end
       end
     end
