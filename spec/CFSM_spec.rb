@@ -207,7 +207,7 @@ HEREDOC
         it 'should create a separate thread when async' do
           CFSM.start
 
-          expect( TestFSM_A.thread_status ).to eq('run').or eq("sleep")
+          expect( TestFSM_A.thread_status ).to eq('run').or eq('sleep')
         end
 
         it 'should not create a separate thread when async false' do
