@@ -196,11 +196,11 @@ HEREDOC
           end
         end
 
-        expect { CFSM.start }.to raise_error( EmptyCFSMClass )
+        expect { CFSM.start }.to raise_error( CFSM::EmptyCFSMClass )
       end
 
       it 'should raise an error if we try to start on a namespace' do
-        expect { TestFSM_A.start }.to raise_error( OnlyStartOnCFSMClass )
+        expect { TestFSM_A.start }.to raise_error( CFSM::OnlyStartOnCFSMClass )
       end
 
       context 'async option' do
@@ -309,7 +309,7 @@ HEREDOC
 
         class TestDo < CFSM
           state :a do
-            on :event, :transition => :b do |event, next_state|
+            on :event, :transition => :b do |event|
               # We can't use expectation matchers within this method.  They cause the system to timeout.  Better
               # store the results in a hash and check them later.
               @result = { :name => self.name, :event => event, :state => self.state }
@@ -327,7 +327,7 @@ HEREDOC
           end
 
           def test_transition(event, next_state)
-            @result = { :name => self.name, :event => event, :state => self.state }
+            @result = { :name => self.name, :event => event, :state => self.state, :next_state => next_state }
             # Set the return based on what we are testing.
             @fail_proc
           end
@@ -359,6 +359,7 @@ HEREDOC
             expect( fsm.result[:event] ).to equal( event )
             expect( fsm.result[:state] ).to eq( :a ) if exec_style=='block'
             expect( fsm.result[:state] ).to eq( :c ) if exec_style=='method'
+            expect( fsm.result[:next_state] ).to eq( :d ) if exec_style=='method'
 
             expect( fsm.state ).to eq( :a ) if !test_case && exec_style=='block'
             expect( fsm.state ).to eq( :b ) if test_case && exec_style=='block'

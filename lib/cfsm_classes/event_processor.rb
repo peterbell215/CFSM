@@ -11,12 +11,7 @@ require 'condition_parser/condition_cache'
 require 'condition_optimisation/condition_graph'
 require 'condition_optimisation/condition_permutations'
 
-class EmptyCFSMClass < Exception; end
-class BlockAndExecDefined < Exception; end
-
 module CfsmClasses
-  class TooLateToRegisterEvent < Exception; end
-
   # This class hides the implementation complexities of the Communicating FSM system.  It is really only to be invoked from
   # methods within the CFSM class
   #
@@ -161,7 +156,7 @@ module CfsmClasses
       # Check that for every defined class in the system, there is at least one instantiated FSM.  If not
       # raise an exception.
       @cfsm_initial_state.each_key do |cfsm|
-        raise EmptyCFSMClass, "#{namespace} has no instantiated FSMs" if @cfsms[cfsm].nil?
+        raise CFSM::EmptyCFSMClass, "#{namespace} has no instantiated FSMs" if @cfsms[cfsm].nil?
       end
 
       @status = :running

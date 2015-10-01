@@ -6,11 +6,12 @@ require 'logger'
 
 require 'cfsm_classes/event_processor'
 
-class OnlyStartOnCFSMClass < Exception
-
-end
-
 class CFSM
+  class OnlyStartOnCFSMClass < Exception; end
+  class EmptyCFSMClass < Exception; end
+  class BlockAndExecDefined < Exception; end
+  class TooLateToRegisterEvent < Exception; end
+  
   # Create the FSM.
   def initialize( name = nil )
     processor = @@event_processors[ self.class.namespace ]
