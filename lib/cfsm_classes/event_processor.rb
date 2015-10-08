@@ -149,9 +149,12 @@ module CfsmClasses
       @cfsms[ cfsm ]
     end
 
-    # Creates the queue for this event_class processor.  If the event_class processor is to operate in async mode, also
+    # Creates the queue for this event_class processor.  Converts the condition trees to condition graphs for fast
+    # evaluation by the RETE algorithm.  If the event_class processor is to operate in async mode, also
     # creates the processing thread and starts waiting for events to be queued.
-    # TODO: documentation for this method is not uptodate
+    #
+    # @param [Hash] options the options for running the FSM.
+    # @option options [true,false] :sync whether the FSM operators in sync mode.
     def run( options )
       # Check that for every defined class in the system, there is at least one instantiated FSM.  If not
       # raise an exception.
@@ -204,24 +207,12 @@ module CfsmClasses
       # Remove all pending events from the queue.
       @event_queue.pop_each { |event| self.cancel( event ) } if @event_queue
 
-      # This unloads any classes derived from CFSM.  It does this by looking at all currently loaded classes,
-      # and checking if they are derived from CFSM.  IF they are, we split them into the module reference and
-      # the class name as a symbol.  We then use remove_const to get rid of them.
-      ObjectSpace.each_object( Class ).select do |klass|
-        if klass < CFSM
-          module_name = klass.to_s.split('::')[0..-2].join('::')
-          module_ref = module_name.empty? ? Object : Object.const_get( module_name )
-          class_sym = klass.to_s.split('::')[-1].to_sym
-          if module_ref.constants.index class_sym
-            module_ref.instance_exec( class_sym ) { |k| remove_const( k ) }
-          end
-        end
-      end
+      unload_cfsm_classes
     end
 
-    # Receives an event_class for consideration by the event_class processor.  So long as the EventProcessor has
+    # Receives an event for consideration by the event_class processor.  So long as the EventProcessor has
     # been started and we have a ConditionGraph
-    # for that event_class we stick it into the queue for processing.  If we are not operating in async mode,
+    # for that event's class we stick it into the queue for processing.  If we are not operating in async mode,
     # then we also process the event_class.
     # @param event [CfsmEvent] the event being posted.
     def post( event )
@@ -269,8 +260,8 @@ module CfsmClasses
             thread = @delayed_event_hash.delete(event)
             thread.kill if ( thread.is_a?(Thread) )
             set_event_status(event, :cancelled)
-            return true
           end
+          return true
         when :pending
           set_event_status(event, :cancelled)
           return @event_queue.remove( event )
@@ -307,32 +298,7 @@ module CfsmClasses
                                                      end)
 
           unless transitions.empty?
-            @event_queue.remove( event )
-
-            CFSM.logger.info "#{event.inspect} being processed in #{namespace}"
-
-            # we have a number of transactions to process, so lets do the state transitions.
-            transitions.each do |t|
-              # the second part of the if clause does some magic so that the block is executed in the context of
-              # the FSM and not the event processor.
-              do_transition =
-                  case t.transition_proc
-                    when Proc
-                      t.fsm.instance_exec(event, &t.transition_proc)
-                    when Symbol
-                      t.fsm.send(t.transition_proc, event, t.new_state)
-                    when nil
-                      true
-                    else
-                      false
-                  end
-              t.fsm.instance_exec( t.new_state ) { |s| set_state(s) } if do_transition
-            end
-
-            set_event_status( event, :processed )
-
-            # we have managed to process the event_class, so exit process event_class.
-            return event
+            return event if process_transitions(event, transitions)
           end
         end
         # if we get to here, we have been through all events in the queue and cannot process any.  Need to
@@ -367,6 +333,9 @@ HEREDOC
     end
 
     private
+
+    # Create single instances of the parser and the transformer.
+    @@parser =  ConditionParser::Parser.new
 
     # Take all the condition trees associated with this EventProcessor and populate the @conditions_cache
     # hash.
@@ -409,9 +378,6 @@ HEREDOC
       self
     end
 
-    # Create single instances of the parser and the transformer.
-    @@parser =  ConditionParser::Parser.new
-
     # In order to save memory, we remove the parser, once we have parsed and converted all trees.
     def self.shutdown_parser
       self.remove_class_variable :@@parser
@@ -434,6 +400,48 @@ HEREDOC
       @cfsms.each_pair do |klass, cfsms|
         result << "#{klass.to_s} : #{cfsms.join(', ')}\n"
       end
+    end
+
+    # This unloads any classes derived from CFSM.  It does this by looking at all currently loaded classes,
+    # and checking if they are derived from CFSM.  IF they are, we split them into the module reference and
+    # the class name as a symbol.  We then use remove_const to get rid of them.
+    def unload_cfsm_classes
+      ObjectSpace.each_object( Class ).select do |klass|
+        if klass < CFSM
+          module_name = klass.to_s.split('::')[0..-2].join('::')
+          module_ref = module_name.empty? ? Object : Object.const_get( module_name )
+          class_sym = klass.to_s.split('::')[-1].to_sym
+          if module_ref.constants.index class_sym
+            module_ref.instance_exec( class_sym ) { |k| remove_const( k ) }
+          end
+        end
+      end
+    end
+
+    def process_transitions(event, transitions)
+      @event_queue.remove( event )
+
+      CFSM.logger.info "#{event.inspect} being processed in #{namespace}"
+
+      transitions.each do |t|
+        do_transition =
+            case t.transition_proc
+              when Proc
+                t.fsm.instance_exec(event, &t.transition_proc)
+              when Symbol
+                t.fsm.send(t.transition_proc, event, t.new_state)
+              when nil
+                true
+              else
+                false
+            end
+        t.fsm.instance_exec( t.new_state ) { |s| set_state(s) } if do_transition
+      end
+
+      set_event_status( event, :processed )
+
+      # we have managed to process the event_class, so exit process event_class.
+      return event
     end
 
     # Used to hold the condition tree and transition descriptions in the @@event_processors hash.

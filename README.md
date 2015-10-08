@@ -39,7 +39,7 @@ event = CfsmEvent.new( :incoming_call )
 CFSM.post( event )
 ```
 
-This creates an event of type ```:incoming_call````.  The instruction ```CFSM.post``` then makes the CFSM system aware of the event. The system will automatically work out to which FSMs the event needs to be sent to effect a state transition.  All state machines that can react to the event will react to it.  If no state machine can react to the event, then the event gets queued.  This was a conscious design decision to avoid race conditions causing events to get lost.  This does mean that if an event can be generated that the system should ignore, this needs to be explicitly captured as a valid transition using something like:
+This creates an event of type ```:incoming_call```.  The instruction ```CFSM.post``` then makes the CFSM system aware of the event. The system will automatically work out to which FSMs the event needs to be sent to effect a state transition.  All state machines that can react to the event will react to it.  If no state machine can react to the event, then the event gets queued until at least one FSM can act on the event.  This was a conscious design decision to avoid race conditions causing events to get lost.  This does mean that if an event can be generated that the system should ignore, this needs to be explicitly captured as a valid transition using something like:
 
 ```ruby
     state :a do
@@ -57,7 +57,7 @@ call.call_number
 # ... returns '01225 700000
 ```
 
-Each of the items in ```CfsmEvent``` data hash is accessible via a suitable method.
+Note that each of the items in ```CfsmEvent``` data hash is accessible via a suitable method.
 
 ### Priority
 
@@ -67,7 +67,20 @@ Events can be prioritised to ensure that more important events are acted on more
 call = CfsmEvent.new :incoming_call, :prio => 3
 ```
 
-The lowest and default priority is zero.  Priorities can be positive Fixnums.
+The lowest and default priority is zero.  Priorities can be positive Fixnums.  Within a priority events are processed on a first-in, first-out basis.
+
+### Delayed Events
+
+Sometimes, we want an event to first be triggered after a certain time.  Using the delay attributes allows the user to define in how many seconds an event will happen.  For example;
+
+```ruby
+call_back = CfsmEvent.new :call_back, :delay => 30, :data => { :callback_number => '01225 700000' }
+CFSM.post( call_back )
+```
+## Conditions
+
+Sometimes we want a FSM only to react if certain conditions are met.  For example, we might not accept
+
 
 ## Actions
 
@@ -75,7 +88,7 @@ The lowest and default priority is zero.  Priorities can be positive Fixnums.
 
 
 
-## Conditions
+
 
 ## Namespacess
 
