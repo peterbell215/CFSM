@@ -1,10 +1,9 @@
 # @author Peter Bell
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
-
 require 'rspec'
-require 'condition_optimisation/condition_permutations'
-require 'condition_optimisation/condition_graph_factory'
+
+require 'cfsm'
 
 module ConditionOptimisation
   describe ConditionPermutations do

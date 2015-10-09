@@ -2,9 +2,6 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
-require 'condition_optimisation/condition_graph'
-require 'condition_optimisation/condition_permutations'
-
 module ConditionOptimisation
   # Factory class that performs necessary steps to create a ConditionGraph
   class ConditionGraphFactory

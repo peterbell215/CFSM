@@ -5,9 +5,6 @@
 require 'rspec'
 
 require 'cfsm'
-require 'cfsm_event'
-require 'condition_parser/fsm_state_variable'
-require 'condition_parser/event_condition'
 
 module ConditionParser
   describe EventCondition do

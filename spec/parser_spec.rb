@@ -1,16 +1,10 @@
 # @author Peter Bell
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
-
 require 'parslet'
-require 'cfsm'
-require 'cfsm_event'
-require 'condition_parser/parser'
-require 'condition_parser/condition_cache'
-require 'condition_parser/transformer'
-require 'condition_parser/fsm_state_variable'
-
 require 'rspec/expectations'
+
+require 'cfsm'
 
 module ConditionParser
   RSpec::Matchers.define :have_parse_tree do |expected|

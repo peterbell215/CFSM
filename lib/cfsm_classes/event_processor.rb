@@ -2,14 +2,7 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
-require 'cfsm_classes/transition'
-require 'cfsm_classes/prio_queue'
-require 'condition_parser/parser'
-require 'condition_parser/fsm_state_variable'
-require 'condition_parser/transformer'
-require 'condition_parser/condition_cache'
-require 'condition_optimisation/condition_graph'
-require 'condition_optimisation/condition_permutations'
+
 
 module CfsmClasses
   # This class hides the implementation complexities of the Communicating FSM system.  It is really only to be invoked from

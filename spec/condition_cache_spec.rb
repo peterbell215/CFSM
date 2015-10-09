@@ -1,11 +1,9 @@
 # @author Peter Bell
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
+require 'rspec'
 
 require 'cfsm'
-require 'condition_parser/condition_cache'
-
-require 'rspec'
 
 module ConditionParser
   describe 'ConditionCache' do

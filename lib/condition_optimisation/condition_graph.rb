@@ -2,9 +2,6 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
-require 'condition_optimisation/conditions_node'
-require 'condition_optimisation/condition_permutations'
-
 module ConditionOptimisation
   class ConditionGraph < Array
     def initialize( condition_array = [], start_array = [] )

@@ -1,11 +1,9 @@
 # @author Peter Bell
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
-
 require 'rspec'
 
-require 'cfsm_event'
-require 'cfsm_classes/prio_queue'
+require 'cfsm'
 
 module CfsmClasses
   describe PrioQueue do

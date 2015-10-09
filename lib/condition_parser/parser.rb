@@ -3,7 +3,6 @@
 # Licensed under MIT.  See License file in top level directory.
 
 require 'parslet'
-require 'condition_parser/transformer'
 
 module ConditionParser
   class Parser < Parslet::Parser

@@ -4,8 +4,6 @@
 
 require 'logger'
 
-require 'cfsm_classes/event_processor'
-
 class CFSM
   class OnlyStartOnCFSMClass < Exception; end
   class EmptyCFSMClass < Exception; end
@@ -186,3 +184,18 @@ class CFSM
     end
   end
 end
+
+require 'cfsm_classes/transition'
+require 'cfsm_classes/prio_queue'
+require 'condition_parser/parser'
+require 'condition_parser/event_condition'
+require 'condition_parser/event_attribute'
+require 'condition_parser/fsm_state_variable'
+require 'condition_parser/transformer'
+require 'condition_parser/condition_cache'
+require 'condition_optimisation/condition_permutations'
+require 'condition_optimisation/condition_graph_factory'
+require 'condition_optimisation/condition_graph'
+require 'condition_optimisation/conditions_node'
+require 'cfsm_classes/event_processor'
+

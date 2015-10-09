@@ -7,8 +7,6 @@
 # Each ComparisonNode will evaluate a condition.  BranchNodes are used to evaluate OR conditions.  So the 
 
 require 'parslet'
-require 'condition_parser/event_condition'
-require 'condition_parser/event_attribute'
 
 module ConditionParser
   class Transformer < Parslet::Transform

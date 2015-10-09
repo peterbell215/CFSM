@@ -1,11 +1,9 @@
 # @author Peter Bell
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
+require 'set'
 
 require 'cfsm'
-require 'set'
-require 'condition_optimisation/condition_graph'
-require 'logger'
 
 module ConditionOptimisation
   # This is generic across all tests within this test script.  In the simplified test cases we represent

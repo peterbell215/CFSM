@@ -2,9 +2,8 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
+# TODO do we really need set here?
 require 'set'
-
-require 'condition_optimisation/condition_graph'
 
 module ConditionOptimisation
   # We are exploring the permutations of all possible ways that we can combine the different anded

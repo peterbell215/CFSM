@@ -2,9 +2,7 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
-
 module ConditionOptimisation
-  ##
   # Uses to represent a condition node within a directed graph of conditions.
   # The directed graph shows the RETE decision tree.
   class ConditionsNode

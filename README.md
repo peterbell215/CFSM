@@ -158,5 +158,5 @@ In both forms, we allow for the action to fail leading to the transition not hap
 
 ## Namespacess
 
-
+Groups of related FSMs can be grouped into a namespace by including them in the same modules.  Events are not specific to a namespace, so an event posted will be evaluated in all namespaces that have FSMs that have declared an interest in the event.  Namespaces are still
 

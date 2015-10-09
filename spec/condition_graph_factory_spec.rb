@@ -4,9 +4,8 @@
 
 require 'rspec'
 
-require 'condition_optimisation/condition_graph_factory'
-require 'condition_optimisation/condition_graph'
-require 'logger'
+require 'cfsm'
+require 'cfsm_event'
 
 module ConditionOptimisation
   describe 'evaluate multiple graphs' do
