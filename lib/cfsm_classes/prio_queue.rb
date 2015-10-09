@@ -12,14 +12,19 @@ module CfsmClasses
     end
 
     # Pushes an element onto the queue taking account of priority.
+    # @param [Object] element - element to be pushed into queue.
+    # @return [PrioQueue] - reference to self
     def push(element)
+
       @mutex.synchronize do
         (@queues[element.prio] ||= Array.new).push element
         @queue_wait.signal
       end
+      self
     end
 
     # Removes the highest priority element that has longest been in the queue.
+    # @return [Object] returns the highest priority element.
     def pop
       result = nil
       @mutex.synchronize do
@@ -41,6 +46,7 @@ module CfsmClasses
     end
 
     # Returns an array copy of the queue with the correct ordering.
+    # @return [Array] the array of elements in the queue.
     def to_a
       result = []
       @mutex.synchronize do
@@ -50,6 +56,8 @@ module CfsmClasses
       end
       result
     end
+
+    # Removes the referenced element from the queueu.
 
     def remove( element )
       @mutex.synchronize do

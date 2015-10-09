@@ -21,13 +21,12 @@ end
 
 fsm = Telephone.new( :fsm_name)     # create an instance of the Telephone FSM
 CFSM.run                            # Start the state machine system running
-
 ```
 This clearly shows how to specify a simple state machine.  The first defined state is the initial state of the FSM. In our case the state ```:nothing_happening```.  States are always symbols.
 
 State machines need to be created in the same way as any other object. This allows the same state machine to be used multiple times in a program.   For example, we can choose to create multiple phones.  When invoking the constructor, we can pass a name either as a symbol or a string.  If no name is passed, then the code reference is used as the name.
 
-Once all the state machines have been instantiated, then the system is started with the ```CFSM.run``` instruction.  Normally, the state machine system executes asynchronously in its own thread.  This allows other threads to run that create the external events.
+Once, all the state machines have been instantiated, then the system is started with the ```CFSM.run``` instruction.  Normally, the state machine system executes asynchronously in its own thread.  This allows other threads to run that create the external events.
 
 ## Events
 
@@ -79,16 +78,83 @@ CFSM.post( call_back )
 ```
 ## Conditions
 
-Sometimes we want a FSM only to react if certain conditions are met.  For example, we might not accept
+Sometimes we want a FSM only to react if certain conditions are met.  For example, we might block a call from abroad:
 
+```ruby
+class Telephone < CFSM
+    state :nothing_happening do
+        on :incoming_call, :transition => :ringing, :if => 'orig==:uk'
+    end
+
+    # ...
+end
+
+my_phone = Telephone.new
+
+CFSM.start
+CFSM.post( CfsmEvent.new(:call, :data => { :orig => :de } )
+
+my_phone.state
+# => :nothing_happening
+
+CFSM.post( CfsmEvent.new(:call, :data => { :orig => :uk } )
+
+my_phone.state
+# => :incoming_call
+```
+
+The parser that interprets the _if_ clause supports a verity of condition tests:
+
+```ruby
+on :event, :transition => :new_state, :if => 'cost<5 || cost<10 && important'
+```
+
+Tests that the method call ```event.cost``` returns less than 5, or that ```event.cost``` to be less than 10 and ```event.important``` to be truthy.  Event method calls can be concatenated. So the following is also valid ```event.name.length``` is also valid.
+
+The parser supports parentheses, and comparisons with numbers, strings or symbol.  The following are all valid clauses:
+
+```ruby
+on :event, :transition => :new_state, :if => 'cost<5 && (org=:cam || org=:lon)'
+on :event, :transition => :new_state, :if => 'name="Peter"'
+```
+
+We may have some information internal to the state machine other than the state itself which we want to take into account in the condition.  The following supports this:
+
+```ruby
+on :event, :transition => :new_state, :if => '@subscription_status==:enabled'
+```
+
+Although we use the @ symbol to represent a state check, this is actually executed as a method call.  Now that method can be a instance variable accessor.  However, it may be a more complex calculation as well.
 
 ## Actions
 
+Clearly, just performing transitions on their own is not particularly useful.  The FSM needs to perform actions based on those transitions.  Two forms of actions can be specified using the FSM:
 
+```ruby
+class Telephone < CFSM
+    state :nothing_happening do
+        # Form 1: Do block
+        on :incoming_call, :transition => :ringing do |event|
+            Audio.play 'ring.wav'
+            true
+        end
 
+        # Form 2: Execute a method call
+        on :off_hook, :transition => :connection, :exec => open_voip_connection
+    end
 
+    state :ringing
+        # Form 2: Execute a method call
+        on :ringing, :transition => :off_hook, :exec => open_voip_connection
+    end
 
-
+    def open_voip_connection(event, next_state)
+        Audio.stop
+        Voip.connect   # Note, returns nil if it fails
+    end
+end
+```
+In both forms, we allow for the action to fail leading to the transition not happening.  So if the block or method returns a falsey value, then the transition does not happen.  Clearly the block may have already made some other changes that it will need to undo for itself before returning.
 
 ## Namespacess
 
