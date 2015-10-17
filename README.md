@@ -109,9 +109,9 @@ The parser that interprets the _if_ clause supports a verity of condition tests:
 on :event, :transition => :new_state, :if => 'cost<5 || cost<10 && important'
 ```
 
-Tests that the method call ```event.cost``` returns less than 5, or that ```event.cost``` to be less than 10 and ```event.important``` to be truthy.  Event method calls can be concatenated. So the following is also valid ```event.name.length``` is also valid.
+Tests that the method call ```event.cost``` returns less than 5, or that ```event.cost``` to be less than 10 and ```event.important``` to be truthy.  Event method calls can be concatenated. So ```event.name.length``` is also valid.
 
-The parser supports parentheses, and comparisons with numbers, strings or symbol.  The following are all valid clauses:
+The parser supports parentheses, booleans and comparisons with numbers, strings or symbol.  The following are all valid clauses:
 
 ```ruby
 on :event, :transition => :new_state, :if => 'cost<5 && (org=:cam || org=:lon)'
@@ -128,7 +128,7 @@ Although we use the @ symbol to represent a state check, this is actually execut
 
 ## Actions
 
-Clearly, just performing transitions on their own is not particularly useful.  The FSM needs to perform actions based on those transitions.  Two forms of actions can be specified using the FSM:
+Clearly, just performing transitions on there own is not particularly useful.  The FSM needs to perform actions based on those transitions.  Two forms of actions can be specified using the FSM:
 
 ```ruby
 class Telephone < CFSM

@@ -15,7 +15,6 @@ module CfsmClasses
     # @param [Object] element - element to be pushed into queue.
     # @return [PrioQueue] - reference to self
     def push(element)
-
       @mutex.synchronize do
         (@queues[element.prio] ||= Array.new).push element
         @queue_wait.signal

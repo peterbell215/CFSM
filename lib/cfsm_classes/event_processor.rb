@@ -167,15 +167,8 @@ module CfsmClasses
       # For each CFSM namespace, we also have a queue to hold unprocessed events.
       @event_queue ||= PrioQueue.new
 
-      # We also create a Hash to a mapping between delayed events and the thread that is used to
-      # wait.
-      @delayed_event_hash = {}
-
       # Ensure only one thread is actually in the process_event method.
       @process_mutex = Mutex.new
-
-      # In order to avoid race conditions on the delayed_event_hash we also declare a mutex.
-      @delayed_event_mutex = Mutex.new
 
       # If running in sync mode, we set @thread to true to indicate the EventProcessor has been set to
       # run.  If we are running in async mode then create a thread with an infinite loop to process incoming events.
@@ -204,37 +197,14 @@ module CfsmClasses
     end
 
     # Receives an event for consideration by the event_class processor.  So long as the EventProcessor has
-    # been started and we have a ConditionGraph
-    # for that event's class we stick it into the queue for processing.  If we are not operating in async mode,
-    # then we also process the event_class.
+    # been started and we have a ConditionGraph for that event's class we stick it into the queue for processing.  If
+    # we are not operating in async mode, then we also process the event_class.
     # @param event [CfsmEvent] the event being posted.
     def post( event )
       if @thread && @conditions[ event.event_class ]
-        if event.delay > 0
-          # TODO rather than have one thread per delayed event_class, we should have a sorted queue with a single thread
-          @delayed_event_hash[ event ] = Thread.new do
-            set_event_status(event, :delayed )
-            # wait for the delay to expire in the thread.
-            sleep event.delay
-            # Avoid race conditions by preventing any other threads updating the delayed_event_hash
-            @delayed_event_mutex.synchronize do
-              # If the event_class still exists in the delayed_event_hash, remove it and post it into the main queue.
-              if @delayed_event_hash.delete(event)
-                set_event_status(event, :pending )
-                @event_queue.push event
-              end
-            end
-          end
-          # tell the delayed thread to run so that it sets its status and gets to the sleep.
-          while @delayed_event_hash[ event ].status!='sleep'
-            Thread.pass
-          end
-          CFSM.logger.info "Event #{event.inspect} delayed for #{event.delay} seconds in #{namespace}"
-        else
-          set_event_status(event, :pending )
-          @event_queue.push event
-          CFSM.logger.info "Event #{event.inspect} posted to #{namespace}"
-        end
+        set_event_status(event, :pending )
+        @event_queue.push event
+        CFSM.logger.info "Event #{event.inspect} posted to #{namespace}"
         process_event if @thread==true
       end
     end
@@ -248,13 +218,6 @@ module CfsmClasses
       CFSM.logger.info( "#{namespace.to_s}: cancelling event #{event.inspect}" )
 
       case event.status( namespace )
-        when :delayed
-          @delayed_event_mutex.synchronize do
-            thread = @delayed_event_hash.delete(event)
-            thread.kill if ( thread.is_a?(Thread) )
-            set_event_status(event, :cancelled)
-          end
-          return true
         when :pending
           set_event_status(event, :cancelled)
           return @event_queue.remove( event )

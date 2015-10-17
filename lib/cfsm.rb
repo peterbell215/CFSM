@@ -4,12 +4,30 @@
 
 require 'logger'
 
+require 'cfsm_event'
+require 'cfsm_classes/transition'
+require 'cfsm_classes/prio_queue'
+require 'cfsm_classes/sorted_array'
+require 'cfsm_classes/delayed_queue'
+require 'condition_parser/parser'
+require 'condition_parser/event_condition'
+require 'condition_parser/event_attribute'
+require 'condition_parser/fsm_state_variable'
+require 'condition_parser/transformer'
+require 'condition_parser/condition_cache'
+require 'condition_optimisation/condition_permutations'
+require 'condition_optimisation/condition_graph_factory'
+require 'condition_optimisation/condition_graph'
+require 'condition_optimisation/conditions_node'
+require 'cfsm_classes/event_processor'
+
 class CFSM
   class OnlyStartOnCFSMClass < Exception; end
   class EmptyCFSMClass < Exception; end
   class BlockAndExecDefined < Exception; end
   class TooLateToRegisterEvent < Exception; end
-  
+  class ComparingDelayedToLiveEvent < Exception; end
+
   # Create the FSM.
   def initialize( name = nil )
     processor = @@event_processors[ self.class.namespace ]
@@ -88,7 +106,11 @@ class CFSM
   #
   # @param [CfsmEvent] event
   def self.post( event )
-    @@event_processors.each_value { |processor| processor.post( event ) }
+    if event.expiry
+      @@delayed_queue.post( event )
+    else
+      @@event_processors.each_value { |processor| processor.post( event ) }
+    end
   end
 
   # Use to inform the system of a change in either a FSM's internal state, or an event's internal variables.
@@ -111,9 +133,14 @@ class CFSM
   # @param [CfsmEvent] event cancel the event in the queue
   # @return [true,false] returns whether cancelling of the event was successful
   def self.cancel( event )
-    result = true
-    @@event_processors.each_value { |processor| result &&= processor.cancel( event ) }
-    return result
+    if @@delayed_queue.cancel( event )
+      result = true
+    else
+      result = true
+      @@event_processors.each_value { |processor| result &&= processor.cancel( event ) }
+    end
+
+    result
   end
 
   # Given a class of FSMs, this returns an array of instantiated FSMs of that class.
@@ -161,7 +188,14 @@ class CFSM
   @@event_processors = {}
 
   # Provide a logger to be used throughout the system.
-  @@logger = Logger.new( File.new('cfsm.log', 'w') )
+  File.delete('cfsm.log')
+  @@logger = Logger.new('cfsm.log', 0)
+
+  # We have one delayed event queue.  Once the event has expired, then we push it to the processors.
+  @@delayed_queue = CfsmClasses::DelayedQueue.new do |event|
+    event.reset_expiry
+    post( event )
+  end
 
   # Set the state - used by EventProcessor.  Use fsm.instance_exec( state ) { |s| set_state(s) } for
   # the event processor to set the state.
@@ -184,18 +218,4 @@ class CFSM
     end
   end
 end
-
-require 'cfsm_classes/transition'
-require 'cfsm_classes/prio_queue'
-require 'condition_parser/parser'
-require 'condition_parser/event_condition'
-require 'condition_parser/event_attribute'
-require 'condition_parser/fsm_state_variable'
-require 'condition_parser/transformer'
-require 'condition_parser/condition_cache'
-require 'condition_optimisation/condition_permutations'
-require 'condition_optimisation/condition_graph_factory'
-require 'condition_optimisation/condition_graph'
-require 'condition_optimisation/conditions_node'
-require 'cfsm_classes/event_processor'
 

@@ -14,7 +14,7 @@ describe CfsmEvent do
 
       expect( event.event_class ).to eq(:test_event)
       expect( event.prio ).to eq( 0 )
-      expect( event.delay ).to eq( 0 )
+      expect( event.expiry ).to be_nil
       expect( event.status ).to be_nil
     end
 

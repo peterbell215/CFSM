@@ -11,10 +11,15 @@
 # @example Creating an event without a sub-class
 #   Cfsm.Event.new( :car_arrived, :data> { :from => :N, :lane => 2}, :prio => 2, :delay => 10 )
 class CfsmEvent
+  class EventDoesNotHaveExpiry < Exception; end
+
+  include Comparable
+
   # @param [Symbol,Class] event_class
   # @param [Hash] opts the options for this event.
   # @option opts [Hash] :data provides the data for the event.
   # @option opts [Fixnum] :prio the priority of the message with 0 the lowest priority.  Default is 0.
+  # @option opts [Time] :expiry the time at which the event should become live and be posted
   # @option opts [Fixnum] :delay allows the posting of the event to be delayed.  Default is 0.
   # @option opts [true,false] :autopost allows the event to be immediately posted to the relevant CFSMs.
   # @return [CfsmEvent]
@@ -33,11 +38,30 @@ class CfsmEvent
 
     @src = caller(1, 1)[0]
     @prio = opts[ :prio ] || 0
-    @delay = opts[ :delay ] || 0
+    # At the point a delayed event is created, this sets an expiry for that event.
+    @expiry = opts[ :expiry ] || (opts[ :delay ] ? Time.now + opts[ :delay ] : nil )
 
     CFSM.post( self ) if opts[:autopost]
 
     self
+  end
+
+  # Once an event has left the delayed queue, CFSM needs to reset its expiry to nil before posting it to
+  # the event processors' queues.
+  def reset_expiry
+    @expiry = nil
+  end
+
+  # Allows SortedArray to compare the events.  Behaviour different if the two events still need to expire versus
+  # it they are both live.
+  def <=>(event2)
+    raise ComparingDelayedToLiveEvent if self.expiry.nil? != event2.expiry.nil?
+
+    if self.expiry
+      self.expiry <=> event2.expiry
+    else
+      event2.prio <=> self.prio
+    end
   end
 
   # This returns the status of the event.
@@ -60,11 +84,11 @@ class CfsmEvent
   attr_reader :src
   attr_reader :event_class
   attr_reader :prio
-  attr_reader :delay
   attr_reader :data
+  attr_reader :expiry
 
   def inspect
-    "{ #{ self.event_class.to_s }: prio = #{self.prio.to_s}, status = #{@status ? @status.to_s : 'nil'}, data = #{ self.data.inspect } }"
+    "{ #{ self.event_class.to_s }: prio = #{self.prio.to_s}, status = #{@status ? @status.to_s : 'nil'}, expiry = #{self.expiry}, data = #{ self.data.inspect } }"
   end
 
   private
