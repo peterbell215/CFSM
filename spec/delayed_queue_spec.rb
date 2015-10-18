@@ -2,39 +2,35 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 require 'rspec'
+require 'rspec/wait'
 require 'rspec/expectations'
 
 require 'cfsm'
 
 module CfsmClasses
   describe DelayedQueue do
-    describe '#post' do
-      let!(:seq) { Enumerator.new { |yielder| 0.step { |num| yielder.yield num } } }
-      let!(:delay_seq) { Enumerator.new { |yielder| i=0; loop { yielder.yield( i += rand + 1 ) } } }
-      let!(:expected_events) { Array.new(10) { CfsmEvent.new( :tst_event, :delay => delay_seq.next, :data => { :seq => seq.next } ) } }
-      let!(:expected_events_seq) { expected_events.each }
-      let!(:start_time) { Time.now }
-      let!(:wait_for_retrieves) { ConditionVariable.new }
+    let!(:seq) { Enumerator.new { |yielder| 2.step { |num| yielder.yield num } } }
+    let!(:expected_events) { Array.new(5) { d = seq.next; CfsmEvent.new( :tst_event, :delay => 2+d/2.0, :data => { :seq => d } ) } }
+    let!(:expected_events_seq) { expected_events.each }
 
+    describe '#post' do
       it 'should raise exception if an event does not have a delay or expiry set' do
         delayed_queue = DelayedQueue.new { |event| }
         expect { delayed_queue.post CfsmEvent.new( :tst_event ) }.to raise_exception CfsmEvent::EventDoesNotHaveExpiry
         delayed_queue.kill
       end
 
+      # TODO: the following code is not very DRY.  Not sure what to do about it for now.
       it 'should retrieve events at the correct time if pushed in order' do
-        event_retrieved = false
         delayed_queue = DelayedQueue.new do |event|
           expected_event = expected_events_seq.next
-          expect(Time.now - expected_event.expiry < 0.01 )
+          expect(Time.now - expected_event.expiry).to be < 0.01
           expect(event.seq ).to eq( expected_event.seq )
         end
 
         expected_events.each { |event| delayed_queue.post event }
 
-        until delayed_queue.empty?
-          sleep 1
-        end
+        wait_for( delayed_queue ).to be_empty
 
         delayed_queue.kill
       end
@@ -48,16 +44,13 @@ module CfsmClasses
 
         delayed_queue = DelayedQueue.new do |event|
           expected_event = expected_events_seq.next
-          delta = Time.now - expected_event.expiry
-          expect( Time.now - expected_event.expiry < 0.01 )
+          expect(Time.now - expected_event.expiry).to be < 0.01
           expect(event.seq ).to eq( expected_event.seq )
         end
 
         events.each { |event| delayed_queue.post event }
 
-        until delayed_queue.empty?
-          sleep 1
-        end
+        wait_for( delayed_queue ).to be_empty
 
         delayed_queue.kill
       end
@@ -70,16 +63,48 @@ module CfsmClasses
 
         delayed_queue = DelayedQueue.new do |event|
           expected_event = expected_events_seq.next
-          delta = Time.now - expected_event.expiry
-          expect( Time.now - expected_event.expiry < 0.01 )
+          expect(Time.now - expected_event.expiry).to be < 0.01
           expect(event.seq ).to eq( expected_event.seq )
         end
 
         events.each { |event| delayed_queue.post event }
 
-        until delayed_queue.empty?
-          sleep 1
+        wait_for( delayed_queue ).to be_empty
+
+        delayed_queue.kill
+      end
+    end
+
+    describe '#cancel' do
+      it 'should correctly remove an event other than the first one.' do
+        delayed_queue = DelayedQueue.new do |event|
+          # expect( event.seq ).not_to eq(2)
+          expected_event = expected_events_seq.next
+          expect(Time.now - expected_event.expiry).to be < 0.01
+          expect(event.seq ).to eq( expected_event.seq )
         end
+
+        expected_events.each { |event| delayed_queue.post event }
+
+        delayed_queue.cancel( expected_events[3] )
+
+        wait_for( delayed_queue ).to be_empty
+
+        delayed_queue.kill
+      end
+
+      it 'should correctly remove the first one and spit out the next one at the correct time' do
+        delayed_queue = DelayedQueue.new do |event|
+          expect( event.seq ).not_to eq(2)
+          expected_event = expected_events_seq.next
+          expect(Time.now - expected_event.expiry).to be < 0.01
+        end
+
+        expected_events.each { |event| delayed_queue.post event }
+
+        delayed_queue.cancel( expected_events.shift )
+
+        wait_for( delayed_queue ).to be_empty
 
         delayed_queue.kill
       end

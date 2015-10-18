@@ -16,14 +16,17 @@ module CfsmClasses
       @wait_thread = Thread.new do
         loop do
           if self.empty?
+            CFSM.logger.debug "Infinite sleep"
             sleep
           elsif self.first.expiry <= Time.now then
             @queue_mutex.synchronize { event = self.shift }
             CFSM.logger.info "Retrieved delayed event #{event.inspect}"
             # Note, for reasons I don't understand, we need to yield first, and then reset expiry.
             yield( event )
+            CFSM.logger.debug "Back from yield"
             event.reset_expiry
           else
+            CFSM.logger.debug "Sleep for #{self.first.expiry - Time.now}"
             sleep( self.first.expiry - Time.now )
           end
         end
@@ -35,12 +38,16 @@ module CfsmClasses
       raise CfsmEvent::EventDoesNotHaveExpiry if event.expiry.nil?
       @queue_mutex.synchronize { self.push event }
       CFSM.logger.info "Pushed delayed event #{event.inspect}"
-      @wait_thread.run if self.length > 0 # && self.first == event
+      @wait_thread.run if self.length > 0 && self.first == event
     end
 
     # Removes the referenced element from the queueu.
     def cancel( event )
-      @queue_mutex.synchronize { self.delete( event ) }
+      CFSM.logger.info "Cancelled delayed event #{event.inspect}"
+      result = nil
+      @queue_mutex.synchronize { result = self.delete( event ) }
+      @wait_thread.run if self.length > 0 && self.first == event
+      result
     end
 
     # Used if the delayed event queue is no longer needed.  Destroys the array and kills the waiting thread.

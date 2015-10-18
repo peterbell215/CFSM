@@ -2,6 +2,7 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 require 'rspec'
+require 'rspec/wait'
 
 require 'cfsm'
 
@@ -146,7 +147,7 @@ module CfsmClasses
         result = queue.inspect.split("\n")[1..-1]
 
         (0..2).each do |i|
-          expect( result[i] ).to eq( "{ test_event: prio = #{2-i}, status = nil, data = {:element=>#{2-i}} }")
+          expect( result[i] ).to eq( "{ test_event: prio = #{2-i}, status = nil, expiry = nil, data = {:element=>#{2-i}} }")
         end
       end
 
@@ -162,7 +163,7 @@ module CfsmClasses
 
         (0..10).each do |i|
           # keepting sleeping till the thread status is "sleep" i.e. waiting for input
-          sleep 0.001 while t.status != 'sleep'
+          wait_for( t.status).to_not eql('sleep')
           queue.push(CfsmEvent.new :test_event, :data => {:element => i} )
         end
       end
@@ -178,7 +179,7 @@ module CfsmClasses
             expect( queue.size ).to eq( 7 )
           end
 
-          sleep 0.001 while t.status != 'sleep'
+          wait_for( t.status).to_not eql('sleep')
           queue.push(CfsmEvent.new :test_event, :data => { :element => 8 } )
         end
       end
