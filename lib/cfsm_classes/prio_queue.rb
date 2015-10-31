@@ -6,7 +6,7 @@ module CfsmClasses
   # This class implements a thread safe priority queue designed around our requirements.
   class PrioQueue
     def initialize
-      @queues = Array.new
+      @queue = SortedArray.new { |e1, e2| e2.prio <=> e1.prio }
       @mutex = Mutex.new
       @queue_wait = ConditionVariable.new
     end
@@ -16,27 +16,21 @@ module CfsmClasses
     # @return [PrioQueue] - reference to self
     def push(element)
       @mutex.synchronize do
-        (@queues[element.prio] ||= Array.new).push element
+        @queue.push element
         @queue_wait.signal
       end
       self
     end
 
-    # Removes the highest priority element that has longest been in the queue.
+    # Removes the highest priority element that has longest been in the queue.  If the
+    # queue is empty, block until a new element is added.
+    #
     # @return [Object] returns the highest priority element.
     def pop
-      result = nil
       @mutex.synchronize do
         @queue_wait.wait( @mutex ) if size==0
-
-        (@queues.size-1).downto(0).each do |queue_index|
-          if @queues[queue_index] && @queues[queue_index].size > 0
-            result = @queues[queue_index].shift
-            break
-          end
-        end
+        @queue.shift
       end
-      result
     end
 
     # Allows the calling thread to wait for a new element to have been added.
@@ -47,23 +41,17 @@ module CfsmClasses
     # Returns an array copy of the queue with the correct ordering.
     # @return [Array] the array of elements in the queue.
     def to_a
-      result = []
-      @mutex.synchronize do
-        (@queues.size-1).downto(0).each do |queue_index|
-          result.concat @queues[queue_index] if @queues[queue_index] && @queues[queue_index].size > 0
-        end
-      end
-      result
+      @mutex.synchronize { Array.new( @queue ) }
     end
 
-    # Removes the referenced element from the queueu.
+    # Removes the referenced element from the queue.
+    def delete( element )
+      @mutex.synchronize { @queue.delete( element ) }
+    end
 
-    def remove( element )
-      @mutex.synchronize do
-        if @queues[ element.prio ] && (index = @queues[ element.prio ].find_index( element ) )
-          return @queues[ element.prio ].delete_at(index)
-        end
-      end
+
+    def each
+      @queue.each { |e| yield e }
     end
 
     def pop_each
@@ -73,17 +61,13 @@ module CfsmClasses
       end
     end
 
-    def peek_each
-      self.to_a.each { |e| yield e }
-    end
-
     def size
-      @queues.inject(0) { |s, q| s += q ? q.size : 0 }
+      @queue.size
     end
 
     def inspect
       result = "queue:\n"
-      self.peek_each do |obj|
+      self.each do |obj|
         result << "#{obj.inspect}\n"
       end
       result

@@ -22,10 +22,6 @@ class Entry
   attr_reader :insert_sequence
   attr_reader :prio
 
-  def <=>(e2)
-    self.prio <=> e2.prio
-  end
-
   def to_s
     "< prio=#{prio}, insert_sequence=#{insert_sequence} >"
   end
@@ -33,6 +29,8 @@ end
 
 module CfsmClasses
   describe SortedArray do
+    subject { SortedArray.new { |e1, e2| e1.prio <=>e2.prio } }
+
     before(:each) { Entry.init_counter }
 
     it 'should correctly add an element to an empty array' do
@@ -72,14 +70,15 @@ module CfsmClasses
 
     it "should correctly insert a sequence of elements" do
       (0..8).to_a.permutation.each do |seq|
-        result = SortedArray.new
+        result = SortedArray.new { |e1, e2| e1.prio <=> e2.prio }
         expected_result = []
 
         seq.each do |i|
-          result.push Entry.new( i/2 )
-          expected_result.push Entry.new( i/2 )
+          entry = Entry.new( i/2 )
+          result.push entry
+          expected_result.push entry
         end
-        expected_result.sort!
+        expected_result.sort! { |e1, e2| e1.prio <=> e2.prio }
         expect( result ).to match( expected_result )
       end
     end

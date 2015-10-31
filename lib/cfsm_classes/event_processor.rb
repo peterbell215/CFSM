@@ -217,13 +217,12 @@ module CfsmClasses
     def cancel( event )
       CFSM.logger.info( "#{namespace.to_s}: cancelling event #{event.inspect}" )
 
-      case event.status( namespace )
-        when :pending
-          set_event_status(event, :cancelled)
-          return @event_queue.remove( event )
-        else
-          CFSM.logger.info( "#{namespace.to_s}: cancelling default event #{event.inspect}" )
-          return set_event_status(event, :cancelled)
+      if event.status( namespace ) == :pending
+        set_event_status(event, :cancelled)
+        return @event_queue.delete( event )
+      else
+        CFSM.logger.info( "#{namespace.to_s}: canceling default event #{event.inspect}" )
+        return set_event_status(event, :cancelled)
       end
     end
 
@@ -240,7 +239,7 @@ module CfsmClasses
       @process_mutex.synchronize do
         CFSM.logger.info( "#{namespace.to_s}: checking if events can be processed.  Queue holds #{@event_queue.size} event(s)" )
         @status = :process_event
-        @event_queue.peek_each do |event|
+        @event_queue.each do |event|
           # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
           transitions =
               @conditions[event.event_class].execute(event,
@@ -374,8 +373,13 @@ HEREDOC
       end
     end
 
+    # Once we have determined that one or more transitions need to happen, then the transitions
+    # are processed in this method.
+    #
+    # @param event [CfsmEvent]  - the event causing the transitions
+    # @param transitions[Array<Transition>] - the list of transitions to execute.
     def process_transitions(event, transitions)
-      @event_queue.remove( event )
+      @event_queue.delete( event )
 
       CFSM.logger.info "#{event.inspect} being processed in #{namespace}"
 

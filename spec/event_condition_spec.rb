@@ -6,6 +6,8 @@ require 'rspec'
 
 require 'cfsm'
 
+# TODO add missing tests
+
 module ConditionParser
   describe EventCondition do
     before(:each) do

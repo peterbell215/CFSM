@@ -13,8 +13,6 @@
 class CfsmEvent
   class EventDoesNotHaveExpiry < Exception; end
 
-  include Comparable
-
   # @param [Symbol,Class] event_class
   # @param [Hash] opts the options for this event.
   # @option opts [Hash] :data provides the data for the event.
@@ -50,18 +48,6 @@ class CfsmEvent
   # the event processors' queues.
   def reset_expiry
     @expiry = nil
-  end
-
-  # Allows SortedArray to compare the events.  Behaviour different if the two events still need to expire versus
-  # it they are both live.
-  def <=>(event2)
-    raise ComparingDelayedToLiveEvent if self.expiry.nil? != event2.expiry.nil?
-
-    if self.expiry
-      self.expiry <=> event2.expiry
-    else
-      event2.prio <=> self.prio
-    end
   end
 
   # This returns the status of the event.

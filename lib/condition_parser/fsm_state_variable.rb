@@ -1,16 +1,15 @@
 # @author Peter Bell
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
+require 'cfsm'
 
 module ConditionParser
-  ##
   # Holds a check of the state that needs to be considered.  In our implementation which state
   # a specific FSM is in is considered just another condition similar to the other tests.  The
   # reasoning is that you might have a number of state machines all testing the same conditions.
   # This way the RETE graph can check all of those conditions before finally checking state,
-  # leading to an optimised state.
+  # leading to an optimised graph.
   class FsmStateVariable
-    ##
     # Constructor
     #
     # @param [class] fsm_class is the class of FSM that can be evaluated
@@ -23,16 +22,14 @@ module ConditionParser
     attr_reader :state_var
     attr_reader :fsm_class
 
-    ##
     # Comparator
     #
-    # @param [FsmStateVariable] object2
+    # @param [FsmStateVariable,EventAttribute] object2
     # @return [True,False]
     def ==(object2)
-      self.fsm_class==object2.fsm_class && self.state_var==object2.state_var
+      object2.is_a?(FsmStateVariable) && self.fsm_class==object2.fsm_class && self.state_var==object2.state_var
     end
 
-    ##
     # Override the standard hash key so that different instances that are == generate the same hash
     # key.
     # @return [Fixnum]

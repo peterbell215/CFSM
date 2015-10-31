@@ -123,6 +123,4 @@ describe CfsmEvent do
     end
   end
 
-
-
 end

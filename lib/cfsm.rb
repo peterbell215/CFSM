@@ -27,6 +27,7 @@ class CFSM
   class BlockAndExecDefined < Exception; end
   class TooLateToRegisterEvent < Exception; end
   class ComparingDelayedToLiveEvent < Exception; end
+  class NonEventBeingCompared < Exception; end
 
   # Create the FSM.
   def initialize( name = nil )

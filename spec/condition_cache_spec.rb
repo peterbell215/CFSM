@@ -6,7 +6,7 @@ require 'rspec'
 require 'cfsm'
 
 module ConditionParser
-  describe 'ConditionCache' do
+  describe ConditionCache do
     before(:all) { class TestFSM < CFSM; end }
     subject(:condition_hash) { ConditionCache.new }
     let!( :event_condition1 ) { EventCondition.new(:==, EventAttribute.new('attribute'), 5.0) }

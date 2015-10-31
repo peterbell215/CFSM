@@ -13,32 +13,38 @@ module CfsmClasses
       @queue_mutex = Mutex.new
       event = nil
 
+      super { |e1, e2| e1.expiry <=> e2.expiry }
+
       @wait_thread = Thread.new do
         loop do
           if self.empty?
-            CFSM.logger.debug "Infinite sleep"
-            sleep
+            CFSM.logger.debug 'Infinite sleep'
+            sleep 5
           elsif self.first.expiry <= Time.now then
+            event = nil
             @queue_mutex.synchronize { event = self.shift }
             CFSM.logger.info "Retrieved delayed event #{event.inspect}"
             # Note, for reasons I don't understand, we need to yield first, and then reset expiry.
             yield( event )
-            CFSM.logger.debug "Back from yield"
+            CFSM.logger.debug 'Back from yield'
             event.reset_expiry
           else
+            delay = self.first.expiry - Time.now
             CFSM.logger.debug "Sleep for #{self.first.expiry - Time.now}"
-            sleep( self.first.expiry - Time.now )
+            sleep( self.first.expiry - Time.now ) if delay > 0
           end
         end
       end
     end
+
+    attr_reader :wait_thread
 
     # Note that event expiry needs to be set by the caller.
     def post( event )
       raise CfsmEvent::EventDoesNotHaveExpiry if event.expiry.nil?
       @queue_mutex.synchronize { self.push event }
       CFSM.logger.info "Pushed delayed event #{event.inspect}"
-      @wait_thread.run if self.length > 0 && self.first == event
+      @wait_thread.wakeup if self.length > 0 && self.first == event
     end
 
     # Removes the referenced element from the queueu.
@@ -46,7 +52,7 @@ module CfsmClasses
       CFSM.logger.info "Cancelled delayed event #{event.inspect}"
       result = nil
       @queue_mutex.synchronize { result = self.delete( event ) }
-      @wait_thread.run if self.length > 0 && self.first == event
+      @wait_thread.wakeup if self.length > 0 && self.first == event
       result
     end
 

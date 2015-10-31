@@ -9,6 +9,8 @@ require 'cfsm'
 
 module CfsmClasses
   describe DelayedQueue do
+    before(:each) { CFSM.reset }
+
     let!(:seq) { Enumerator.new { |yielder| 2.step { |num| yielder.yield num } } }
     let!(:expected_events) { Array.new(5) { d = seq.next; CfsmEvent.new( :tst_event, :delay => 2+d/2.0, :data => { :seq => d } ) } }
     let!(:expected_events_seq) { expected_events.each }
@@ -77,8 +79,11 @@ module CfsmClasses
 
     describe '#cancel' do
       it 'should correctly remove an event other than the first one.' do
+        $DEBUG = true
+
         delayed_queue = DelayedQueue.new do |event|
-          # expect( event.seq ).not_to eq(2)
+          CFSM.logger.info "length = #{delayed_queue.size}"
+          expect( event.seq ).not_to eq(5)
           expected_event = expected_events_seq.next
           expect(Time.now - expected_event.expiry).to be < 0.01
           expect(event.seq ).to eq( expected_event.seq )
@@ -86,9 +91,11 @@ module CfsmClasses
 
         expected_events.each { |event| delayed_queue.post event }
 
-        delayed_queue.cancel( expected_events[3] )
+        delayed_queue.cancel( expected_events.delete_at(3) )
 
-        wait_for( delayed_queue ).to be_empty
+        while !delayed_queue.empty?
+          sleep 5
+        end
 
         delayed_queue.kill
       end
