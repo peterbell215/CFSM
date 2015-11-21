@@ -143,8 +143,6 @@ module CfsmClasses
           expect( result[i] ).to eq( "{ test_event: prio = #{2-i}, status = nil, expiry = nil, data = {:element=>#{2-i}} }")
         end
       end
-
-
     end
 
     context '#async behaviour' do
@@ -155,7 +153,6 @@ module CfsmClasses
         end
 
         (0..10).each do |i|
-          # keepting sleeping till the thread status is "sleep" i.e. waiting for input
           wait_for( t.status).to_not eql('sleep')
           subject.push(CfsmEvent.new :test_event, :data => {:element => i} )
         end
@@ -172,8 +169,8 @@ module CfsmClasses
             expect( subject.size ).to eq( 7 )
           end
 
-          wait_for( t.status).to_not eql('sleep')
           subject.push(CfsmEvent.new :test_event, :data => { :element => 8 } )
+          expect( t.join(60) ).not_to be_nil
         end
       end
     end

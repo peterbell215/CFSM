@@ -36,6 +36,7 @@ describe CFSM do
       end
     end
 
+    # TODO replace let! with subject
     let!( :test_fsm_a) { TestFSM_A.new }
     let!( :test_fsm_b1) { TestModuleB::TestFSM_B.new :test_fsm_b1 }
     let!( :test_fsm_b2) { TestModuleB::TestFSM_B.new :test_fsm_b2 }
@@ -130,7 +131,7 @@ Thread status: not started
 Condition graph: N/A
 Current queue: uninitialised
 Status of each FSM:
-{TestFSM_A=>[<name = "CFSM_spec.rb:39:in `new'", state = a>]}
+{TestFSM_A=>[<name = "CFSM_spec.rb:40:in `new'", state = a>]}
 **************************
 Namespace: TestModuleB
 Thread status: not started
@@ -261,43 +262,74 @@ HEREDOC
     end
 
     context 'if processing' do
-      before( :each ) do
-        class TestFSM < CFSM
-          state :a do
-            on :event1, :transition => :b, :if => '@test==1'
-          end
+      context 'state variable test' do
+        before( :each ) do
+          class TestFSM < CFSM
+            state :a do
+              on :event1, :transition => :b, :if => '@test==1'
+            end
 
-          def initialize
-            # noinspection RubyArgCount
-            super
-            @test = 0
-          end
+            def initialize
+              # noinspection RubyArgCount
+              super
+              @test = 0
+            end
 
-          attr_accessor :test
+            attr_accessor :test
+          end
+        end
+
+        # TODO replace with subject
+        # noinspection RubyArgCount
+        let!( :fsm ) { TestFSM.new }
+
+        it 'should not advance if a state variable is not correctly set' do
+          fsm.test = 1
+          CFSM.start :sync => true
+
+          expect( fsm.state ).to eq( :a )
+          CFSM.post( CfsmEvent.new(:event1) )
+          expect( fsm.state ).to eq( :b )
+        end
+
+        it "should advance once the FSM's member variable is correctly set" do
+          CFSM.start :sync => true
+          expect( fsm.state ).to eq( :a )
+          event = CfsmEvent.new(:event1)
+          CFSM.post( event )
+          expect( fsm.state ).to eq( :a )
+          fsm.test = 1
+          CFSM.eval( fsm )
+          expect( fsm.state ).to eq( :b )
         end
       end
 
-      # noinspection RubyArgCount
-      let!( :fsm ) { TestFSM.new }
-
-      it 'should not advance if a state variable is not correctly set' do
-        fsm.test = 1
-        CFSM.start :sync => true
-
-        expect( fsm.state ).to eq( :a )
-        CFSM.post( CfsmEvent.new(:event1) )
-        expect( fsm.state ).to eq( :b )
+      context 'event variable test' do
+        # TODO these need creating.
       end
 
-      it "should advance once the FSM's member variable is correctly set" do
-        CFSM.start :sync => true
-        expect( fsm.state ).to eq( :a )
-        event = CfsmEvent.new(:event1)
-        CFSM.post( event )
-        expect( fsm.state ).to eq( :a )
-        fsm.test = 1
-        CFSM.eval( fsm )
-        expect( fsm.state ).to eq( :b )
+      context 'event variable against state variable' do
+        before( :each ) do
+          class TestFSM < CFSM
+            state :a do
+              on :event1, :transition => :b, :if => 'src==@name'
+            end
+          end
+        end
+
+        let!( :fsm1 ){ TestFSM.new :fsm1 }
+        let!( :fsm2 ){ TestFSM.new :fsm2 }
+
+        it 'should correctly compare the event attribute to the state attribute' do
+          CFSM.start :sync => true
+          expect( fsm1.state ).to eq(:a)
+          expect( fsm2.state ).to eq(:a)
+
+          event = CfsmEvent.new :event1, :src => :fsm1, :autopost => true
+
+          expect( fsm1.state ).to eq(:b)
+          expect( fsm2.state ).to eq(:a)
+        end
       end
     end
   end

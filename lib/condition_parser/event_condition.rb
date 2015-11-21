@@ -38,32 +38,29 @@ module ConditionParser
     # @param [Array<CFSM>] cfsms is the array of FSMs to be evaluated.
     # @return [Array<CFSM>] is the array of FSMs that match the evaluated condition.
     def evaluate( event, cfsms )
-      if @attribute.is_a? FsmStateVariable
-        # if cfsms remains nil then this particular namespace has not FSMs instantiated,
-        # therefore return []
-        cfsms = CFSM.state_machines( @attribute.fsm_class ).dup if cfsms == :all
+      return [] if cfsms.nil? || cfsms.empty?
 
-        if cfsms && !cfsms.empty?
-          cfsms.each do |fsm|
-            # TODO: @value could be complex.  Need something to deal with that case.
+      # if cfsms remains nil then this particular namespace has no FSMs instantiated,
+      # therefore return []
+      cfsms = CFSM.state_machines( @attribute.fsm_class ).dup if cfsms == :all
 
-            # We need to coerce the two args to be the same class before we send to the comparator
-            left_arg = fsm.send( @attribute.state_var )
-            if left_arg.respond_to?( :coerce )
-              left_arg, right_arg = left_arg.coerce( @value )
-            else
-              right_arg = @value
-            end
+      cfsms.delete_if do |fsm|
+        if @attribute.is_a? FsmStateVariable
+          # TODO: @value could be complex.  Need something to deal with that case.
 
-            cfsms.delete(fsm) unless left_arg.send( @comparator, right_arg )
+          # We need to coerce the two args to be the same class before we send to the comparator
+          left_arg = fsm.send( @attribute.state_var )
+          if left_arg.respond_to?( :coerce )
+            left_arg, right_arg = left_arg.coerce( @value )
+          else
+            right_arg = @value
           end
-
-          cfsms
+          !left_arg.send( @comparator, right_arg )
+        else
+          !self.attribute.evaluate( event ).send( self.comparator, fsm.send( self.value.state_var ) )
         end
-      else
-        # simply testing a condition.
-        event.evaluate( self.attribute ).send( self.comparator, self.value )
       end
+      cfsms
     end
 
     # Override the standard hash key so that different instances that are == generate the same hash

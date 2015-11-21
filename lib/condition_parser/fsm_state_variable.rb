@@ -30,8 +30,8 @@ module ConditionParser
       object2.is_a?(FsmStateVariable) && self.fsm_class==object2.fsm_class && self.state_var==object2.state_var
     end
 
-    # Override the standard hash key so that different instances that are == generate the same hash
-    # key.
+    # Override the standard hash key so that different instances that are == generate the same hash key.
+    #
     # @return [Fixnum]
     def hash
       fsm_class.to_s.hash ^ state_var.to_s.hash

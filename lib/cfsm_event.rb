@@ -15,6 +15,7 @@ class CfsmEvent
 
   # @param [Symbol,Class] event_class
   # @param [Hash] opts the options for this event.
+  # @option opts [String|Symbol] :src provides details of the source. If omitted stores the location from which initializer was called.
   # @option opts [Hash] :data provides the data for the event.
   # @option opts [Fixnum] :prio the priority of the message with 0 the lowest priority.  Default is 0.
   # @option opts [Time] :expiry the time at which the event should become live and be posted
@@ -34,7 +35,7 @@ class CfsmEvent
       end
     end
 
-    @src = caller(1, 1)[0]
+    @src = opts[:src] || caller(1, 1)[0]
     @prio = opts[ :prio ] || 0
     # At the point a delayed event is created, this sets an expiry for that event.
     @expiry = opts[ :expiry ] || (opts[ :delay ] ? Time.now + opts[ :delay ] : nil )
