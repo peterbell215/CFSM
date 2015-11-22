@@ -32,7 +32,7 @@ module CfsmClasses
 
         expected_events.each { |event| delayed_queue.post event }
 
-        wait_for( delayed_queue ).to be_empty
+        wait_for { delayed_queue }.to be_empty
 
         delayed_queue.kill
       end
@@ -52,7 +52,7 @@ module CfsmClasses
 
         events.each { |event| delayed_queue.post event }
 
-        wait_for( delayed_queue ).to be_empty
+        wait_for { delayed_queue }.to be_empty
 
         delayed_queue.kill
       end
@@ -71,7 +71,7 @@ module CfsmClasses
 
         events.each { |event| delayed_queue.post event }
 
-        wait_for( delayed_queue ).to be_empty
+        wait_for { delayed_queue }.to be_empty
 
         delayed_queue.kill
       end
@@ -111,7 +111,7 @@ module CfsmClasses
 
         delayed_queue.cancel( expected_events.shift )
 
-        wait_for( delayed_queue ).to be_empty
+        wait_for { delayed_queue }.to be_empty
 
         delayed_queue.kill
       end

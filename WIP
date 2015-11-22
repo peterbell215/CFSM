@@ -1,5 +1,5 @@
-Make the post Namespace specific.  Also make the status namespace space specific.
-
-RSpecs for delayed_queue and sorted_array.
+Currently, most of the time, RSpec runs correctly for all tests.  Just occasionally, its like it got off on the wrong foot.
+Suspect some sort of async behaviour that makes it fail if a thread change happens at the wrong time.  Will require more work.
+It does also seem to be either the same tests fail or pass.
 
 

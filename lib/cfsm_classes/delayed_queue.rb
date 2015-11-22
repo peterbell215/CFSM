@@ -18,7 +18,7 @@ module CfsmClasses
       @wait_thread = Thread.new do
         loop do
           if self.empty?
-            CFSM.logger.debug 'Infinite sleep'
+            CFSM.logger.debug 'Main loop of DelayedQueue: infinite sleep'
             sleep 5
           elsif self.first.expiry <= Time.now then
             event = nil
@@ -26,11 +26,11 @@ module CfsmClasses
             CFSM.logger.info "Retrieved delayed event #{event.inspect}"
             # Note, for reasons I don't understand, we need to yield first, and then reset expiry.
             yield( event )
-            CFSM.logger.debug 'Back from yield'
+            CFSM.logger.debug 'Main loop of DelayedQueue: Back from yield'
             event.reset_expiry
           else
             delay = self.first.expiry - Time.now
-            CFSM.logger.debug "Sleep for #{self.first.expiry - Time.now}"
+            CFSM.logger.debug "Main loop of DelayedQueue: Sleep for #{self.first.expiry - Time.now}"
             sleep( self.first.expiry - Time.now ) if delay > 0
           end
         end

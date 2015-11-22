@@ -9,6 +9,7 @@ module CfsmClasses
       @queue = SortedArray.new { |e1, e2| e2.prio <=> e1.prio }
       @mutex = Mutex.new
       @queue_wait = ConditionVariable.new
+      @waiting_threads = []
     end
 
     # Pushes an element onto the queue taking account of priority.
@@ -28,14 +29,27 @@ module CfsmClasses
     # @return [Object] returns the highest priority element.
     def pop
       @mutex.synchronize do
-        @queue_wait.wait( @mutex ) if size==0
+        if size==0
+          @waiting_threads << Thread.current
+          @queue_wait.wait(@mutex)
+        end
+        @waiting_threads.delete Thread.current
         @queue.shift
       end
     end
 
     # Allows the calling thread to wait for a new element to have been added.
     def wait_for_new_event
-      @mutex.synchronize { @queue_wait.wait( @mutex ) }
+      @mutex.synchronize do
+        @waiting_threads << Thread.current
+        @queue_wait.wait(@mutex)
+        @waiting_threads.delete Thread.current
+      end
+    end
+
+    # Indicates whether the given thread is waiting on this priority queue.
+    def thread_waiting?( t )
+      @mutex.synchronize { !@waiting_threads.index( t ).nil? }
     end
 
     # Returns an array copy of the queue with the correct ordering.
@@ -48,7 +62,6 @@ module CfsmClasses
     def delete( element )
       @mutex.synchronize { @queue.delete( element ) }
     end
-
 
     def each
       @queue.each { |e| yield e }

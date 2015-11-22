@@ -140,8 +140,19 @@ module CfsmClasses
         result = subject.inspect.split("\n")[1..-1]
 
         (0..2).each do |i|
-          expect( result[i] ).to eq( "{ test_event: prio = #{2-i}, status = nil, expiry = nil, data = {:element=>#{2-i}} }")
+          expect( result[i] ).to eq( "{ test_event: src = spec.rb:138:in `new', prio = #{2-i}, status = nil, expiry = nil, data = {:element=>#{2-i}} }")
         end
+      end
+    end
+
+    describe '#waiting_for?' do
+      it 'should return false if thread is not waiting.' do
+        expect( subject.thread_waiting?(Thread.current) ).to be_falsey
+      end
+
+      it 'should return true if waiting for an element to be added to an empty queue' do
+        t = Thread.new { subject.pop }
+        wait_for { subject.thread_waiting?( t ) }.to be_truthy
       end
     end
 
@@ -152,10 +163,9 @@ module CfsmClasses
           (0..10).each { |i| expect( subject.pop.element ).to eq( i ) }
         end
 
-        (0..10).each do |i|
-          wait_for( t.status).to_not eql('sleep')
-          subject.push(CfsmEvent.new :test_event, :data => {:element => i} )
-        end
+        wait_for { subject.thread_waiting?( t ) }.to be_truthy
+
+        (0..10).each {|i| subject.push(CfsmEvent.new :test_event, :data => {:element => i} ) }
       end
 
       describe '#wait_for_new_element' do
@@ -168,6 +178,9 @@ module CfsmClasses
             subject.wait_for_new_event
             expect( subject.size ).to eq( 7 )
           end
+
+          t.run
+          wait_for { subject.thread_waiting?(t ) }.to be_truthy
 
           subject.push(CfsmEvent.new :test_event, :data => { :element => 8 } )
           expect( t.join(60) ).not_to be_nil

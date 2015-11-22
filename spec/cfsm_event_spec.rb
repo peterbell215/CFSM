@@ -31,13 +31,13 @@ describe CfsmEvent do
 
   describe '#inspect' do
     it 'should return a string describing the event' do
-      expect( CfsmEvent.new( :test_event, :prio => 1,
+      expect( CfsmEvent.new( :test_event, :src => 'rspec', :prio => 1,
                              :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym } ).inspect ).to \
-      eq('{ test_event: prio = 1, status = nil, expiry = nil, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
+      eq('{ test_event: src = rspec, prio = 1, status = nil, expiry = nil, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
 
       expect( CfsmEvent.new( :test_event, :prio => 2, :expiry => Time.mktime(2015,12,1,14,30),
                              :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym } ).inspect ).to \
-      eq('{ test_event: prio = 2, status = nil, expiry = 1-Dec 14:30.000, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
+      eq('{ test_event: src = _spec.rb:38:in `new\', prio = 2, status = nil, expiry = 1-Dec 14:30.000, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
     end
   end
 
