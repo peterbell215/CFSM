@@ -38,7 +38,8 @@ class TrafficLightGraphic
 
     y_pos = ROAD_Y - TRAFFIC_LIGHT_HEIGHT/2
     [:green, :yellow, :red].each do |light|
-      @light[light] = TkcOval.new(@canvas, traffic_light_centre - LIGHT_HEIGHT/2, y_pos, traffic_light_centre + LIGHT_HEIGHT/2, y_pos - LIGHT_HEIGHT)
+      @light[light] = TkcOval.new(@canvas, traffic_light_centre - LIGHT_HEIGHT/2, y_pos,
+                                  traffic_light_centre + LIGHT_HEIGHT/2, y_pos - LIGHT_HEIGHT)
       y_pos -= LIGHT_HEIGHT
     end
   end

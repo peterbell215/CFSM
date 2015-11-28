@@ -221,7 +221,7 @@ module CfsmClasses
         set_event_status(event, :cancelled)
         return @event_queue.delete( event )
       else
-        CFSM.logger.info( "#{namespace.to_s}: canceling default event #{event.inspect}" )
+        CFSM.logger.info( "#{namespace.to_s}: cancelling default event #{event.inspect}" )
         return set_event_status(event, :cancelled)
       end
     end

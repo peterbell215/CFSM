@@ -75,7 +75,8 @@ class CfsmEvent
   attr_reader :expiry
 
   def inspect
-    "{ #{ self.event_class.to_s }: prio = #{self.prio.to_s}, status = #{@status ? @status.to_s : 'nil'}, expiry = #{self.expiry ? self.expiry.strftime("%-d-%b %H:%M.%3N") : 'nil'}, data = #{ self.data.inspect } }"
+    "{ #{ self.event_class.to_s }: src = #{self.src.to_s[-20..-1] || self.src.to_s}, prio = #{self.prio.to_s}, "\
+    "status = #{@status ? @status.to_s : 'nil'}, expiry = #{self.expiry ? self.expiry.strftime("%-d-%b %H:%M.%3N") : 'nil'}, data = #{ self.data.inspect } }"
   end
 
   private
