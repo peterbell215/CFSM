@@ -11,7 +11,13 @@ module ConditionOptimisation
   # transitions.
 
   describe ConditionGraph do
-    let(:log) { Logger.new( 'condition_graph.txt' ).tap { |l| l.level = Logger::DEBUG } }
+    before(:each) do
+      class ::Symbol
+        def instantiate( fsms )
+          return [ self ]
+        end
+      end
+    end
 
     describe 'graph to/and from strings' do
       subject(:graph) do
@@ -183,29 +189,46 @@ module ConditionOptimisation
         # We use a simplified representation for testing: conditions are represented as Fixnums
         # and transitions as symbols.
         context 'check that each condition is evaluated exactly once' do
+          before(:each) do
+            # We monkey patch these two classes to allow us to test with a simplified representation.  In this
+            # specific test, we remove the condition to ensure it is not evaluated multiple times.
+            class ::Fixnum
+              def evaluate( condition_set, fsms )
+                if condition_set.delete( self )
+                  return fsms
+                else
+                  fail
+                end
+              end
+            end
+          end
+
           it 'should evaluate each condition only once and return the correct transition' do
             # We use a slight of hand here.  The evaluate lambda is passed the set of conditions that have
             # not yet been evaluated in the event field.  This way we can keep track of what conditions have been
             # evaluated without needing to interfere
             # in any way with EventProcessor::execute.
-            expect( simple_graph.execute( set_a,
-                    -> (conditions_to_go, condition, fsms ) { expect(conditions_to_go.delete? condition).to be_truthy; fsms },
-                    -> ( transition, included_fsms ) { [ transition ] } ) ).to contain_exactly :fsm_a
+            expect( simple_graph.execute( set_a ) ).to contain_exactly :fsm_a
             expect( set_a ).to be_empty
           end
         end
 
         context 'some conditions are true' do
+          before(:each) do
+            # We monkey patch these two classes to allow us to test with a simplified representation.
+            class ::Fixnum
+              def evaluate( condition_set, fsms )
+                condition_set.member?( self ) ? fsms : nil
+              end
+            end
+          end
+
           it 'should only return :fsm_a if conditons 3 to 6 are false ' do
-            expect( graph.execute( set_a,
-                                   -> (event, condition, fsms) { event.member?(condition) ? fsms : nil },
-                                   -> ( transition, included_fsms ) { [transition] }) ).to contain_exactly( :fsm_a )
+            expect( graph.execute( set_a ) ).to contain_exactly( :fsm_a )
           end
 
           it 'should only return :fsm_b and :fsm_c for conditons 1 to 6' do
-            expect( graph.execute( set_b,
-                                   -> (event, condition, fsms) { event.member?(condition) ? fsms : nil },
-                                   -> ( transition, included_fsms ) { [ transition ] } ) ).to contain_exactly( :fsm_b, :fsm_c )
+            expect( graph.execute( set_b ) ).to contain_exactly( :fsm_b, :fsm_c )
           end
         end
       end
@@ -222,14 +245,7 @@ module ConditionOptimisation
     end
 
     context 'should handle a complex set of conditions' do
-      before(:each) do
-        # See comment above about need to monkey patch Fixnum to support testing.
-        class ::Fixnum
-          def evaluate( fsms, condition_set )
-            condition_set.member?( self ) ? fsms : nil
-          end
-        end
-      end
+
 
       subject( :graph ) { ConditionGraph.new }
       let( :complex_conditions_set ) do
@@ -261,9 +277,7 @@ module ConditionOptimisation
             (0..index).each do |i|
               condition_set_under_test = conditions_sets_as_array[i]
               expected_transition = complex_conditions_set[ condition_set_under_test ]
-              expect( graph.execute( condition_set_under_test,
-                                     -> (event, condition, fsms) { event.member?(condition) ? fsms : nil },
-                                     -> ( transition, included_fsms ) { [transition] } ) ).to include( expected_transition )
+              expect( graph.execute( condition_set_under_test ) ).to include( expected_transition )
             end
           end
         end
@@ -275,9 +289,7 @@ module ConditionOptimisation
 
           # Now test that for every condition_set we get the correct transition.
           complex_conditions_set.each_pair do |condition_set, transition|
-            expect( graph.execute( condition_set,
-                                   -> (event, condition, fsms) { event.member?(condition) ? fsms : nil },
-                                   -> ( transition, included_fsms ) { [transition] } ) ).to include( transition )
+            expect( graph.execute( condition_set ) ).to include( transition )
           end
         end
       end

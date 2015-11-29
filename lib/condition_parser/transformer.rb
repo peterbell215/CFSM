@@ -4,7 +4,7 @@
 
 # @note
 # Part of the parslet family.  Transforms the condition tree into a linear array of ComparisonNode's and BranchNodes
-# Each ComparisonNode will evaluate a condition.  BranchNodes are used to evaluate OR conditions.  So the 
+# Each ComparisonNode will evaluate a condition.  BranchNodes are used to evaluate OR conditions.
 
 require 'parslet'
 
@@ -21,15 +21,15 @@ module ConditionParser
       EventCondition.new( comparator.str.to_sym, left, right )
     end
 
-    # Recurse down the tree, replacing each EventCondition with an integer number.  Used to help make
-    # the manipulation of the condition trees easier.
+    # Recurse down the tree, ensuring that each EventCondition object exists only once.  This allows equality of nodes
+    # to be tested using object_id rather than comparing individual elements of the EventCondition.
     #
     # @param [ConditionCache] cache
     # @param [Hash,Array,EventCondition] tree
     # @return [Hash,Array,Fixnum]
     def self.cache_conditions( cache, tree )
       if tree.is_a? EventCondition
-        (cache << tree)
+        ( cache.add(tree) )
       else
         # If its not an EventCondition (leaf node) then it must be a Hash.
         (tree[:or] || tree[:and]).map! { |sub_tree| sub_tree = cache_conditions( cache, sub_tree) }
@@ -60,7 +60,9 @@ module ConditionParser
     # @return [Array<EventCondition>]
     def self.and(a , b)
        result = []
-       make_a_of_a( a ).each { |el_a| make_a_of_a( b ).each { |el_b| result.push( el_a + el_b ) } }
+       a_as_array_of_array = make_a_of_a( a )
+       b_as_array_of_array = make_a_of_a( b )
+       a_as_array_of_array.each { |el_a| b_as_array_of_array.each { |el_b| result.push( el_a + el_b ) } }
        result
     end
 
@@ -79,8 +81,11 @@ module ConditionParser
       end
     end
 
-    ##
-    # Recurse through the
+    # Any boolean expression can ultimately be presented as ( set1 of AND conditions ) OR (set2 of AND conditions ) OR ...
+    #
+    # This function finds all paths through the tree that provide a set of AND conditions.  Each entry in the array
+    # is one such sub-term of AND conditions.  It does this by recursing through all AND paths.
+    #
     # @param [Hash,EventCondition] tree
     # @return [Array<Array<EventConditions>>]
     def self.generate_permutations(tree)

@@ -83,7 +83,7 @@ module ConditionParser
           cache = ConditionCache.new
           Transformer.cache_conditions( cache, result )
 
-          expect( result ).to have_parse_tree( {:and=>[0, {:or=>[1, 2]}]} )
+          expect( result ).to have_parse_tree( {:and=>[cache[0], {:or=>[cache[1], cache[2]]}]} )
 
           expect( cache[0] ).to eq ConditionParser::EventCondition.new( :==, EventAttribute.new( 'a' ), 4.0)
           expect( cache[1] ).to eq ConditionParser::EventCondition.new( :==, FsmStateVariable.new( TestFSM, 'b' ), 'Peter' )

@@ -11,6 +11,20 @@ module ConditionOptimisation
   describe 'evaluate multiple graphs' do
     subject( :condition_graph_factory ) { ConditionGraphFactory.new }
 
+    before(:each) do
+      # We monkey patch these two classes to allow us to test with a simplified representation.
+      class ::Fixnum
+        def evaluate( condition_set, fsms )
+          condition_set.member?( self ) ? fsms : nil
+        end
+      end
+      class ::Symbol
+        def instantiate( fsms )
+          return [ self ]
+        end
+      end
+    end
+
     it 'should correctly optimise' do
       conditions_sets = {}
 
@@ -24,9 +38,7 @@ module ConditionOptimisation
 
       # Now test that for every condition set we get the correct
       conditions_sets.each_pair do |condition_set, transition|
-        expect( graph.execute(condition_set,
-                             ->(condition_set, condition, fsms) { condition_set.member?(condition) ? fsms : nil },
-                             ->(transition, included_fsms) { [transition] } ) ).to include( transition )
+        expect( graph.execute(condition_set) ).to include( transition )
       end
 
       # TODO: test the negative: i.e. sets of conditions that are not covered

@@ -54,8 +54,12 @@ module CfsmClasses
       @conditions = {}
 
       # In order to facilitate faster manipulation of the parameters during the optimisation we cache the
-      # parameters in this Hash together with an integer.  The Caches are in turn hashed onto the EventConditions.
-      @condition_cache = {}
+      # parameters.  The ConditionCache holds an array of EventConditons with all tests stored only once in
+      # the EventCondition.  This allows faster manipulation of the tree during optimisation since when comparing
+      # conditions we can do this simply on object_id rather than on the whole EventCondition.
+      #
+      # Once optimisation is complete, this array can be discarded.
+      @condition_cache = ConditionParser::ConditionCache.new
     end
 
     attr_reader :status
@@ -241,16 +245,7 @@ module CfsmClasses
         @status = :process_event
         @event_queue.each do |event|
           # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
-          transitions =
-              @conditions[event.event_class].execute(event,
-                                                     ->(event, condition, fsms) do
-                                                       # condition evaluation
-                                                       @condition_cache[event.event_class][condition].evaluate(event, fsms)
-                                                     end,
-                                                     ->(transition, fsms) do
-                                                       # transition instantiation
-                                                       transition.instantiate( fsms )
-                                                     end)
+          transitions = @conditions[event.event_class].execute( event )
 
           unless transitions.empty?
             return event if process_transitions(event, transitions)
@@ -297,10 +292,8 @@ HEREDOC
     # @api private
     def cache_conditions
       @conditions.each_pair do |event, condition_trees|
-        @condition_cache[event] ||= ConditionParser::ConditionCache.new
         condition_trees.each do |tree|
-          tree.condition_tree = ConditionParser::Transformer.cache_conditions(@condition_cache[event],
-                                                                              tree.condition_tree)
+          tree.condition_tree = ConditionParser::Transformer.cache_conditions(@condition_cache, tree.condition_tree)
         end
       end
     end

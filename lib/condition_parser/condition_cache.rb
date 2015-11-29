@@ -11,12 +11,18 @@ module ConditionParser
   class ConditionCache < Array
     # Add an entry to the cache, or if already cached just return the lookup value.
     # @param event_condition [ConditionNode] the event condition being cached.
-    # @return [Integer] the cache value
-    def <<(event_condition)
+    # @return [ConditionNode] the cached value - either the event condition, or a previously stored copy of the same
+    def add(event_condition)
       # TODO: we need to re-arrange the in-equality if it contains both an event attribute and a state attribute.
 
-      # check if the member exists: if so add.
-      self.index( event_condition ) || self.push( event_condition ).length - 1
+      # check if the member exists: if not add.
+      index_existing_entry = self.index( event_condition )
+      if index_existing_entry.nil?
+        self.push( event_condition )
+        event_condition
+      else
+        self[index_existing_entry]
+      end
     end
   end
 end

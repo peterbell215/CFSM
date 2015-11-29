@@ -114,14 +114,12 @@ module ConditionOptimisation
       self
     end
 
-    # Executes the graph.  When it needs to evaluate a condition it call condition_eval_lambda.
-    # Likewise, when it needs to instantiate it calls transition_instantiate_lambda.  This mechanism
-    # allows both details of the way the conditions are stored to be kept away from ConditionGraph, and
-    # also to use a different representation in RSpec tests of ConditionGraph.
+    # Executes the condition graph.  Starts at the appropriate start_node, progresses through the condition nodes
+    # keeping track of all fsms in play.  Once all conditions have been evaluated, then the transitions associated
+    # with that condition node are added to the list of transitions that need executing.
+    #
     # @param [CfsmEvent] event
-    # @param [lambda] condition_eval_lambda
-    # @param [lambda] transition_instantiate_lambda
-    def execute( event, condition_eval_lambda, transition_instantiate_lambda )
+    def execute( event )
       transitions = Set.new      # list of transitions that can be executed.
 
       @start_array.each do |current|
@@ -129,32 +127,28 @@ module ConditionOptimisation
 
         begin
           # Retrieve next condition set to evaluate, and the fsms to use.
-          current, fsms = stack.pop(2)
+          current, fsms_still_in_play = stack.pop(2)
 
-          # At this point self[current] points to a ConditionNode.  This has a set of conditions which we
-          # need to evaluate in turn. *fsms* keeps a list of all finite state machines that are still in play.
-          fsms = self[current].conditions.inject( fsms ) do |f, c|
-            f = condition_eval_lambda.call(event, c, f)
-            if f.nil?
-              CFSM.logger.info("Condition evaluation failed for #{event.inspect} on #{c.inspect}")
-              break
+          catch( :all_fsms_eliminated ) do
+            # At this point self[current] points to a ConditionNode.  This has a set of conditions which we
+            # need to evaluate in turn. *fsms* keeps a list of all finite state machines that are still in play.
+            self[current].conditions.each do |condition_to_eval|
+              fsms_still_in_play = condition_to_eval.evaluate( event, fsms_still_in_play )
+              if fsms_still_in_play.nil?
+                CFSM.logger.info("Condition evaluation failed for #{event.inspect} on #{condition_to_eval.inspect}")
+                throw :all_fsms_eliminated
+              end
             end
-            f
-          end
 
-          if fsms && !fsms.empty?
             # fsms is either :all or a list of FSMs that meet the criteria. We now have to apply the specified
             # transitions to those fsms in the list, or all if the list is still :all.
-            transitions +=
-                self[current].transitions.inject([]) do |trans_to_exec, transition|
-                  trans_to_exec += transition_instantiate_lambda.call( transition, fsms )
-                end
+            self[current].transitions.each { |transition| transitions.merge transition.instantiate(fsms_still_in_play) }
+
             # Now push the follow ons onto the stack, with the list fof instantiated fsms still in play
-            self[current].edges.each { |follow_on| stack += [ follow_on, fsms ] }
+            self[current].edges.each { |follow_on| stack += [ follow_on, fsms_still_in_play ] }
           end
         end until stack.empty? # If the stack is empty we are done.
       end
-      #return the transitions
       transitions
     end
 
