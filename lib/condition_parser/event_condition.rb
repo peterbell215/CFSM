@@ -69,15 +69,24 @@ module ConditionParser
     # key
     # @return [Fixnum]
     def hash
-      self.comparator.object_id ^ self.left_term.hash ^ self.right_term.hash
+      self.comparator.object_id ^ INVERSE[self.comparator].object_id ^ self.left_term.hash ^ self.right_term.hash
     end
 
-    # Check if two EventConditions are equal.
+    # Check if two EventConditions are equal.  Take account of the fact that left and right may be
+    # reversed.
+    #
     # @param [EventCondition] object2
     # @return [True,False]
     def ==(object2)
-      object2.is_a?( EventCondition ) &&
-        self.comparator == object2.comparator && self.left_term == object2.left_term && self.right_term == object2.right_term
+      return false unless object2.is_a?( EventCondition )
+
+      if self.comparator == object2.comparator
+        self.left_term == object2.left_term && self.right_term == object2.right_term
+      elsif INVERSE[self.comparator] == object2.comparator
+        self.left_term == object2.right_term && self.right_term == object2.left_term
+      else
+        false
+      end
     end
 
     alias eql? :==
@@ -88,14 +97,14 @@ module ConditionParser
     def comparison_evaluate(event, fsm)
       left_arg = arg_evaluate( @left_term, event, fsm )
       right_arg = arg_evaluate( @right_term, event, fsm )
-
       # We need to coerce the two args to be the same class before we send to the comparator
       left_arg, right_arg = left_arg.coerce( right_arg ) if left_arg.respond_to?( :coerce )
-
       comparison_result = left_arg.send( @comparator, right_arg )
 
-      CFSM.logger.debug "- against #{fsm.inspect}" unless fsm.nil?
-      CFSM.logger.debug "    Result: #{left_arg.inspect} #{@comparator.to_s} #{right_arg.inspect} => #{comparison_result}"
+      if CFSM.logger.debug?
+        CFSM.logger.debug "- against #{fsm.inspect}" unless fsm.nil?
+        CFSM.logger.debug "    Result: #{left_arg.inspect} #{@comparator.to_s} #{right_arg.inspect} => #{comparison_result}"
+      end
       comparison_result
     end
 

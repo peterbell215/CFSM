@@ -35,6 +35,8 @@ module ConditionParser
     let!( :test_fsm1_1 ) { TestFSM1.new( 5 ) }
     let!( :fsm_condition1 ) { EventCondition::fsm_state_checker(TestFSM1, :a) }
     let!( :test_event ) { CfsmEvent.new( :test_event, :data => { :test_var => 5 } ) }
+    let!( :fsm_state_variable ){ FsmStateVariable.new(TestFSM1,:test_var) }
+    let!( :event_attribute ){ EventAttribute.new(:test_var) }
 
     describe '#fsm_state_checker' do
       it 'should generate a state checker correctly do' do
@@ -70,11 +72,36 @@ module ConditionParser
     end
 
     describe '#hash' do
-      #TODO
+      it 'should generate the same hash for two identical EventConditions' do
+        ech1 = EventCondition.new(:<, fsm_state_variable, event_attribute).hash
+        ech2 = EventCondition.new(:>, event_attribute, fsm_state_variable).hash
+        ech3 = EventCondition.new(:>=, event_attribute, fsm_state_variable).hash
+
+        expect( ech1 ).to eql(ech2)
+        expect( ech1 ).to_not eql(ech3)
+      end
     end
 
     describe '#==' do
-      #TODO
+      it 'should compare two EventConditions correctly' do
+        ec1 = EventCondition.new(:==, fsm_state_variable, 5)
+        ec2 = EventCondition.new(:==, fsm_state_variable, 5)
+        ec3 = EventCondition.new(:==, event_attribute, 5)
+        ec4 = EventCondition.new(:==, event_attribute, 5)
+
+        expect( ec1==ec2 ).to be true
+        expect( ec3==ec4 ).to be true
+        expect( ec1==ec3 ).to be false
+        expect( ec2==ec4 ).to be false
+      end
+
+      it 'should compare two EventConditions that are inverse of each other correctly' do
+        ec1 = EventCondition.new(:<, fsm_state_variable, event_attribute)
+        ec2 = EventCondition.new(:>, event_attribute, fsm_state_variable)
+        ec3 = EventCondition.new(:>=, event_attribute, fsm_state_variable)
+        expect( ec1==ec2 ).to be true
+        expect( ec1==ec3 ).to be false
+      end
     end
   end
 end
