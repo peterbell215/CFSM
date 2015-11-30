@@ -34,31 +34,42 @@ module ConditionParser
       EventCondition.new(:==, FsmStateVariable.new( fsm_class, :state ), state)
     end
 
+    def inspect
+      "#{@attribute.inspect} #{@comparator.to_s} #{@value.inspect}"
+    end
+
     # This will evaluate for whether the condition has been met.
     # @param [Array<CFSM>] cfsms is the array of FSMs to be evaluated.
     # @return [Array<CFSM>] is the array of FSMs that match the evaluated condition.
     def evaluate( event, cfsms )
       return [] if cfsms.nil? || cfsms.empty?
 
+      CFSM.logger.debug "Evaluating #{self.inspect} "
+      CFSM.logger.debug "    against event #{event.inspect}"
+
       # if cfsms remains nil then this particular namespace has no FSMs instantiated,
       # therefore return []
       cfsms = CFSM.state_machines( @attribute.fsm_class ).dup if cfsms == :all
 
       cfsms.delete_if do |fsm|
+        CFSM.logger.debug "- against #{fsm.inspect}"
         if @attribute.is_a? FsmStateVariable
-          # TODO: @value could be complex.  Need something to deal with that case.
-
-          # We need to coerce the two args to be the same class before we send to the comparator
           left_arg = fsm.send( @attribute.state_var )
-          if left_arg.respond_to?( :coerce )
-            left_arg, right_arg = left_arg.coerce( @value )
-          else
-            right_arg = @value
-          end
-          !left_arg.send( @comparator, right_arg )
+          # TODO: @value could be complex.  Need something to deal with that case.
+          right_arg = @value
         else
-          !self.attribute.evaluate( event ).send( self.comparator, fsm.send( self.value.state_var ) )
+          left_arg = self.attribute.evaluate( event )
+          right_arg = fsm.send(self.value.state_var)
         end
+
+        # We need to coerce the two args to be the same class before we send to the comparator
+        left_arg, right_arg = left_arg.coerce( @value ) if left_arg.respond_to?( :coerce )
+
+        comparison_result = left_arg.send( @comparator, right_arg )
+        CFSM.logger.debug "    Condition: #{self.inspect}"
+        CFSM.logger.debug "    Result:    #{left_arg.inspect} #{@comparator.to_s} #{right_arg.inspect} => #{comparison_result}"
+
+        !comparison_result
       end
       cfsms
     end

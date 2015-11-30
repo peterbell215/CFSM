@@ -23,7 +23,6 @@ module ConditionOptimisation
       ConditionsNode.new( self.conditions, self.transitions, self.edges )
     end
 
-    ##
     # This is checking whether the two nodes are close enough to then do a closer examination
     # examination.
     def similar( cond_node2 )

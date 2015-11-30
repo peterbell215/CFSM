@@ -12,6 +12,10 @@ module ConditionParser
       @attribute.hash
     end
 
+    def inspect
+      "EventAttribute #{@attribute.to_s}"
+    end
+
     def evaluate(event)
       event.send( @attribute )
     end

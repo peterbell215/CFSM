@@ -37,6 +37,10 @@ module ConditionParser
       fsm_class.to_s.hash ^ state_var.to_s.hash
     end
 
+    def inspect
+      "FsmStateVariable #{@fsm_class.to_s}.#{@state_var.to_s}"
+    end
+
     alias eql? ==
   end
 end

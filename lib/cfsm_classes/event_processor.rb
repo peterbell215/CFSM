@@ -244,8 +244,11 @@ module CfsmClasses
         CFSM.logger.info( "#{namespace.to_s}: checking if events can be processed.  Queue holds #{@event_queue.size} event(s)" )
         @status = :process_event
         @event_queue.each do |event|
+          CFSM.logger.debug( "#{namespace.to_s}: Examining event #{event.inspect}" )
+
           # we use fsms to keep track of which FSMs are in the right state to meet the requirements.
           transitions = @conditions[event.event_class].execute( event )
+          CFSM.logger.debug( "Transitions still in play: #{transitions.inspect}")
 
           unless transitions.empty?
             return event if process_transitions(event, transitions)
