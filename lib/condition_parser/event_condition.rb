@@ -9,18 +9,26 @@ module ConditionParser
   # - value either a constant or another expression.
   class EventCondition
     attr_reader :comparator
-    attr_reader :attribute
-    attr_reader :value
+    attr_reader :left_term
+    attr_reader :right_term
+
+    INVERSE = { :== => :==, :!= => :!=, :>= => :<=, :> => :<, :<= => :>=, :< => :> }
 
     # Constructor
     #
     # @param comparator [Symbol] the comparison to be undertaken
-    # @param attribute [String] the attribute to tested
-    # @param [Object] value the value it should be compared to
-    def initialize( comparator, attribute, value )
-      @comparator = comparator
-      @attribute = attribute
-      @value = value
+    # @param left_term [Object] the left term of the comparator
+    # @param right_term [Object]  the right term it should be compared to
+    def initialize( comparator, left_term, right_term )
+      if !left_term.is_a?(FsmStateVariable) && right_term.is_a?(FsmStateVariable)
+        @comparator = INVERSE[comparator]
+        @left_term = right_term
+        @right_term = left_term
+      else
+        @comparator = comparator
+        @left_term = left_term
+        @right_term = right_term
+      end
       self
     end
 
@@ -35,50 +43,33 @@ module ConditionParser
     end
 
     def inspect
-      "#{@attribute.inspect} #{@comparator.to_s} #{@value.inspect}"
+      "#{@left_term.inspect} #{@comparator.to_s} #{@right_term.inspect}"
     end
 
     # This will evaluate for whether the condition has been met.
     # @param [Array<CFSM>] cfsms is the array of FSMs to be evaluated.
     # @return [Array<CFSM>] is the array of FSMs that match the evaluated condition.
     def evaluate( event, cfsms )
+      # if cfsms remains nil then this particular namespace has no FSMs instantiated,
+      # therefore return []
       return [] if cfsms.nil? || cfsms.empty?
 
       CFSM.logger.debug "Evaluating #{self.inspect} "
       CFSM.logger.debug "    against event #{event.inspect}"
 
-      # if cfsms remains nil then this particular namespace has no FSMs instantiated,
-      # therefore return []
-      cfsms = CFSM.state_machines( @attribute.fsm_class ).dup if cfsms == :all
-
-      cfsms.delete_if do |fsm|
-        CFSM.logger.debug "- against #{fsm.inspect}"
-        if @attribute.is_a? FsmStateVariable
-          left_arg = fsm.send( @attribute.state_var )
-          # TODO: @value could be complex.  Need something to deal with that case.
-          right_arg = @value
-        else
-          left_arg = self.attribute.evaluate( event )
-          right_arg = fsm.send(self.value.state_var)
-        end
-
-        # We need to coerce the two args to be the same class before we send to the comparator
-        left_arg, right_arg = left_arg.coerce( @value ) if left_arg.respond_to?( :coerce )
-
-        comparison_result = left_arg.send( @comparator, right_arg )
-        CFSM.logger.debug "    Condition: #{self.inspect}"
-        CFSM.logger.debug "    Result:    #{left_arg.inspect} #{@comparator.to_s} #{right_arg.inspect} => #{comparison_result}"
-
-        !comparison_result
+      if @left_term.is_a? FsmStateVariable
+        cfsms = CFSM.state_machines( @left_term.fsm_class ).dup if cfsms == :all
+        cfsms.delete_if { |fsm| !comparison_evaluate(event, fsm) }
+      else
+        comparison_evaluate(event, nil) ? cfsms : []
       end
-      cfsms
     end
 
     # Override the standard hash key so that different instances that are == generate the same hash
     # key
     # @return [Fixnum]
     def hash
-      self.comparator.object_id ^ self.attribute.hash ^ self.value.hash
+      self.comparator.object_id ^ self.left_term.hash ^ self.right_term.hash
     end
 
     # Check if two EventConditions are equal.
@@ -86,9 +77,38 @@ module ConditionParser
     # @return [True,False]
     def ==(object2)
       object2.is_a?( EventCondition ) &&
-        self.comparator == object2.comparator && self.attribute == object2.attribute && self.value == object2.value
+        self.comparator == object2.comparator && self.left_term == object2.left_term && self.right_term == object2.right_term
     end
 
     alias eql? :==
+
+    private
+
+    # Private method to evaluate for an event and a specific FSM whether the condition is med.
+    def comparison_evaluate(event, fsm)
+      left_arg = arg_evaluate( @left_term, event, fsm )
+      right_arg = arg_evaluate( @right_term, event, fsm )
+
+      # We need to coerce the two args to be the same class before we send to the comparator
+      left_arg, right_arg = left_arg.coerce( right_arg ) if left_arg.respond_to?( :coerce )
+
+      comparison_result = left_arg.send( @comparator, right_arg )
+
+      CFSM.logger.debug "- against #{fsm.inspect}" unless fsm.nil?
+      CFSM.logger.debug "    Result: #{left_arg.inspect} #{@comparator.to_s} #{right_arg.inspect} => #{comparison_result}"
+      comparison_result
+    end
+
+    # Private method to evaluate one side of the comparison operator.
+    def arg_evaluate( argument, event, fsm )
+      case argument
+        when FsmStateVariable
+          return fsm.send( argument.state_var )
+        when EventAttribute
+          return argument.evaluate( event )
+        else
+          return argument
+      end
+    end
   end
 end

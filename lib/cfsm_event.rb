@@ -35,6 +35,8 @@ class CfsmEvent
       end
     end
 
+    # TODO: flag warning if attribute is in opts that we don't recognise.
+
     @src = opts[:src] || caller(1, 1)[0]
     @prio = opts[ :prio ] || 0
     # At the point a delayed event is created, this sets an expiry for that event.
