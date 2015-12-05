@@ -2,5 +2,7 @@ Currently, most of the time, RSpec runs correctly for all tests.  Just occasiona
 Suspect some sort of async behaviour that makes it fail if a thread change happens at the wrong time.  Will require more work.
 It does also seem to be either the same tests fail or pass.
 
+conditions_to_evaluate is destryong cfsms_still_in_play in traffic light problem.
+
 
 

@@ -59,6 +59,7 @@ module ConditionParser
 
       if @left_term.is_a? FsmStateVariable
         cfsms = CFSM.state_machines( @left_term.fsm_class ).dup if cfsms == :all
+        # TODO: this is destroying the set globally.
         cfsms.delete_if { |fsm| !comparison_evaluate(event, fsm) }
       else
         comparison_evaluate(event, nil) ? cfsms : []

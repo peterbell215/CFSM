@@ -134,7 +134,7 @@ module ConditionOptimisation
             # need to evaluate in turn. *fsms* keeps a list of all finite state machines that are still in play.
             self[current].conditions.each do |condition_to_eval|
               fsms_still_in_play = condition_to_eval.evaluate( event, fsms_still_in_play )
-              if fsms_still_in_play.nil?
+              if fsms_still_in_play.nil? || fsms_still_in_play.empty?
                 CFSM.logger.info("Condition evaluation failed for #{event.inspect} on #{condition_to_eval.inspect}")
                 throw :all_fsms_eliminated
               end
@@ -142,10 +142,14 @@ module ConditionOptimisation
 
             # fsms is either :all or a list of FSMs that meet the criteria. We now have to apply the specified
             # transitions to those fsms in the list, or all if the list is still :all.
-            self[current].transitions.each { |transition| transitions.merge transition.instantiate(fsms_still_in_play) }
+            self[current].transitions.each do |transition|
+              transitions.merge transition.instantiate(fsms_still_in_play)
+            end
 
             # Now push the follow ons onto the stack, with the list fof instantiated fsms still in play
-            self[current].edges.each { |follow_on| stack += [ follow_on, fsms_still_in_play ] }
+            self[current].edges.each do |follow_on|
+              stack += [follow_on, fsms_still_in_play == :all ? :all : fsms_still_in_play.dup]
+            end
           end
         end until stack.empty? # If the stack is empty we are done.
       end
@@ -177,9 +181,9 @@ module ConditionOptimisation
 
       # Print each line
       self.each_with_index do |obj,ind|
-        string << "#{ind}: {#{obj.conditions.to_a.join(', ')}} "\
-          "[#{obj.transitions.to_a.join(', ')}] "\
-          "-> #{ obj.edges.empty? ? 'end' : obj.edges.to_a.join(', ')}\n"
+        string << "#{ind}: {#{obj.conditions.to_a.map{|t|t.inspect}.join(', ')}} "
+        string << "[#{obj.transitions.to_a.map{|t| t.to_s}.join(', ')}] "
+        string << "-> #{ obj.edges.empty? ? 'end' : obj.edges.to_a.map{|e| e.inspect}.join(', ')}\n"
       end
 
       string

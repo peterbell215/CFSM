@@ -245,8 +245,6 @@ module ConditionOptimisation
     end
 
     context 'should handle a complex set of conditions' do
-
-
       subject( :graph ) { ConditionGraph.new }
       let( :complex_conditions_set ) do
         {

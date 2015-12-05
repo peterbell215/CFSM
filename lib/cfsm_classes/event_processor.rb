@@ -168,6 +168,13 @@ module CfsmClasses
       convert_trees_to_sets
       convert_sets_to_graph
 
+      if CFSM.logger.info?
+        @conditions.each_pair do |event_class, condition_graph|
+          CFSM.logger.info "Condition graph for #{event_class.to_s}"
+          CFSM.logger.info condition_graph.inspect
+        end
+      end
+
       # For each CFSM namespace, we also have a queue to hold unprocessed events.
       @event_queue ||= PrioQueue.new
 

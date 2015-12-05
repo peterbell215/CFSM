@@ -2,6 +2,8 @@
 # @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
+require 'pathname'
+
 module CfsmClasses
   ##
   # Used to describe a state transition.
@@ -33,6 +35,17 @@ module CfsmClasses
         transitions
       end
       # note transitions returned from loop, so implicitly returned from method
+    end
+
+    def inspect
+      result = "Transition: #{fsm.name} to #{new_state}"
+      case self.transition_proc
+        when Proc
+          filename, line = self.transition_proc.source_location
+          result << " on exec of #{Pathname.new(filename).basename}:#{line}"
+        when Symbol
+          result << " on exec of #{transition_proc.to_s}"
+      end
     end
   end
 end
