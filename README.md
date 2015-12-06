@@ -134,7 +134,7 @@ Clearly, just performing transitions on there own is not particularly useful.  T
 class Telephone < CFSM
     state :nothing_happening do
         # Form 1: Do block
-        on :incoming_call, :transition => :ringing do |event|
+        on :incoming_call, :transition => :ringing do |event, next_state|
             Audio.play 'ring.wav'
             true
         end
@@ -155,6 +155,8 @@ class Telephone < CFSM
 end
 ```
 In both forms, we allow for the action to fail leading to the transition not happening.  So if the block or method returns a falsey value, then the transition does not happen.  Clearly the block may have already made some other changes that it will need to undo for itself before returning.
+
+Note that during the execution of the block or method, the FSMs state will still be in the old state.  However, the event will have been consumed, so the event will need to be reposted if the user wants it to be re-evaluated.  In the case of a block parameter the new state is unambigious, so we do not bother passing it into the block.
 
 ## Namespacess
 

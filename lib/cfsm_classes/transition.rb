@@ -37,6 +37,7 @@ module CfsmClasses
       # note transitions returned from loop, so implicitly returned from method
     end
 
+    # Turn the transition into a string description.
     def inspect
       result = "Transition: #{fsm.name} to #{new_state}"
       case self.transition_proc
@@ -47,5 +48,7 @@ module CfsmClasses
           result << " on exec of #{transition_proc.to_s}"
       end
     end
+
+    alias to_s inspect
   end
 end

@@ -65,31 +65,32 @@ class TrafficLight < CFSM
 
   state :red do
     on :other_been_red_for_10s, :if => 'src!=@name', :transition => :red_yellow do |e|
-      traffic_light_graphic.set_traffic_light( self.name, e.event_class )
+      traffic_light_graphic.set_traffic_light( self.name, :red_yellow )
+      puts "#{self.name} set to red yellow"
       CFSM.post( CfsmEvent.new :next_phase, :src => self.name, :delay => 2 )
-      true
     end
   end
 
   state :red_yellow do
-    on :next_phase, :if => 'src==@name', :transition => :green  do
-      traffic_light_graphic.set_traffic_light( self.name, e.event_class )
+    on :next_phase, :if => 'src==@name', :transition => :green  do |e|
+      traffic_light_graphic.set_traffic_light( self.name, :green )
+      puts "#{self.name} set to green"
       CFSM.post( CfsmEvent.new :next_phase, :src => self.name, :delay => 2 )
-      true
     end
   end
 
   state :green do
-    on :next_phase, :if => 'src==@name', :transition => :yellow  do
-      traffic_light_graphic.set_traffic_light( self.name, e.event_class )
-      CFSM.post( CfsmEvent.new :next_phase, :src => self.name, :delay => 30 )
-      true
+    on :next_phase, :if => 'src==@name', :transition => :yellow  do |e|
+      traffic_light_graphic.set_traffic_light( self.name, :yellow )
+      puts "#{self.name} set to yellow"
+      CFSM.post( CfsmEvent.new :next_phase, :src => self.name, :delay => 20 )
     end
   end
 
   state :yellow do
-    on :next_phase, :if => 'src==@name', :transition => :red  do
-      traffic_light_graphic.set_traffic_light( self.name, e.event_class )
+    on :next_phase, :if => 'src==@name', :transition => :red  do |e|
+      traffic_light_graphic.set_traffic_light( self.name, :red )
+      puts "#{self.name} set to red"
       CFSM.post( CfsmEvent.new :other_been_red_for_10s, :src => self.name, :delay => 10 )
       true
     end
