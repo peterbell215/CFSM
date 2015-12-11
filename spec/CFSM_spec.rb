@@ -354,6 +354,13 @@ HEREDOC
             on :event, :transition => :d, :exec => :test_transition
           end
 
+          state :f do
+            on :event, :transition => :g do |event|
+              # This should cause the method to raise an error.
+              self.state.non_existent_method
+            end
+          end
+
           def set_initial_state( initial_state )
             self.instance_exec( initial_state ) { |s| set_state(s) }
           end
@@ -378,6 +385,7 @@ HEREDOC
 
       ['block' , 'method'].each do |exec_style|
         [false, true].each do |test_case|
+          # TODO this sometimes fails to run due to some form of race condition.
           it "should #{'not ' unless test_case}transition to new state if #{exec_style} returns #{test_case.to_s}" do
             fsm = TestDo.new( test_case )
             fsm.set_initial_state( :c ) if exec_style=='method'
@@ -399,6 +407,15 @@ HEREDOC
             expect( fsm.state ).to eq( :d ) if test_case && exec_style=='method'
           end
         end
+      end
+
+      it 'should correctly handle an Exception in the block' do
+        fsm = TestDo.new( 'block' )
+        fsm.set_initial_state( :f )
+
+        CFSM.start
+        CFSM.post( event )
+        expect { sleep 30 }.to raise_error NoMethodError
       end
     end
   end

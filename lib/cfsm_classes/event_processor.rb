@@ -183,11 +183,21 @@ module CfsmClasses
 
       # If running in sync mode, we set @thread to true to indicate the EventProcessor has been set to
       # run.  If we are running in async mode then create a thread with an infinite loop to process incoming events.
+       start_thread
+    end
+
+    # Private method that starts the thread.  Separated out from run for readability.
+    def start_thread
       @thread = @options[:sync] || Thread.new do
-        loop do
-          @status = :waiting_for_event
-          process_event
-          @event_queue.wait_for_new_event
+        begin
+          loop do
+            @status = :waiting_for_event
+            process_event
+            @event_queue.wait_for_new_event
+          end
+        rescue => e
+          CFSM.logger.fatal "#{e.class}: #{$!}"
+          Thread.main.raise e
         end
       end
     end
