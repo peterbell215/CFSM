@@ -28,8 +28,8 @@ class TrafficLightGraphic
     @canvas.pack
   end
 
-  def draw_traffic_light(light)
-    traffic_light_centre = light==:left ? LEFT_TRAFFIC_CENTRE : RIGHT_TRAFFIC_CENTRE
+  def draw_traffic_light(left_or_right)
+    traffic_light_centre = left_or_right==:left ? LEFT_TRAFFIC_CENTRE : RIGHT_TRAFFIC_CENTRE
     TkcLine.new(@canvas, traffic_light_centre, ROAD_Y, traffic_light_centre, ROAD_Y - TRAFFIC_LIGHT_HEIGHT/2)
     TkcRectangle.new(@canvas, traffic_light_centre - TRAFFIC_WIDTH/2,
                      ROAD_Y - TRAFFIC_LIGHT_HEIGHT/2,
@@ -38,10 +38,12 @@ class TrafficLightGraphic
 
     y_pos = ROAD_Y - TRAFFIC_LIGHT_HEIGHT/2
     [:green, :yellow, :red].each do |light|
-      @light[light] = TkcOval.new(@canvas, traffic_light_centre - LIGHT_HEIGHT/2, y_pos,
+      @light[left_or_right][light] = TkcOval.new(@canvas, traffic_light_centre - LIGHT_HEIGHT/2, y_pos,
                                   traffic_light_centre + LIGHT_HEIGHT/2, y_pos - LIGHT_HEIGHT)
       y_pos -= LIGHT_HEIGHT
     end
+
+    set_traffic_light(left_or_right, :red)
   end
 
   def set_traffic_light(left_or_right, lamp_on)
@@ -66,7 +68,6 @@ class TrafficLight < CFSM
   state :red do
     on :other_been_red_for_10s, :if => 'src!=@name', :transition => :red_yellow do |e|
       traffic_light_graphic.set_traffic_light( self.name, :red_yellow )
-      puts "#{self.name} set to red yellow"
       CFSM.post( CfsmEvent.new :next_phase, :src => self.name, :delay => 2 )
     end
   end
@@ -74,25 +75,21 @@ class TrafficLight < CFSM
   state :red_yellow do
     on :next_phase, :if => 'src==@name', :transition => :green  do |e|
       traffic_light_graphic.set_traffic_light( self.name, :green )
-      puts "#{self.name} set to green"
-      CFSM.post( CfsmEvent.new :next_phase, :src => self.name, :delay => 2 )
+      CFSM.post( CfsmEvent.new :next_phase, :src => self.name, :delay => 20 )
     end
   end
 
   state :green do
     on :next_phase, :if => 'src==@name', :transition => :yellow  do |e|
       traffic_light_graphic.set_traffic_light( self.name, :yellow )
-      puts "#{self.name} set to yellow"
-      CFSM.post( CfsmEvent.new :next_phase, :src => self.name, :delay => 20 )
+      CFSM.post( CfsmEvent.new :next_phase, :src => self.name, :delay => 2 )
     end
   end
 
   state :yellow do
     on :next_phase, :if => 'src==@name', :transition => :red  do |e|
       traffic_light_graphic.set_traffic_light( self.name, :red )
-      puts "#{self.name} set to red"
       CFSM.post( CfsmEvent.new :other_been_red_for_10s, :src => self.name, :delay => 10 )
-      true
     end
   end
 end
