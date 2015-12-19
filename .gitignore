@@ -1,0 +1,10 @@
+# Created by .ignore support plugin (hsz.mobi)
+/.idea
+/Examples/cfsm.log
+/cfsm.log
+/pkg
+/.rspec
+/rspec_failures.txt
+/Gemfile.lock
+
+
