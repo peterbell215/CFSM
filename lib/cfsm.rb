@@ -47,15 +47,42 @@ class CFSM
   # hash maps from the module onto the individual event_processor.
   @event_processors = {}
 
-  # Access method to access `@event_processors` from derived classes.
+  # @api private
+  # Access method to access `@event_processors` from derived classes.  Returns the hash mapping
+  # CFSM derived classes to event processors.
+  #
   # @return [Hash<Class => EventProcessor]
   def self.event_processors
     @event_processors
   end
 
+  # @api private
+  # This method allows the `@event_processors` hash to be reset.  Used by Rspec tests as part of a complete
+  # reset of the CFSM system between tests.
+  #
+  # @return [Hash] a reference to the empty hash.
   def self.event_processors_reset
     @event_processors = {}
   end
+
+  # Provide a logger to be used throughout the system.
+  # @TODO: need to deal with the cfsm.log not being available.
+  File.delete('cfsm.log')
+  @@logger = Logger.new('cfsm.log', 0)
+
+  # We have one delayed event queue.  Once the event has expired, then we push it to the processors.
+  @delayed_queue = CfsmClasses::DelayedQueue.new do |event|
+    event.reset_expiry
+    post( event )
+  end
+
+  # Accessor for `@delayed_queue`
+  #
+  # @return [DeleyedQueue] Delayed event queue for all CFSMs.
+  def self.delayed_queue
+    @delayed_queue
+  end
+
   # Create the FSM.
   #
   # @param [Symbol, String] name the name of the FSM.  If no name is given, then the filename and line from which the
@@ -141,7 +168,7 @@ class CFSM
   # @param [CfsmEvent] event
   def self.post( event )
     if event.expiry
-      @@delayed_queue.post( event )
+      CFSM.delayed_queue.post( event )
     else
       CFSM.event_processors.each_value { |processor| processor.post( event ) }
     end
@@ -167,7 +194,7 @@ class CFSM
   # @param [CfsmEvent] event cancel the event in the queue
   # @return [Boolean] returns whether cancelling of the event was successful
   def self.cancel( event )
-    if @@delayed_queue.cancel( event )
+    if CFSM.delayed_queue.cancel( event )
       result = true
     else
       result = true
@@ -214,17 +241,6 @@ class CFSM
   end
 
   private
-
-  # Provide a logger to be used throughout the system.
-  # @TODO: need to deal with the cfsm.log not being available.
-  File.delete('cfsm.log')
-  @@logger = Logger.new('cfsm.log', 0)
-
-  # We have one delayed event queue.  Once the event has expired, then we push it to the processors.
-  @@delayed_queue = CfsmClasses::DelayedQueue.new do |event|
-    event.reset_expiry
-    post( event )
-  end
 
   # Set the state - used by EventProcessor.  Use fsm.instance_exec( state ) { |s| set_state(s) } for
   # the event processor to set the state.
