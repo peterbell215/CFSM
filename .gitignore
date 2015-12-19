@@ -2,7 +2,6 @@
 .idea
 Examples/cfsm.log
 cfsm.log
-pkg
 .rspec
 rspec_failures.txt
 CFSM-0.0.1.gem
