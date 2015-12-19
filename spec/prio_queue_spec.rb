@@ -139,7 +139,7 @@ module CfsmClasses
         result = subject.inspect.split("\n")[1..-1]
 
         (0..2).each do |i|
-          expect( result[i] ).to eq( "{ test_event: src = spec.rb:138:in `new', prio = #{2-i}, status = nil, expiry = nil, data = {:element=>#{2-i}} }")
+          expect( result[i] ).to eq( "{ test_event: src = spec.rb:137:in `new', prio = #{2-i}, status = nil, expiry = nil, data = {:element=>#{2-i}} }")
         end
       end
     end

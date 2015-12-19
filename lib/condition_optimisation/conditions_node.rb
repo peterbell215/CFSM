@@ -10,7 +10,6 @@ module ConditionOptimisation
     # @param conditions [Set] defines the set of conditions all of which must be true for the condition node to be true
     # @param transitions [Set<Fixnum>] defines the set of transitions to be raised if the conditions are true
     # @param edges [Set<Fixnum>] defines the set of follow conditions within the graph
-    # @param start_node [Set<Fixnum.] defines whether this node is a starting node
     # @return [ConditionsNode]
     def initialize( conditions, transitions, edges = [] )
       @conditions = Set.new( conditions ) # make a copy

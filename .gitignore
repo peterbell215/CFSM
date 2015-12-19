@@ -1,10 +1,8 @@
-# Created by .ignore support plugin (hsz.mobi)
 .idea
 Examples/cfsm.log
 cfsm.log
+doc
 .rspec
 rspec_failures.txt
 CFSM-0.0.1.gem
 Gemfile.lock
-
-

@@ -130,7 +130,7 @@ Thread status: not started
 Condition graph: N/A
 Current queue: uninitialised
 Status of each FSM:
-{TestFSM_A=>[<name = "CFSM_spec.rb:40:in `new'", state = a>]}
+{TestFSM_A=>[<name = "CFSM_spec.rb:39:in `new'", state = a>]}
 **************************
 Namespace: TestModuleB
 Thread status: not started

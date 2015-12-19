@@ -68,7 +68,7 @@ class CFSM
   # Provide a logger to be used throughout the system.
   # @TODO: need to deal with the cfsm.log not being available.
   File.delete('cfsm.log')
-  @@logger = Logger.new('cfsm.log', 0)
+  @logger = Logger.new('cfsm.log', 0)
 
   # We have one delayed event queue.  Once the event has expired, then we push it to the processors.
   @delayed_queue = CfsmClasses::DelayedQueue.new do |event|
@@ -232,7 +232,7 @@ class CFSM
   # We provide a logger to track how the system is performing.  This is really just a frontend for the Logger
   # class.
   def self.logger
-    @@logger
+    @logger
   end
 
   # This function allows the thread status for a specific namespace to be retrieved.

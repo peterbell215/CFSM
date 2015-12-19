@@ -34,7 +34,7 @@ module ConditionParser
     # Factory method to provide a convenient way of creating an EventCondition to
     # check the current state of the FSM.
     #
-    # @param [Class] fsm
+    # @param [Class] fsm_class
     # @param [Symbol] state
     # @return [EventCondition]
     def self.fsm_state_checker(fsm_class, state)

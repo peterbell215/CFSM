@@ -36,7 +36,7 @@ describe CfsmEvent do
 
       expect( CfsmEvent.new( :test_event, :prio => 2, :expiry => Time.mktime(2015,12,1,14,30),
                              :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym } ).inspect ).to \
-      eq('{ test_event: src = _spec.rb:38:in `new\', prio = 2, status = nil, expiry = 1-Dec 14:30.000, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
+      eq('{ test_event: src = _spec.rb:37:in `new\', prio = 2, status = nil, expiry = 1-Dec 14:30.000, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
     end
   end
 

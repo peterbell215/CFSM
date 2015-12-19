@@ -1,8 +1,6 @@
 # @author Peter Bell
 # Licensed under MIT.  See License file in top level directory.
 
-
-
 module CfsmClasses
   # This class hides the implementation complexities of the Communicating FSM system.  It is really only to be invoked from
   # methods within the CFSM class
@@ -353,7 +351,6 @@ HEREDOC
     # The status is something that should only be set by EventProcessor.  Therefore, it is a private method
     # on CfsmEvent.  This helper function allows us to set the status.
     # @param [Event] event whose status needs setting
-    # @param [String] namespace the namespace in which the event is being set
     # @param [Symbol] status the new status
     def set_event_status( event, status )
       event.instance_exec( namespace ) { |namespace| set_status(status, namespace) }
