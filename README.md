@@ -165,3 +165,13 @@ Note that during the execution of the block or method, the FSMs state will still
 
 Groups of related FSMs can be grouped into a namespace by including them in the same modules.  Events are not specific to a namespace, so an event posted will be evaluated in all namespaces that have FSMs that have declared an interest in the event.  Namespaces are still 
 
+
+
+
+## Contributing
+
+1. Fork it ( https://github.com/peterbell215/CFSM/fork )
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Add some feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create a new Pull Request
