@@ -1,5 +1,4 @@
 # @author Peter Bell
-# @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
 # Class to represent a message/event that is produced and then sent to the appropriate CFSMs.  Typically, this class

@@ -1,5 +1,4 @@
 # @author Peter Bell
-# @copyright 2015
 # Licensed under MIT.  See License file in top level directory.
 
 require 'logger'
@@ -21,6 +20,19 @@ require 'condition_optimisation/condition_graph'
 require 'condition_optimisation/conditions_node'
 require 'cfsm_classes/event_processor'
 
+# This is the core class for the system.  The user defines CFSMs by deriving a new class from this class.
+# The class definition includes the state machine definition.  For example:
+#
+# @example
+#   class Telephone < CFSM
+#     state :nothing_happening do
+#       on :incoming_call, :transition => :ringing
+#     end
+#
+#     state :ringing do
+#       on :receiver_lifted, :transition => :connection
+#     end
+#   end
 class CFSM
   class OnlyStartOnCFSMClass < Exception; end
   class EmptyCFSMClass < Exception; end
@@ -30,6 +42,9 @@ class CFSM
   class NonEventBeingCompared < Exception; end
 
   # Create the FSM.
+  #
+  # @param [Symbol, String] name the name of the FSM.  If no name is given, then the filename and line from which the
+  #   the constructor was called are used as the name.
   def initialize( name = nil )
     processor = @@event_processors[ self.class.namespace ]
     processor.register_cfsm( self )
@@ -37,7 +52,10 @@ class CFSM
     @state = processor.initial_state( self.class )
   end
 
+  # Returns the name of the FSM as declared at instantiation.
   attr_reader :name
+
+  # Returns the current state of the finite state machine.
   attr_reader :state
 
   # Related FSMs can be grouped into modules.  All FSMs that are part of the same module are deemed to be part of the
@@ -132,7 +150,7 @@ class CFSM
   # Used to cancel an event posted into the system.
   #
   # @param [CfsmEvent] event cancel the event in the queue
-  # @return [true,false] returns whether cancelling of the event was successful
+  # @return [Boolean] returns whether cancelling of the event was successful
   def self.cancel( event )
     if @@delayed_queue.cancel( event )
       result = true
