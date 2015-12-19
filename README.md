@@ -58,6 +58,8 @@ call.call_number
 
 Note that each of the items in ```CfsmEvent``` data hash is accessible via a suitable method.
 
+The other alternative is to create a child class of CfsmEvent.
+
 ### Priority
 
 Events can be prioritised to ensure that more important events are acted on more quickly:
@@ -76,6 +78,7 @@ Sometimes, we want an event to first be triggered after a certain time.  Using t
 call_back = CfsmEvent.new :call_back, :delay => 30, :data => { :callback_number => '01225 700000' }
 CFSM.post( call_back )
 ```
+
 ## Conditions
 
 Sometimes we want a FSM only to react if certain conditions are met.  For example, we might block a call from abroad:
@@ -134,7 +137,7 @@ Clearly, just performing transitions on there own is not particularly useful.  T
 class Telephone < CFSM
     state :nothing_happening do
         # Form 1: Do block
-        on :incoming_call, :transition => :ringing do |event, next_state|
+        on :incoming_call, :transition => :ringing do |event|
             Audio.play 'ring.wav'
             true
         end
@@ -160,5 +163,5 @@ Note that during the execution of the block or method, the FSMs state will still
 
 ## Namespacess
 
-Groups of related FSMs can be grouped into a namespace by including them in the same modules.  Events are not specific to a namespace, so an event posted will be evaluated in all namespaces that have FSMs that have declared an interest in the event.  Namespaces are still
+Groups of related FSMs can be grouped into a namespace by including them in the same modules.  Events are not specific to a namespace, so an event posted will be evaluated in all namespaces that have FSMs that have declared an interest in the event.  Namespaces are still 
 
