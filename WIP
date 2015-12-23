@@ -2,7 +2,14 @@ Currently, most of the time, RSpec runs correctly for all tests.  Just occasiona
 Suspect some sort of async behaviour that makes it fail if a thread change happens at the wrong time.  Will require more work.
 It does also seem to be either the same tests fail or pass.
 
-conditions_to_evaluate is destryong cfsms_still_in_play in traffic light problem.
+RSpec is unable to run individual tests from within Rubymine.
+RSpec is unable to run failed tests on their own.
+
+We still have an issue where sometimes specs fail that normally work.  Some sort of race condition in the code.
+
+Rake task for Yard.
+
+
 
 
 

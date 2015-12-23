@@ -2,12 +2,21 @@
 # Licensed under MIT.  See License file in top level directory.
 
 module ConditionOptimisation
+  # This class holds the description of a ConditionGraph.  The condition graph is basically an array of `conditions_node`.
+  # Each condition_node holds a set of conditions that must all hold, a set of transitions that can be executed if the
+  # condition node is true, and references as indexes within the ConditionGraph array to alternative options.  More details
+  # are in the Wiki.
   #
+  # This class also holds an array of start nodes.
   class ConditionGraph < Array
+    # @param [Array<ConditionsNode>] condition_array the initial set of conditions nodes
+    # @param [Array<Fixnum>] start_array the array of initial condition nodes to be evaluated
+    # @return [ConditionGraph] the created graph
     def initialize( condition_array = [], start_array = [] )
       super( condition_array )
       @start_array = start_array
     end
+
 
     attr_reader :start_array
     alias :nr_nodes :length
@@ -19,6 +28,8 @@ module ConditionOptimisation
       new_graph
     end
 
+    # Details of the rules are found within the (wiki)[https://github.com/peterbell215/CFSM/wiki/The-Optimiser#combining-chains].
+    #
     # A chain is a hash of one element containing a set of conditions, and a transition description. So a chain might be:
     #
     #   0: {c1, c2, c3, c4}[fsm1_transition] -> 1
@@ -32,11 +43,17 @@ module ConditionOptimisation
     # The merge only ever evaluates start nodes in the graph.  It applies
     # one of the four rules:
     #
-    # 0: {:c1, :c2, :c3, :c4}[:fsm1_transition] -> end
+    # *Rule 1*
+    #
+    #   0: {:c1, :c2, :c3, :c4}[:fsm1_transition] -> end
+    #
     # merged with
-    # {:c1, :c2, :c3, :c4}[:fsm2_transition]
+    #
+    #   {:c1, :c2, :c3, :c4}[:fsm2_transition]
+    #
     # becomes
-    # 0: {:c1, :c2, :c3, :c4}[:fsm1_transition, :fsm2_transition] -> end
+    #
+    #   0: {:c1, :c2, :c3, :c4}[:fsm1_transition, :fsm2_transition] -> end
     #
     # 0: {:c1, :c2, :c3, :c4}[:fsm1_transition] -> end
     # merged with

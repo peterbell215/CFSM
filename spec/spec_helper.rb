@@ -1,3 +1,6 @@
+require 'bundler/setup'
+Bundler.setup
+
 require 'rspec/wait'
 
 RSpec.configure do |c|
