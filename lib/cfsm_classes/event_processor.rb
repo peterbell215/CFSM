@@ -84,13 +84,15 @@ module CfsmClasses
       @other_params = other_params
     end
 
-    # Class method to register that a FSM reacting to an event_class while in a defined state and transitioning to a new state.
+    # Class method to register that a FSM can react to an event_class while in a defined state and that it can
+    # transition to a new state.  The actual on statement would be found in the class derived from CFSM.
     #
-    # @api private
-    #
+    # @!scope Class
     # @param event_class [Class,symbol] the event_class that we are reacting too.
     # @param parameters [String] the parameters that the FSM must meet to
     # @param proc [Proc] a method to be executed as part of the state transition
+    # @raise [BlockAndExecDefined] if both an action block and action method is defined.  The exception class
+    #     description includes an example
     def on( event_class, parameters = {}, &proc )
       # Create an array to hold the condition trees and their respective transitions.
       @conditions[ event_class ] ||= Array.new
@@ -115,7 +117,7 @@ module CfsmClasses
       @conditions[event_class].push Struct::EventTree.new( if_tree, transition )
     end
 
-    # Retrieves the initial state for this class of FSM.  If it is not defined, raises an error.
+    # Retrieves the initial state for this class of FSM.
     #
     # @api private
     #

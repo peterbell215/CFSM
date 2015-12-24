@@ -34,8 +34,22 @@ require 'cfsm_classes/event_processor'
 #     end
 #   end
 class CFSM
+
   class OnlyStartOnCFSMClass < Exception; end
+
   class EmptyCFSMClass < Exception; end
+
+  # When specifying a transition handler, the user can either do this with a block or with a reference to a method.
+  # If the user has specified both, then this is an error.
+  #
+  # @example
+  #    class Telephone < CFSM
+  #     state :nothing_happening do
+  #       # We are specifying two actions here.
+  #       on :incoming_call, :transition => :ringing, :exec => :open_voip do |event|
+  #         open_voip_connection
+  #       end
+  #     end
   class BlockAndExecDefined < Exception; end
   class TooLateToRegisterEvent < Exception; end
   class ComparingDelayedToLiveEvent < Exception; end
@@ -94,10 +108,10 @@ class CFSM
     @state = processor.initial_state( self.class )
   end
 
-  # Returns the name of the FSM as declared at instantiation.
+  # @return [Symbol, String] the name of the FSM as declared at instantiation.
   attr_reader :name
 
-  # Returns the current state of the finite state machine.
+  # @return [Symbol] current state of the finite state machine.
   attr_reader :state
 
   # Related FSMs can be grouped into modules.  All FSMs that are part of the same module are deemed to be part of the
@@ -143,7 +157,8 @@ class CFSM
   # non-async mode, control is only returned to the posting process, once the event has been processed.
   #
   # @param [Hash] options defines various options for the start command
-  # @option options [Array<Module>,Module] :namespace defines the namespace that should be started.  If missing all namespaces are started.
+  # @option options [Array<Module>,Module] :namespace defines the namespace that should be started.  If missing all
+  #     namespaces are started.
   # @option options [True,False] :sync defines whether the execution of the namespaces should be run synchronous,
   def self.start( options = {} )
     raise OnlyStartOnCFSMClass if self != CFSM
@@ -175,14 +190,21 @@ class CFSM
   end
 
   # Use to inform the system of a change in either a FSM's internal state, or an event's internal variables.
+  # This should lead to re-evaluating the current set of outstanding events.
+  #
+  # @param [CFSM, CfsmEvent] obj the object that has changed.
+  # @return [Boolean] returns whether an event was process
   def self.eval( obj )
+    event_processed = false
+
     if obj.is_a? CFSM
       CFSM.event_processors.each_value do |processor|
-        processor.process_event if processor[obj.class]
+        event_processed ||= processor.process_event if processor[obj.class]
       end
     elsif obj.is_a? CfsmEvent
-      CFSM.event_processors[ obj ].process_event
+      event_processed ||= CFSM.event_processors[ obj ].process_event
     end
+    event_processed
   end
 
   def self.status

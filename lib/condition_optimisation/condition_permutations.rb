@@ -49,19 +49,24 @@ module ConditionOptimisation
   # our set of graphs: C on its own, and C combined with A. By the time we get to C, A, B we already have an
   # equivalent graph.
   module ConditionPermutations
-    # As per above explanation, *graph* is a ConditionGraph i.e. an executable graph to evaluate a set of
-    # conditions. *nxt_conditions* is a hash that for a set of anded conditions gives the index of the graph
-    # in the @set_of_graphs array.
-    Struct.new('GraphEntry', :graph, :nxt_conditions )
+    # An array of GraphEntry items is used to hold a graph representing the use of permutations to define an
+    # optimal RETE graph.
+    class GraphEntry < Struct.new(:graph, :nxt_conditions )
+      # @!attribute graph
+      #   @return [ConditionGraph] the RETE condition graph that this entry represents.
+      # @!attribute nxt_conditions
+      #   @return [Hash<ConditionSet, Integer>]
+      #     a hash that for a set of anded conditions gives the index of the graph in the `set_of_graphs` array.
+    end
+
 
     attr_reader :set_of_graphs
 
-    ##
     # Given a set of anded_conditions and associated transitions, for example:
     #
-    # a = [1, 2, 7, 8 ] => :fsm_c
-    # b = [1, 2, 3, 4, 5, 6 ] => :fsm_b
-    # c = [3, 4, 5, 6 ] => :fsm_a
+    #    a = [1, 2, 7, 8 ] => :fsm_c
+    #    b = [1, 2, 3, 4, 5, 6 ] => :fsm_b
+    #    c = [3, 4, 5, 6 ] => :fsm_a
     #
     # This function will try a reasonable number of permutations to combine the sets.  If we have less than 6 members
     # in the set, we try all permutations.
@@ -73,7 +78,7 @@ module ConditionOptimisation
 
       # This is mainly here for testing purposes.  Allows us to not have to explicitely create a set when creating
       # the test data.
-      condition_sets.keys.keep_if { |c| c.is_a? Array }.each { |c| condition_sets[ ::Set.new( c )] = condition_sets.delete( c ) }
+      condition_sets.keys.keep_if { |c| c.is_a? Array }.each { |c| condition_sets[::Set.new( c )] = condition_sets.delete( c ) }
 
       if condition_sets.size > 6
         (1..40).each do
@@ -86,12 +91,11 @@ module ConditionOptimisation
       self
     end
 
-    ##
     # Given a specific sequence in which condition sets are added to the graph, build a graph that represents
     # the test of all the conditions.  This is added to the existing graph of possible ConditionGraphs held in
-    # @set_of_graphs.
+    # set_of_graphs.
     #
-    # @param [Hash<Set => Symbol,CFSM>] condition_sets
+    # @param [Hash<Set<ConditionParser::EventCondition> => CfsmClasses::Transition>] condition_sets
     # @param [Array<Set<Conditions>>] seq_of_insertions
     # @return [Array<GraphEntry>]
     def apply_one_permutation( condition_sets, seq_of_insertions )
@@ -120,7 +124,6 @@ module ConditionOptimisation
       @set_of_graphs
     end
 
-    ##
     # Having calculated a new graph, we now need to see, if we have already arrived at the same graph by another method.
     # If it is a genuinely new graph, we add it to the set.  If not, we return an index to the existing entry.
     #
@@ -135,7 +138,6 @@ module ConditionOptimisation
       @set_of_graphs.length-1
     end
 
-    ##
     # Having determined all possible ConditionGraphs this method will check which one is optimal, This method first removes
     # the intermediate graphs we generated to only leave complete graphs as defined by an empty nxt_conditions hash.
     # It then counts the number of conditions to be tested in each graph.  It returns the graph with the smallest number
@@ -143,6 +145,7 @@ module ConditionOptimisation
     #
     # @return [ConditionGraph]
     def find_optimal
+      # @type [ConditionGraph] g
       @set_of_graphs.keep_if { |g| g.nxt_conditions.empty? }
       @set_of_graphs.min { |a, b| a.graph.count_complexity <=> b.graph.count_complexity }.graph
     end
