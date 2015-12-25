@@ -96,7 +96,7 @@ module ConditionOptimisation
     # set_of_graphs.
     #
     # @param [Hash<Set<ConditionParser::EventCondition> => CfsmClasses::Transition>] condition_sets
-    # @param [Array<Set<Conditions>>] seq_of_insertions
+    # @param [Array<ConditionParser::EventCondition>] seq_of_insertions
     # @return [Array<GraphEntry>]
     def apply_one_permutation( condition_sets, seq_of_insertions )
       previous_graph_index = nil
