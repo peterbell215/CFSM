@@ -5,49 +5,10 @@
 require 'set'
 
 module ConditionOptimisation
-  # We are exploring the permutations of all possible ways that we can combine the different anded
-  # conditions into a condition execution graph in order to find the most efficient one.  As this
-  # could potentially be a vary large number of permutations, we try and keep the amount of work
-  # down.  We construct a directed graph.  Each node in the graph represents a valid condition
-  # execution graph.  Each edge represents adding an anded condition set to a condition execution
-  # graph in order to get to a new execution graph.
+  # This module forms part of the optimisation process.  It provides the methods used to try different
+  # permutations of condition sets to generate the optimal RETE graph.
   #
-  # Lets explain with an example: we have four condition sets A, B, C, and D.  Now A and B share some conditions
-  # but also have some conditions independent of each other.  This means that whichever way we combine them, we get
-  # the same graph:
-  #
-  #   start 0:
-  #   0: { A intersection B}[] => 1, 2
-  #   1: { A minus B }[:fsm_a] => end
-  #   2: { B minus A }[:fsm_b] => end
-  #
-  # Now lets further assume that D is a complete subset of C.  So again the graph is the same which ever sequence
-  # we combine the graphs in.
-  #
-  # The @set_of_graphs will hold a directed graph.  Each graph node holds the condition execution graph, and a hash
-  # that marks by adding condition set A to this graph, we will arrive at a new graph whose index is y.  So if our
-  # initianal sequence of generating the graph is [ A, B, C, D ] we would end up with the graph held in the array as
-  # follows:
-  #
-  # 0: graph with A only : { B => 1 }
-  # 1: graph with A and B: { C => 2 }
-  # 2: graph with A and B plus C in parallel: { D => 3 }
-  # 3: graph with (A and B) plus (C and D) in parallel: {}
-  #
-  # If we now evaluate graphs in the sequence [ B, A, C, D ] then the graph becomes:
-  #
-  # 0: graph with A only : { B => 1 }
-  # 1: graph with A and B: { C => 2 }
-  # 2: graph with A and B plus C in parallel: { D => 3 }
-  # 3: graph with (A and B) plus (C and D) in parallel: {}
-  # 4: graph with B only : { A => 2 }
-  #
-  # From here on in, the permutator just goes through checking that it already has the appropriate
-  # transitions.  So in order to evaluate [ B, A, C, D ] we only have to do one further costly merge operation.
-  #
-  # Now if we look at the combination [ C, A, B, D ], again we actually end up only adding two new graphs to
-  # our set of graphs: C on its own, and C combined with A. By the time we get to C, A, B we already have an
-  # equivalent graph.
+  # @see https://github.com/peterbell215/CFSM/wiki/Permutator Description of algorithm in project Wiki.
   module ConditionPermutations
     # An array of GraphEntry items is used to hold a graph representing the use of permutations to define an
     # optimal RETE graph.
@@ -59,24 +20,24 @@ module ConditionOptimisation
       #     a hash that for a set of anded conditions gives the index of the graph in the `set_of_graphs` array.
     end
 
-
+    # @return [Array<GraphEntry>] the directed graph of graph entries.
     attr_reader :set_of_graphs
 
     # Given a set of anded_conditions and associated transitions, for example:
     #
-    #    a = [1, 2, 7, 8 ] => :fsm_c
-    #    b = [1, 2, 3, 4, 5, 6 ] => :fsm_b
-    #    c = [3, 4, 5, 6 ] => :fsm_a
+    #    [A, B, C, D ] => :fsm_c
+    #    [1, 2, 3, 4, 5, 6 ] => :fsm_b
+    #    [3, 4, 5, 6 ] => :fsm_a
     #
     # This function will try a reasonable number of permutations to combine the sets.  If we have less than 6 members
     # in the set, we try all permutations.
     #
+    # @param [Hash<Set<ConditionSet>. Symbol>] condition_sets
     # @return [ConditionGraph]
-    # @param [Hash<Set => Symbol, CFSM>] condition_sets
     def permutate_graphs( condition_sets )
       @set_of_graphs = []
 
-      # This is mainly here for testing purposes.  Allows us to not have to explicitely create a set when creating
+      # This is mainly here for testing purposes.  Allows us to not have to explicitly create a set when creating
       # the test data.
       condition_sets.keys.keep_if { |c| c.is_a? Array }.each { |c| condition_sets[::Set.new( c )] = condition_sets.delete( c ) }
 
