@@ -196,11 +196,7 @@ module ConditionOptimisation
       string = 'start: ' << @start_array.join(', ') << "\n"
 
       # Print each line
-      self.each_with_index do |obj,ind|
-        string << "#{ind}: {#{obj.conditions.to_a.map{|t|t.inspect}.join(', ')}} "
-        string << "[#{obj.transitions.to_a.map{|t| t.to_s}.join(', ')}] "
-        string << "-> #{ obj.edges.empty? ? 'end' : obj.edges.to_a.map{|e| e.inspect}.join(', ')}\n"
-      end
+      self.each_with_index { |obj,ind| string << "#{ind}: #{obj.inspect}\n" }
 
       string
     end

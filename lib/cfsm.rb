@@ -18,6 +18,7 @@ require 'condition_optimisation/condition_permutations'
 require 'condition_optimisation/condition_graph_factory'
 require 'condition_optimisation/condition_graph'
 require 'condition_optimisation/conditions_node'
+require 'condition_optimisation/conditions_set'
 require 'cfsm_classes/event_processor'
 
 # This is the core class for the system.  The user defines CFSMs by deriving a new class from this class.

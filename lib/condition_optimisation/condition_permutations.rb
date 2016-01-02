@@ -95,7 +95,7 @@ module ConditionOptimisation
 
       # if we reach here, it is because the graph is new
       # noinspection RubyResolve
-      @set_of_graphs.push( Struct::GraphEntry.new( graph, {} ) )
+      @set_of_graphs.push( GraphEntry.new( graph, {} ) )
       @set_of_graphs.length-1
     end
 
