@@ -14,9 +14,10 @@ module ConditionOptimisation
       @transitions = Set.new( transitions ) # make a copy
     end
 
-    # Create a deep copy of the condition set.  It is a deep copy since the ConditionsNode may be further split as part
-    # of optimisation.
+    # Create a deep copy of the condition set.  It is a deep copy since the ConditionsNode may be further
+    # split as part of optimisation.
     def clone
+      # TODO no rspec coverage.
       ConditionsNode.new( self.conditions, self.transitions, self.edges )
     end
 

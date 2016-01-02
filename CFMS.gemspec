@@ -29,4 +29,5 @@ DESCRIPTION
   spec.add_development_dependency "rspec", "~>3.4"
   spec.add_development_dependency "rspec-wait"
   spec.add_development_dependency "yard"
+  spec.add_development_dependency "simplecov"
 end

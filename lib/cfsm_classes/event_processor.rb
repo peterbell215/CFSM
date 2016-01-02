@@ -238,6 +238,7 @@ module CfsmClasses
       CFSM.logger.info( "#{namespace.to_s}: cancelling event #{event.inspect}" )
 
       if event.status( namespace ) == :pending
+        # @TODO construct test case to evaluate this branch
         set_event_status(event, :cancelled)
         return @event_queue.delete( event )
       else

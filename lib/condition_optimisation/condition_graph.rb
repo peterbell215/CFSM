@@ -95,6 +95,7 @@ module ConditionOptimisation
             if anded_conditions == obj.conditions
               # the two are the same.  Therefore, simply add transition to the set
               # of transitions on this node.
+              # TODO this branch does not have an RSpec
               self[index].transitions.add( transition )
               throw :added_conditions
             elsif anded_conditions < obj.conditions

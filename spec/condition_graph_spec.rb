@@ -196,6 +196,7 @@ module ConditionOptimisation
                 if condition_set.delete( self )
                   return fsms
                 else
+                  # TODO RSpec never tests this line.  Therefore get coverage issue.  Should we test just to make sure we cover this failure off?
                   fail
                 end
               end

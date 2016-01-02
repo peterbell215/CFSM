@@ -22,6 +22,7 @@ class Entry
   attr_reader :prio
 
   def to_s
+    # TODO not users by Rspec.  Is it needed?
     "< prio=#{prio}, insert_sequence=#{insert_sequence} >"
   end
 end

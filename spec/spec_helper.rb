@@ -1,6 +1,9 @@
 require 'bundler/setup'
 Bundler.setup
 
+require 'simplecov'
+SimpleCov.start
+
 require 'rspec/wait'
 
 RSpec.configure do |c|

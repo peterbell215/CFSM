@@ -55,6 +55,7 @@ describe CFSM do
         CFSM.logger.level = Logger::DEBUG
 
         expect( test_fsm_a.state ).to eq( :a )
+        expect( test_fsm_a.test_method ).to eq( 'Test method invoked' )
 
         event = CfsmEvent.new(:event1, :delay => 3600 )
 

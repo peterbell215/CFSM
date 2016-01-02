@@ -7,6 +7,7 @@ require 'cfsm'
 
 module ConditionParser
   RSpec::Matchers.define :have_parse_tree do |expected|
+    # TODO: re-write tests below to use this matcher.
     match { |actual| Parser::compare_parse_trees(expected, actual) }
   end
 

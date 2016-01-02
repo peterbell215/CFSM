@@ -36,6 +36,7 @@ module ConditionOptimisation
     # @param [Hash] condition_sets
     # @return [Hash]
     def self.condition_sets_from_array( condition_sets )
+      # No Rspec for this line.
       condition_sets.keys.keep_if { |c| c.is_a? Array }.each { |c| sets[ Set.new( c )] = sets.delete( c ) }
     end
   end

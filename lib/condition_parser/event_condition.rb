@@ -58,9 +58,9 @@ module ConditionParser
 
       if @left_term.is_a? FsmStateVariable
         cfsms = CFSM.state_machines( @left_term.fsm_class ).dup if cfsms == :all
-        # TODO: this is destroying the set globally.
         cfsms.delete_if { |fsm| !comparison_evaluate(event, fsm) }
       else
+        # TODO no rspec for this branch
         comparison_evaluate(event, nil) ? cfsms : []
       end
     end
@@ -83,6 +83,7 @@ module ConditionParser
       if self.comparator == object2.comparator
         self.left_term == object2.left_term && self.right_term == object2.right_term
       elsif INVERSE[self.comparator] == object2.comparator
+        # TODO no rspec coverage
         self.left_term == object2.right_term && self.right_term == object2.left_term
       else
         false
