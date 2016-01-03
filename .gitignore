@@ -7,3 +7,5 @@ doc
 rspec_failures.txt
 CFSM-0.0.1.gem
 Gemfile.lock
+coverage
+.ruby-version

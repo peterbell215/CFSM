@@ -41,19 +41,26 @@ describe CfsmEvent do
   end
 
   describe '#set_status' do
+    subject(:event) { CfsmEvent.new :test_event }
+
     it 'should create a hash to store the namespaces if set.' do
-      event = CfsmEvent.new :test_event
       expect( event.status ).to be_nil
       event.instance_eval { set_status( :delayed ) }
       expect( event.status ).to eq( :delayed )
-      expect( event.status( 'OtherNamespsace' ) ).to be_nil
+      expect( event.status( 'OtherNamespace' ) ).to eq( :delayed )
+      event.instance_eval { set_status( :cancelled ) }
+      expect( event.status ).to be_nil
+    end
+
+    it 'should raise an exception if already posted and then status is set to delayed' do
+      event.instance_eval { set_status( :pending, 'NameSpace1' ) }
+      expect { event.instance_eval { set_status( :delayed, 'NameSpace2' ) } }.to raise_exception(CfsmEvent::AlreadySubmittedSetToDelayed)
     end
 
     it 'should remove namespaces correctly.' do
-      event = CfsmEvent.new :test_event
-      event.instance_eval { set_status( :delayed, 'NameSpace1' ) }
+      event.instance_eval { set_status( :pending, 'NameSpace1' ) }
       event.instance_eval { set_status( :pending, 'NameSpace2' ) }
-      expect( event.status('NameSpace1') ).to eq( :delayed )
+      expect( event.status('NameSpace1') ).to eq( :pending )
       expect( event.status('NameSpace2') ).to eq( :pending )
 
       event.instance_eval { set_status( :cancelled, 'NameSpace1' ) }
@@ -93,7 +100,7 @@ describe CfsmEvent do
       expect( test_fsm.state ).to eql( :b )
     end
 
-    it 'should do allow a delayed event to be cancelled.' do
+    it 'should allow a delayed event to be cancelled.' do
       test_fsm = TestFSM.new
       CFSM.start
       test_event = CfsmEvent.new( :delayed_event, :delay => 0.10 )
@@ -121,5 +128,4 @@ describe CfsmEvent do
       expect( CFSM.cancel( test_event ) ).to be_falsey
     end
   end
-
 end

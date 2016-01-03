@@ -10,7 +10,28 @@
 # @example Creating an event without a sub-class
 #   Cfsm.Event.new( :car_arrived, :data> { :from => :N, :lane => 2}, :prio => 2, :delay => 10 )
 class CfsmEvent
-  class EventDoesNotHaveExpiry < Exception; end
+  # Exception class that handles the situation where an event being processed in the DelayedQueue does not have
+  # an expiry.  This should never happen, since only CFSM classes are allowed to change the attributes of an event
+  # once created and posted.
+  class EventDoesNotHaveExpiry < RuntimeError
+    # @param [CfsmEvent] event The event giving rise to the error.
+    def initialize(event)
+      @event = event
+    end
+    # @return [CfsmEvent] The event giving rise to the error.
+    attr_reader :event
+  end
+
+  # Exception class that handles the situation where an event has been sent to the relevant namespaces for processing
+  # and then has its state set back to `:delayed`.  This should not happen.
+  class AlreadySubmittedSetToDelayed < RuntimeError
+    # @param [CfsmEvent] event The event giving rise to the error.
+    def initialize(event)
+      @event = event
+    end
+    # @return [CfsmEvent] The event giving rise to the error.
+    attr_reader :event
+  end
 
   # @param [Symbol,Class] event_class
   # @param [Hash] opts the options for this event.
@@ -50,6 +71,7 @@ class CfsmEvent
   # the event processors' queues.
   def reset_expiry
     @expiry = nil
+    @status = nil
   end
 
   # This returns the status of the event.
@@ -58,7 +80,7 @@ class CfsmEvent
   # per CFSM namespace.  Once posted, the valid statuses are:
   # o 'nil' when the event has not yet been posted to this CFSM namespace or been cancelled in the namespace
   # o _delayed_ if the event has been posted to become active in the future
-  # o _pending_ if the event can be processed, but some condition of the event is not yet valid.
+  # o _pending_ if the event is not delayed, but some condition of the event is not yet valid.
   # o _processed_ once the event has been processed in the said namespace.
   #
   # @param [String] namespace the namespace in which we are querying the status.  IF not specified, then returned or the Global namespace
@@ -68,7 +90,8 @@ class CfsmEvent
   end
 
   # @!attribute [r] status
-  #   @return [:created, :delayed, :pending, :processed] status of the event within its lifecycle
+  #   @return [nil, :delayed, :pending, :processed] status of the event within its lifecycle.  Nil indicates an event
+  #      that has been created but has not been sent of a CFSM for processing.
   attr_reader :src
   attr_reader :event_class
   attr_reader :prio
@@ -84,8 +107,9 @@ class CfsmEvent
 
   # This is a private method to allow `event_processor` to set the status.  The same event can be in multiple
   # namespaces and can therefore have different statuses for each namespace.  Initially, when an event is created,
-  # it is has an undefined status and nil is returned.  Once the event has been posted to a namespace, then the status
-  # values are stored in a hash to allow efficient mapping of namespace to status.
+  # it is has an undefined status and nil is returned.  An event is delayed by the same time for all namespaces.
+  # Once the event has been posted to a namespace, then the status values are stored in a hash to allow efficient
+  # mapping of namespace to status.
   #
   # Namespaces can also be destroyed.  This should really only be used for testing.  In this case, the event
   # will be removed from the relevant queue, and the queue destroyed.  We therefore, also remove the namespace
@@ -94,16 +118,29 @@ class CfsmEvent
   # @api private
   # @param [Symbol] status is the current status of the event
   # @param [String] namespace is the namespace in which it applies.  If omitted, the default is 'Global'
+  # @return [CfsmStatus] returns the status field which is either a hash of namespaces to statuses, or the status itself
+  # @raise [AlreadySubmittedSetToDelayed] if the event has already been sent to the relevant namespaces, and then we
+  #   try and set the status to `:delayed`.
   def set_status(status, namespace = 'Global' )
     if @status.is_a?(Hash)
-      if status==:cancelled
-        @status.delete(namespace)
-        @status = nil if @status.empty?
-      else
-        @status[namespace] = status
+      case status
+        when :cancelled
+          @status.delete(namespace)
+          @status = nil if @status.empty?
+        when :delayed
+          raise AlreadySubmittedSetToDelayed.new(self)
+        else
+          @status[namespace] = status
       end
     else
-      @status = { namespace => status } unless status == :cancelled
+      @status = case status
+                  when :delayed
+                    :delayed
+                  when :cancelled
+                    nil
+                  else
+                    { namespace => status }
+                end
     end
     @status
   end

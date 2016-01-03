@@ -238,6 +238,36 @@ HEREDOC
       expect( fsm.state ).to eq( :b )
     end
 
+    context 'event cancelling' do
+      before(:each) do
+        class TestFSM < CFSM
+          state :a do
+            on :event1, :transition => :b, :if => 'testcase==1'
+          end
+        end
+      end
+
+      it 'should be possible to cancel an event that is waiting' do
+        test_fsm = TestFSM.new
+        CFSM.start
+        event1 = CfsmEvent.new(:event1, :delay => 3600, :data => { :testcase => 0 })
+        CFSM.post event1
+        expect( event1.status ).to eq( :delayed )
+        expect( CFSM.cancel event1 ).to be_truthy
+        expect( event1.status ).to be_nil
+      end
+
+      it 'should be possible to cancel an event that is waiting' do
+        test_fsm = TestFSM.new
+        CFSM.start
+        event1 = CfsmEvent.new(:event1, :data => { :testcase => 0 })
+        CFSM.post event1
+        expect( event1.status ).to eq( :pending )
+        expect( CFSM.cancel event1 ).to be_truthy
+        expect( event1.status ).to be_nil
+      end
+    end
+
     it 'should advance only one state machine of a class if the second is in the wrong state' do
       class TestFSM < CFSM
         state :a do

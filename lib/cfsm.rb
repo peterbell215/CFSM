@@ -21,6 +21,7 @@ require 'condition_optimisation/conditions_node'
 require 'condition_optimisation/conditions_set'
 require 'cfsm_classes/event_processor'
 
+
 # This is the core class for the system.  The user defines CFSMs by deriving a new class from this class.
 # The class definition includes the state machine definition.  For example:
 #
@@ -35,68 +36,7 @@ require 'cfsm_classes/event_processor'
 #     end
 #   end
 class CFSM
-
-  class OnlyStartOnCFSMClass < Exception; end
-
-  class EmptyCFSMClass < Exception; end
-
-  # When specifying a transition handler, the user can either do this with a block or with a reference to a method.
-  # If the user has specified both, then this is an error.
-  #
-  # @example
-  #    class Telephone < CFSM
-  #     state :nothing_happening do
-  #       # We are specifying two actions here.
-  #       on :incoming_call, :transition => :ringing, :exec => :open_voip do |event|
-  #         open_voip_connection
-  #       end
-  #     end
-  class BlockAndExecDefined < Exception; end
-  class TooLateToRegisterEvent < Exception; end
-  class ComparingDelayedToLiveEvent < Exception; end
-  class NonEventBeingCompared < Exception; end
-
-  # This holds for each namespace an EventProcessor that does the heavy lifting.  The user
-  # can partition their system of communicating FSMs into independent sub-systems by placing
-  # groups of FSMs into a module.  Each module has its own event_processor.  The following
-  # hash maps from the module onto the individual event_processor.
-  @event_processors = {}
-
-  # @api private
-  # Access method to access `@event_processors` from derived classes.  Returns the hash mapping
-  # CFSM derived classes to event processors.
-  #
-  # @return [Hash<Class => EventProcessor]
-  def self.event_processors
-    @event_processors
-  end
-
-  # @api private
-  # This method allows the `@event_processors` hash to be reset.  Used by Rspec tests as part of a complete
-  # reset of the CFSM system between tests.
-  #
-  # @return [Hash] a reference to the empty hash.
-  def self.event_processors_reset
-    @event_processors = {}
-  end
-
-  # Provide a logger to be used throughout the system.
-  # @TODO: need to deal with the cfsm.log not being available.
-  File.delete('cfsm.log')
-  @logger = Logger.new('cfsm.log', 0)
-
-  # We have one delayed event queue.  Once the event has expired, then we push it to the processors.
-  @delayed_queue = CfsmClasses::DelayedQueue.new do |event|
-    event.reset_expiry
-    post( event )
-  end
-
-  # Accessor for `@delayed_queue`
-  #
-  # @return [DeleyedQueue] Delayed event queue for all CFSMs.
-  def self.delayed_queue
-    @delayed_queue
-  end
+  load 'CFSM_modules/cfsm_exceptions.rb'
 
   # Create the FSM.
   #
@@ -141,7 +81,9 @@ class CFSM
   # be added once the CFSM.start method is invoked.  This is not the case, when we are unit testing using Rspec.
   # This method allows us to reset the CFSM system to allow new state machines to be defined.
   def self.reset
-    CFSM.event_processors.each_value { |processor| processor.reset }
+    delayed_queue.cancel_all
+
+    self.event_processors.each_value { |processor| processor.reset }
     CFSM.event_processors_reset
 
     # We have successfully started each processor.  Therefore we have no need for the parser.
@@ -161,6 +103,7 @@ class CFSM
   # @option options [Array<Module>,Module] :namespace defines the namespace that should be started.  If missing all
   #     namespaces are started.
   # @option options [True,False] :sync defines whether the execution of the namespaces should be run synchronous,
+  # @raise [OnlyStartOnCFSMClass] if we try and invoke the class _start_ method on a child class.
   def self.start( options = {} )
     raise OnlyStartOnCFSMClass if self != CFSM
 
@@ -203,12 +146,14 @@ class CFSM
         event_processed ||= processor.process_event if processor[obj.class]
       end
     elsif obj.is_a? CfsmEvent
+      # TODO lack of Rspec test coverage
       event_processed ||= CFSM.event_processors[ obj ].process_event
     end
     event_processed
   end
 
   def self.status
+    # TODO lack of Rspec test coverage
     CFSM.event_processors.values.inject( {} ) { |hash, processor| hash[processor.namespace] = processor.status; hash  }
   end
 
@@ -217,14 +162,13 @@ class CFSM
   # @param [CfsmEvent] event cancel the event in the queue
   # @return [Boolean] returns whether cancelling of the event was successful
   def self.cancel( event )
-    if CFSM.delayed_queue.cancel( event )
-      result = true
+    if CFSM.delayed_queue.cancel( event ).nil?
+      CFSM.event_processors.values.inject(false) do |result, processor|
+        processor.cancel(event) || result
+      end
     else
-      result = true
-      CFSM.event_processors.each_value { |processor| result &&= processor.cancel( event ) }
+      true
     end
-
-    result
   end
 
   # Given a class of FSMs, this returns an array of instantiated FSMs of that class.
@@ -252,15 +196,57 @@ class CFSM
     "<name = #{ name_as_string }, state = #{state}>"
   end
 
+  # This function allows the thread status for a specific namespace to be retrieved.
+  def self.thread_status
+    CFSM.event_processors[ self.namespace ].thread_status
+  end
+
   # We provide a logger to track how the system is performing.  This is really just a frontend for the Logger
   # class.
   def self.logger
     @logger
   end
 
-  # This function allows the thread status for a specific namespace to be retrieved.
-  def self.thread_status
-    CFSM.event_processors[ self.namespace ].thread_status
+  # Provide a logger to be used throughout the system.
+  # @TODO: need to deal with the cfsm.log not being available.
+  File.delete('cfsm.log')
+  @logger = Logger.new('cfsm.log', 0)
+
+  # We have one delayed event queue.  Once the event has expired, then we push it to the processors.
+  @delayed_queue = CfsmClasses::DelayedQueue.new do |event|
+    event.reset_expiry
+    post( event )
+  end
+
+  # Accessor for `@delayed_queue`
+  #
+  # @return [DeleyedQueue] Delayed event queue for all CFSMs.
+  def self.delayed_queue
+    @delayed_queue
+  end
+
+  # This holds for each namespace an EventProcessor that does the heavy lifting.  The user
+  # can partition their system of communicating FSMs into independent sub-systems by placing
+  # groups of FSMs into a module.  Each module has its own event_processor.  The following
+  # hash maps from the module onto the individual event_processor.
+  @event_processors = {}
+
+  # @api private
+  # Access method to access `@event_processors` from derived classes.  Returns the hash mapping
+  # CFSM derived classes to event processors.
+  #
+  # @return [Hash<Class => EventProcessor]
+  def self.event_processors
+    @event_processors
+  end
+
+  # @api private
+  # This method allows the `@event_processors` hash to be reset.  Used by Rspec tests as part of a complete
+  # reset of the CFSM system between tests.
+  #
+  # @return [Hash] a reference to the empty hash.
+  def self.event_processors_reset
+    @event_processors = {}
   end
 
   private
@@ -282,6 +268,7 @@ class CFSM
       when Symbol
         ':'<< name.to_s
       else
+        # TODO lack of Rspec test coverage
         name.to_s
     end
   end

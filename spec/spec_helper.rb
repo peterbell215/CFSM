@@ -2,7 +2,9 @@ require 'bundler/setup'
 Bundler.setup
 
 require 'simplecov'
-SimpleCov.start
+SimpleCov.start do
+  add_filter "/Examples/"
+end
 
 require 'rspec/wait'
 

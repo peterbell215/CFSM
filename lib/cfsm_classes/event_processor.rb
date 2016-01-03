@@ -204,9 +204,6 @@ module CfsmClasses
     # Used in the context of CFSM.reset to close down this event_class processor in a clean manner.  Should
     # only be used with RSpec when running a new set of state machine tests.
     def reset
-      @delayed_event_hash.each_key { |event| self.cancel( event ) } if @delayed_event_hash
-      @delayed_event_mutex = nil
-
       @thread.kill if @thread.is_a? Thread
       @thread = nil
 
@@ -229,21 +226,20 @@ module CfsmClasses
       end
     end
 
-    # Cancel a posted event_class.  Mainly used to cancel events due at point in the future.  However, can also
+    # Cancel a pending event_class.  Mainly used to cancel events due at point in the future.  However, can also
     # be used to cancel an event_class that is in the main queue, but has not yet been acted on.
     #
     # @param [CfsmEvent] event
-    # @return [true,false] whether the event_class was still around to be cancelled.
+    # @return [Boolean] whether the event_class was still :pending to be cancelled.
     def cancel( event )
       CFSM.logger.info( "#{namespace.to_s}: cancelling event #{event.inspect}" )
 
-      if event.status( namespace ) == :pending
+      if event.status( namespace ) == :pending && @event_queue.delete( event )
         # @TODO construct test case to evaluate this branch
         set_event_status(event, :cancelled)
-        return @event_queue.delete( event )
+        true
       else
-        CFSM.logger.info( "#{namespace.to_s}: cancelling default event #{event.inspect}" )
-        return set_event_status(event, :cancelled)
+        false
       end
     end
 
@@ -352,7 +348,7 @@ HEREDOC
     end
 
     # The status is something that should only be set by EventProcessor.  Therefore, it is a private method
-    # on CfsmEvent.  This helper function allows us to set the status.
+    # on CfsmEvent.  This helper function allows us to set the status using `#instance_exec`.
     # @param [Event] event whose status needs setting
     # @param [Symbol] status the new status
     def set_event_status( event, status )
@@ -405,6 +401,7 @@ HEREDOC
               when nil
                 true
               else
+                # TODO replace this with an Exception.
                 false
             end
         t.fsm.instance_exec( t.new_state ) { |s| set_state(s) } if do_transition

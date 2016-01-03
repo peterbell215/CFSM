@@ -8,7 +8,7 @@ module CfsmClasses
   class SortedArray < Array
     # Constructor.  Given a block.  This is used to evaluate the relative importance of the two elements.
     #
-    # Example:
+    # @Example:
     # SortedArray.new { |e1, e2| e1.prio <=> e2.prio }
     def initialize( &comp_proc )
       @cmp_proc = comp_proc
