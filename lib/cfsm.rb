@@ -21,6 +21,7 @@ require 'condition_optimisation/conditions_node'
 require 'condition_optimisation/conditions_set'
 require 'cfsm_classes/event_processor'
 
+# TODO make filename and class name consistent
 
 # This is the core class for the system.  The user defines CFSMs by deriving a new class from this class.
 # The class definition includes the state machine definition.  For example:
@@ -86,6 +87,20 @@ class CFSM
     self.event_processors.each_value { |processor| processor.reset }
     CFSM.event_processors_reset
 
+    # This unloads any classes derived from CFSM.  It does this by looking at all currently loaded classes,
+    # and checking if they are derived from CFSM.  IF they are, we split them into the module reference and
+    # the class name as a symbol.  We then use remove_const to get rid of them.
+    ObjectSpace.each_object( Class ).select do |klass|
+      if klass < CFSM
+        module_name = klass.to_s.split('::')[0..-2].join('::')
+        module_ref = module_name.empty? ? Object : Object.const_get( module_name )
+        class_sym = klass.to_s.split('::')[-1].to_sym
+        if module_ref.constants.index class_sym
+          module_ref.instance_exec( class_sym ) { |k| remove_const( k ) }
+        end
+      end
+    end
+
     # We have successfully started each processor.  Therefore we have no need for the parser.
     CfsmClasses::EventProcessor.restart_parser
 
@@ -105,7 +120,7 @@ class CFSM
   # @option options [True,False] :sync defines whether the execution of the namespaces should be run synchronous,
   # @raise [OnlyStartOnCFSMClass] if we try and invoke the class _start_ method on a child class.
   def self.start( options = {} )
-    raise OnlyStartOnCFSMClass if self != CFSM
+    raise OnlyStartOnCFSMClass.new(self) if self != CFSM
 
     namespaces =
         if ( ns = options[:namespace])
