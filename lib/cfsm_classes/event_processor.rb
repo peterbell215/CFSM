@@ -3,7 +3,7 @@
 
 module CfsmClasses
   # This class hides the implementation complexities of the Communicating FSM system.  It is really only to be invoked from
-  # methods within the CFSM class
+  # methods within the CFSM class.  Each event processor looks after one namespace and all FSMs withint that namespace.
   #
   # @api private
   class EventProcessor
@@ -59,20 +59,32 @@ module CfsmClasses
       @condition_cache = ConditionParser::ConditionCache.new
     end
 
+    # @return [:initialising,:process_event,:running,:waiting_for_event] current activity for this event processor.
     attr_reader :status
+
+    # @return [String,Symbol] name of event space for this event processor.
     attr_reader :namespace
 
-    # This does the heavy lifting for when the programmer defines a state.
+    # This does the heavy lifting for when the programmer defines a state.  So when the user has written:
+    #
+    #   class MyFSM < CFSM
+    #     state :a do
+    #
+    # This is converted by CFSM into a call to this method:
+    #
+    #   register_events(MyFSM, :a, &proc with on statements)
     #
     # @param [Class] klass is the class of FSMs for which this event_class is being defined
     # @param [Symbol] state
     # @param [Hash] other_params this is here for future expansion but is not used at the moment.
-    # @param [Proc] exec_block this provides the code that actually defines the behavious in terms of events and how to react to them
+    # @param [Proc] exec_block this provides the code that actually defines the behaviours in terms of events and how
+    #   to react to events
+    # @return [void]
     def register_events(klass, state, other_params, &exec_block)
       @klass_being_defined = klass
       @state_being_defined = state
 
-      # if an initial state has not been set, then set it. In practice, means the first state defintion
+      # if an initial state has not been set, then set it. In practice, means the first state definition
       # gets the initial state.
       @cfsm_initial_state[ klass ] = state unless @cfsm_initial_state[ klass ]
 
@@ -93,6 +105,7 @@ module CfsmClasses
     # @param proc [Proc] a method to be executed as part of the state transition
     # @raise [BlockAndExecDefined] if both an action block and action method is defined.  The exception class
     #     description includes an example
+    # @return [void]
     def on( event_class, parameters = {}, &proc )
       # Create an array to hold the condition trees and their respective transitions.
       @conditions[ event_class ] ||= Array.new
@@ -151,6 +164,7 @@ module CfsmClasses
     #
     # @param [Hash] options the options for running the FSM.
     # @option options [true,false] :sync whether the FSM operators in sync mode.
+    # @return [void]
     def run( options )
       # Check that for every defined class in the system, there is at least one instantiated FSM.  If not
       # raise an exception.
@@ -186,6 +200,7 @@ module CfsmClasses
     end
 
     # Private method that starts the thread.  Separated out from run for readability.
+    # @return [void]
     def start_thread
       @thread = @options[:sync] || Thread.new do
         begin
@@ -203,20 +218,20 @@ module CfsmClasses
 
     # Used in the context of CFSM.reset to close down this event_class processor in a clean manner.  Should
     # only be used with RSpec when running a new set of state machine tests.
+    # @return [void]
     def reset
       @thread.kill if @thread.is_a? Thread
       @thread = nil
 
       # Remove all pending events from the queue.
       @event_queue.pop_each { |event| self.cancel( event ) } if @event_queue
-
-      unload_cfsm_classes
     end
 
     # Receives an event for consideration by the event_class processor.  So long as the EventProcessor has
     # been started and we have a ConditionGraph for that event's class we stick it into the queue for processing.  If
     # we are not operating in async mode, then we also process the event_class.
     # @param event [CfsmEvent] the event being posted.
+    # @return [void]
     def post( event )
       if @thread && @conditions[ event.event_class ]
         set_event_status(event, :pending )
@@ -235,7 +250,6 @@ module CfsmClasses
       CFSM.logger.info( "#{namespace.to_s}: cancelling event #{event.inspect}" )
 
       if event.status( namespace ) == :pending && @event_queue.delete( event )
-        # @TODO construct test case to evaluate this branch
         set_event_status(event, :cancelled)
         true
       else
@@ -245,13 +259,16 @@ module CfsmClasses
 
     # Normally, we shut the parser down once we have evaluated all state machine descriptions.  If we are running
     # RSpec then we may need to restart it.
+    # @return [void]
     def self.restart_parser
       @@parser = ConditionParser::Parser.new
     end
 
-    # Look at each event_class in priority order until it can find one to process. If it can, then it removes that
-    # event_class from the queue and executes the transitions.  Returns the identified event_class.  If no events can be found
-    # returns nil to allow the calling method to perform a wait_for_next_event.
+    # Look at each event_class in priority order until the event processor can find one to process. If it can, then it removes that
+    # event from the queue and executes the transitions.  Returns the processed event.  If no events can be found
+    # that result in a transition, it returns nil to allow the calling method to perform a wait_for_next_event.
+    #
+    # @return [nil, CfsmEvent] if one or more transitions were executed returns the event causing the transition, otherwise nil
     def process_event
       @process_mutex.synchronize do
         CFSM.logger.info( "#{namespace.to_s}: checking if events can be processed.  Queue holds #{@event_queue.size} event(s)" )
@@ -273,6 +290,9 @@ module CfsmClasses
       end
     end
 
+    # Generate a string description of the event processor.
+    #
+    # @return [String] a string description of the event processor.
     def inspect
 <<HEREDOC
 Namespace: #{self.namespace}
@@ -362,22 +382,6 @@ HEREDOC
       result = ''
       @cfsms.each_pair do |klass, cfsms|
         result << "#{klass.to_s} : #{cfsms.join(', ')}\n"
-      end
-    end
-
-    # This unloads any classes derived from CFSM.  It does this by looking at all currently loaded classes,
-    # and checking if they are derived from CFSM.  IF they are, we split them into the module reference and
-    # the class name as a symbol.  We then use remove_const to get rid of them.
-    def unload_cfsm_classes
-      ObjectSpace.each_object( Class ).select do |klass|
-        if klass < CFSM
-          module_name = klass.to_s.split('::')[0..-2].join('::')
-          module_ref = module_name.empty? ? Object : Object.const_get( module_name )
-          class_sym = klass.to_s.split('::')[-1].to_sym
-          if module_ref.constants.index class_sym
-            module_ref.instance_exec( class_sym ) { |k| remove_const( k ) }
-          end
-        end
       end
     end
 
