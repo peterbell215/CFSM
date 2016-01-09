@@ -66,4 +66,20 @@ class CFSM
   # a symbol (i.e. reference to a method), or nil if the transition should occur without any further code executed.
   # This error is raised if this field contains an object other than proc, symbol, or nil.
   class CfsmErrorTransitionUnknownType < CfsmError; end
+
+  # This error is raised, if the options hash passed to the constructor of CfsmEvent includes an illegal key indicating
+  # a likely typo.
+  class CfsmEventHasIllegalOption < CfsmError
+    # @param [Hash<Symbol, Object>] hash the hash contains the invalid keys.
+    def initialize(hash)
+      @hash = hash
+    end
+
+    # @return [Hash] the illegal key value pairings in the options list.
+    attr_reader :hash
+
+    def to_s
+      "CfsmEvent has the following illegal options within the hash: #{hash.keys.to_a.to_s}"
+    end
+  end
 end

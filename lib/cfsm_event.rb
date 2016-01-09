@@ -35,19 +35,23 @@ class CfsmEvent
 
   # @param [Symbol,Class] event_class
   # @param [Hash] opts the options for this event.
-  # @option opts [String|Symbol] :src provides details of the source. If omitted stores the location from which initializer was called.
+  # @option opts [String|Symbol] :src provides details of the source. If omitted stores the location from which
+  #   initializer was called.
   # @option opts [Hash] :data provides the data for the event.
   # @option opts [Fixnum] :prio the priority of the message with 0 the lowest priority.  Default is 0.
   # @option opts [Time] :expiry the time at which the event should become live and be posted
   # @option opts [Fixnum] :delay allows the posting of the event to be delayed.  Default is 0.
-  # @option opts [true,false] :autopost allows the event to be immediately posted to the relevant CFSMs.
+  # @option opts [Boolean] :autopost allows the event to be immediately posted to the relevant CFSMs.
+  # @raise [CfsmEventHasIllegalOption] if opts contains a key other than the above.
   # @return [CfsmEvent]
-  def initialize( event_class, opts={} )
+  def initialize( event_class, options={} )
     @event_class = event_class
+    # As we destroy the hash to check that no illegal options remain, we need to clone.
+    opts = options.clone
 
     # Retrieve the data held and store as instance variables with suitable accessors
     if opts[:data]
-      @data = opts[:data]
+      @data = opts.delete(:data)
       @data.each do |k,v|
         instance_variable_set("@#{k}", v)
         eigenclass = class<<self; self; end
@@ -55,14 +59,14 @@ class CfsmEvent
       end
     end
 
-    # TODO: flag warning if attribute is in opts that we don't recognise.
-
-    @src = opts[:src] || caller(1, 1)[0]
-    @prio = opts[ :prio ] || 0
+    @src = opts.delete(:src) || caller(1, 1)[0]
+    @prio = opts.delete(:prio) || 0
     # At the point a delayed event is created, this sets an expiry for that event.
-    @expiry = opts[ :expiry ] || (opts[ :delay ] ? Time.now + opts[ :delay ] : nil )
+    @expiry = opts.delete(:expiry) || (opts[:delay] ? Time.now + opts.delete(:delay) : nil )
 
-    CFSM.post( self ) if opts[:autopost]
+    CFSM.post( self ) if opts.delete(:autopost)
+
+    raise CfsmEventHasIllegalOption.new(opts) unless opts.empty?
 
     self
   end

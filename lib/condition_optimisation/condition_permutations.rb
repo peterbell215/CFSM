@@ -1,7 +1,6 @@
 # @author Peter Bell
 # Licensed under MIT.  See License file in top level directory.
 
-# TODO do we really need set here?
 require 'set'
 
 module ConditionOptimisation
