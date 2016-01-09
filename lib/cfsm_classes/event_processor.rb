@@ -405,8 +405,7 @@ HEREDOC
               when nil
                 true
               else
-                # TODO replace this with an Exception.
-                false
+                raise CFSM::CfsmErrorTransitionUnknownType
             end
         t.fsm.instance_exec( t.new_state ) { |s| set_state(s) } if do_transition
       end

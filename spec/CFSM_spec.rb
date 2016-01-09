@@ -447,6 +447,31 @@ HEREDOC
         CFSM.post( event )
         expect { sleep 30 }.to raise_error NoMethodError
       end
+
+      it 'should correctly raise CfsmErrorTransitionUnknownType if something has gone really badly wrong' do
+        module CfsmClasses
+          class EventProcessor
+            def corrupt_transition( event )
+              @conditions[ event ][0].transitions.first.corrupt_transition
+            end
+          end
+
+          class Transition
+            def corrupt_transition
+              @transition_proc = 10
+            end
+          end
+        end
+
+        fsm = TestDo.new( 'method' )
+        fsm.set_initial_state( :a )
+
+        CFSM.start
+        CFSM.event_processors['Global'].corrupt_transition(:event)
+        CFSM.post( event )
+
+        expect { sleep 30 }.to raise_error CFSM::CfsmErrorTransitionUnknownType
+      end
     end
   end
 

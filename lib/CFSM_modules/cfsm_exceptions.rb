@@ -60,4 +60,10 @@ class CFSM
   # the RETE graph optimiser assumes everything has been defined at startup.  This exception gets raised if the system
   # detects an additional event handler being raised in a class.
   class TooLateToRegisterEvent < CfsmError; end
+
+  # This exception indicates something has gone seriously wrong. Basically the event processor has a field in which
+  # it stores what needs to happen if an event meets the conditions.  This field can either hold a Proc reference,
+  # a symbol (i.e. reference to a method), or nil if the transition should occur without any further code executed.
+  # This error is raised if this field contains an object other than proc, symbol, or nil.
+  class CfsmErrorTransitionUnknownType < CfsmError; end
 end
