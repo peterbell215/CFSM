@@ -4,7 +4,8 @@
 module ConditionOptimisation
   # Represents a set of conditions that under AND can cause a number of transitions.
   class ConditionsSet
-    # Constructor for a conditions set.
+    # Constructor for a conditions set.  Note, it creates copies of its input parameters to ensure that the originals
+    # are not affected by subsequent operations on the ConditionSet.
     #
     # @param conditions [Set<EventCondition>] defines the set of conditions all of which must be true for the transition to be executable
     # @param transitions [Set<Transitions>] defines the set of transitions to be raised if the conditions are true
@@ -12,13 +13,6 @@ module ConditionOptimisation
     def initialize( conditions, transitions )
       @conditions = Set.new( conditions )   # make a copy
       @transitions = Set.new( transitions ) # make a copy
-    end
-
-    # Create a deep copy of the condition set.  It is a deep copy since the ConditionsNode may be further
-    # split as part of optimisation.
-    def clone
-      # TODO no rspec coverage.
-      ConditionsNode.new( self.conditions, self.transitions, self.edges )
     end
 
     # This is checking whether the two nodes are close enough to then do a closer examination
@@ -29,6 +23,7 @@ module ConditionOptimisation
       self.conditions == cond_node2.conditions && self.transitions == cond_node2.transitions
     end
 
+    # @return [String] a string description of the ConditionSet in the form `{cond1, cond2} [tran1, tran2]`
     def inspect
       "{#{self.conditions.to_a.map{|t|t.inspect}.join(', ')}} [#{self.transitions.to_a.map{|t| t.to_s}.join(', ')}]"
     end
