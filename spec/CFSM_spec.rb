@@ -334,10 +334,6 @@ HEREDOC
         end
       end
 
-      context 'event variable test' do
-        # TODO these need creating.
-      end
-
       context 'event variable against state variable' do
         before( :each ) do
           class TestFSM < CFSM

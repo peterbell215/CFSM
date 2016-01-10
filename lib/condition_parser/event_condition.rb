@@ -18,6 +18,7 @@ module ConditionParser
     # @param comparator [Symbol] the comparison to be undertaken
     # @param left_term [Object] the left term of the comparator
     # @param right_term [Object]  the right term it should be compared to
+    # @return [void]
     def initialize( comparator, left_term, right_term )
       if !left_term.is_a?(FsmStateVariable) && right_term.is_a?(FsmStateVariable)
         @comparator = INVERSE[comparator]
@@ -41,11 +42,13 @@ module ConditionParser
       EventCondition.new(:==, FsmStateVariable.new( fsm_class, :state ), state)
     end
 
+    # @return [String] a string representing the event condition in the form `lhs < rhs`
     def inspect
       "#{@left_term.inspect} #{@comparator.to_s} #{@right_term.inspect}"
     end
 
     # This will evaluate for whether the condition has been met.
+    #
     # @param [Array<CFSM>] cfsms is the array of FSMs to be evaluated.
     # @return [Array<CFSM>] is the array of FSMs that match the evaluated condition.
     def evaluate( event, cfsms )
@@ -60,7 +63,6 @@ module ConditionParser
         cfsms = CFSM.state_machines( @left_term.fsm_class ).dup if cfsms == :all
         cfsms.delete_if { |fsm| !comparison_evaluate(event, fsm) }
       else
-        # TODO no rspec for this branch
         comparison_evaluate(event, nil) ? cfsms : []
       end
     end
@@ -83,7 +85,6 @@ module ConditionParser
       if self.comparator == object2.comparator
         self.left_term == object2.left_term && self.right_term == object2.right_term
       elsif INVERSE[self.comparator] == object2.comparator
-        # TODO no rspec coverage
         self.left_term == object2.right_term && self.right_term == object2.left_term
       else
         false
