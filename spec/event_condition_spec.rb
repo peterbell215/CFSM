@@ -31,6 +31,8 @@ module ConditionParser
       end
     end
 
+    # Note, these can be created using RSpec `subject`, as this is evaluated lazily.  This means that some of the
+    # CFSM classes might be empty causing CFSM to complain about lack of instantiated FSMs for a specific class.
     let!( :test_fsm1_1 ) { TestFSM1.new( 5 ) }
     let!( :fsm_condition1 ) { EventCondition::fsm_state_checker(TestFSM1, :a) }
     let!( :test_event ) { CfsmEvent.new( :test_event, :data => { :test_var => 5 } ) }

@@ -10,6 +10,8 @@ module CfsmClasses
   describe DelayedQueue do
     before(:each) { CFSM.reset }
 
+    # Note, these can be created using RSpec `subject`, as this is evaluated lazily.  This means that some of the
+    # CFSM classes might be empty causing CFSM to complain about lack of instantiated FSMs for a specific class.
     let!(:seq) { Enumerator.new { |yielder| 2.step { |num| yielder.yield num } } }
     let!(:expected_events) { Array.new(5) { d = seq.next; CfsmEvent.new( :tst_event, :delay => 2+d/2.0, :data => { :seq => d } ) } }
     let!(:expected_events_seq) { expected_events.each }

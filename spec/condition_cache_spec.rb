@@ -8,6 +8,8 @@ module ConditionParser
   describe ConditionCache do
     before(:all) { class TestFSM < CFSM; end }
 
+    # Note, these can be created using RSpec `subject`, as this is evaluated lazily.  This means that some of the
+    # CFSM classes might be empty causing CFSM to complain about lack of instantiated FSMs for a specific class.
     let!( :event_condition1 ) { EventCondition.new(:==, EventAttribute.new('attribute'), 5.0) }
     let!( :event_condition2 ) { EventCondition.new(:==, EventAttribute.new('attribute'), 5.0 ) }
     let!( :event_condition3 ) { EventCondition.new(:<, EventAttribute.new('attribute'), 5.0) }

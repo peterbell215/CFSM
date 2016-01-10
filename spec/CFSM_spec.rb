@@ -35,7 +35,8 @@ describe CFSM do
       end
     end
 
-    # TODO replace let! with subject
+    # Note, these can be created using RSpec `subject`, as this is evaluated lazily.  This means that some of the
+    # CFSM classes might be empty causing CFSM to complain about lack of instantiated FSMs for a specific class.
     let!( :test_fsm_a) { TestFSM_A.new }
     let!( :test_fsm_b1) { TestModuleB::TestFSM_B.new :test_fsm_b1 }
     let!( :test_fsm_b2) { TestModuleB::TestFSM_B.new :test_fsm_b2 }
@@ -131,7 +132,7 @@ Thread status: not started
 Condition graph: N/A
 Current queue: uninitialised
 Status of each FSM:
-{TestFSM_A=>[<name = "CFSM_spec.rb:39:in `new'", state = a>]}
+{TestFSM_A=>[<name = "CFSM_spec.rb:40:in `new'", state = a>]}
 **************************
 Namespace: TestModuleB
 Thread status: not started
@@ -309,7 +310,6 @@ HEREDOC
           end
         end
 
-        # TODO replace with subject
         # noinspection RubyArgCount
         let!( :fsm ) { TestFSM.new }
 
@@ -347,8 +347,10 @@ HEREDOC
           end
         end
 
-        let!( :fsm1 ){ TestFSM.new :fsm1 }
-        let!( :fsm2 ){ TestFSM.new :fsm2 }
+        # noinspection RubyArgCount
+        let!( :fsm1 ){ TestFSM.new(:fsm1) }
+        # noinspection RubyArgCount
+        let!( :fsm2 ){ TestFSM.new(:fsm2) }
 
         it 'should correctly compare the event attribute to the state attribute' do
           CFSM.start :sync => true
@@ -411,7 +413,7 @@ HEREDOC
         end
       end
 
-      let!(:event) { CfsmEvent.new( :event ) }
+      subject(:event) { CfsmEvent.new( :event ) }
 
       ['block' , 'method'].each do |exec_style|
         [false, true].each do |test_case|
