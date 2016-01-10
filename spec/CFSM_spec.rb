@@ -334,6 +334,35 @@ HEREDOC
         end
       end
 
+      context 'event variable test' do
+        before( :each ) do
+          class TestFSM < CFSM
+            state :a do
+              on :event1, :transition => :b, :if => 'test==1'
+            end
+          end
+        end
+
+        # noinspection RubyArgCount
+        let!( :fsm ) { TestFSM.new }
+
+        it 'should advance if the event matches the condition' do
+          CFSM.start :sync => true
+
+          expect( fsm.state ).to eq( :a )
+          CFSM.post( CfsmEvent.new(:event1, :data => { :test => 1} ) )
+          expect( fsm.state ).to eq( :b )
+        end
+
+        it 'should not advance if the event does not match the condition' do
+          CFSM.start :sync => true
+
+          expect( fsm.state ).to eq( :a )
+          CFSM.post( CfsmEvent.new(:event1, :data => { :test => 2} ) )
+          expect( fsm.state ).to eq( :a )
+        end
+      end
+
       context 'event variable against state variable' do
         before( :each ) do
           class TestFSM < CFSM
@@ -413,7 +442,7 @@ HEREDOC
 
       ['block' , 'method'].each do |exec_style|
         [false, true].each do |test_case|
-          # TODO this sometimes fails to run due to some form of race condition.
+          # TODO: this sometimes fails to run due to some form of race condition.
           it "should #{'not ' unless test_case}transition to new state if #{exec_style} returns #{test_case.to_s}" do
             fsm = TestDo.new( test_case )
             fsm.set_initial_state( :c ) if exec_style=='method'
