@@ -130,6 +130,13 @@ module ConditionOptimisation
         expect( graph[ 0 ].transitions.to_a ).to contain_exactly :fsm1
       end
 
+      it 'should leave the graph the same, if the added condition matches the first condition' do
+        graph = ConditionGraph::from_string 'start: 0;0: {1, 2} [fsm_1] -> 1;1: {3, 4} [fsm_2] -> end;'
+
+        expect( graph.add_conditions( [1, 2], :fsm_3 ) ).to eq(
+          ConditionGraph::from_string 'start: 0;0: {1, 2} [fsm_1, fsm_3] -> 1;1: {3, 4} [fsm_2] -> end;;' )
+      end
+
       it 'should create two condition chains in sequence if the 2nd is full subset of the 1st' do
         graph = ConditionGraph::from_string 'start: 0;0: {1, 2} [fsm_1] -> 1;1: {3, 4} [fsm_2] -> end;'
 
@@ -196,8 +203,9 @@ module ConditionOptimisation
                 if condition_set.delete( self )
                   return fsms
                 else
-                  # TODO RSpec never tests this line.  Therefore get coverage issue.  Should we test just to make sure we cover this failure off?
+                  # :nocov:
                   fail
+                  # :nocov:
                 end
               end
             end
