@@ -23,7 +23,7 @@ module CfsmClasses
     # @return [CfsmEvent] returns the posted event
     # @raise [CfsmEvent::EventDoesNotHaveExpiry] if the event does not have an expiry set.
     def post( event )
-      raise CfsmEvent::EventDoesNotHaveExpiry.new(event) if event.expiry.nil?
+      raise CFSM::EventDoesNotHaveExpiry.new(event) if event.expiry.nil?
 
       # Start the wait thread  once we have something to wait for.
       start_wait_thread if @wait_thread.nil?

@@ -10,29 +10,6 @@
 # @example Creating an event without a sub-class
 #   Cfsm.Event.new( :car_arrived, :data> { :from => :N, :lane => 2}, :prio => 2, :delay => 10 )
 class CfsmEvent
-  # Exception class that handles the situation where an event being processed in the DelayedQueue does not have
-  # an expiry.  This should never happen, since only CFSM classes are allowed to change the attributes of an event
-  # once created and posted.
-  class EventDoesNotHaveExpiry < RuntimeError
-    # @param [CfsmEvent] event The event giving rise to the error.
-    def initialize(event)
-      @event = event
-    end
-    # @return [CfsmEvent] The event giving rise to the error.
-    attr_reader :event
-  end
-
-  # Exception class that handles the situation where an event has been sent to the relevant namespaces for processing
-  # and then has its state set back to `:delayed`.  This should not happen.
-  class AlreadySubmittedSetToDelayed < RuntimeError
-    # @param [CfsmEvent] event The event giving rise to the error.
-    def initialize(event)
-      @event = event
-    end
-    # @return [CfsmEvent] The event giving rise to the error.
-    attr_reader :event
-  end
-
   # @param [Symbol,Class] event_class
   # @param [Hash] opts the options for this event.
   # @option opts [String|Symbol] :src provides details of the source. If omitted stores the location from which
@@ -66,7 +43,7 @@ class CfsmEvent
 
     CFSM.post( self ) if opts.delete(:autopost)
 
-    raise CfsmEventHasIllegalOption.new(opts) unless opts.empty?
+    raise CFSM::CfsmEventHasIllegalOption.new(opts) unless opts.empty?
 
     self
   end
@@ -132,7 +109,7 @@ class CfsmEvent
           @status.delete(namespace)
           @status = nil if @status.empty?
         when :delayed
-          raise AlreadySubmittedSetToDelayed.new(self)
+          raise CFSM::AlreadySubmittedSetToDelayed.new(self)
         else
           @status[namespace] = status
       end

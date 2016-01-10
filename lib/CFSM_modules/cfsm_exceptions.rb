@@ -6,6 +6,46 @@ class CFSM
   # All CFSM errors are derived from the CfsmError class to make setting up a generic handler easier.
   class CfsmError < RuntimeError; end
 
+  # Exception class that handles the situation where an event being processed in the DelayedQueue does not have
+  # an expiry.  This should never happen, since only CFSM classes are allowed to change the attributes of an event
+  # once created and posted.
+  class EventDoesNotHaveExpiry < CfsmError
+    # @param [CfsmEvent] event The event giving rise to the error.
+    def initialize(event)
+      @event = event
+    end
+    # @return [CfsmEvent] The event giving rise to the error.
+    attr_reader :event
+  end
+
+  # Exception class that handles the situation where an event has been sent to the relevant namespaces for processing
+  # and then has its state set back to `:delayed`.  This should not happen.
+  class AlreadySubmittedSetToDelayed < CfsmError
+    # @param [CfsmEvent] event The event giving rise to the error.
+    def initialize(event)
+      @event = event
+    end
+    # @return [CfsmEvent] The event giving rise to the error.
+    attr_reader :event
+  end
+
+  # This error is raised, if the options hash passed to the constructor of CfsmEvent includes an illegal key indicating
+  # a likely typo.
+  class CfsmEventHasIllegalOption < CfsmError
+    # @param [Hash<Symbol, Object>] hash the hash contains the invalid keys.
+    def initialize(hash)
+      @hash = hash
+    end
+
+    # @return [Hash] the illegal key value pairings in the options list.
+    attr_reader :hash
+
+    # @return [String] the Exceptions error message
+    def to_s
+      "CfsmEvent has the following illegal options within the hash: #{hash.keys.to_a.to_s}"
+    end
+  end
+
   # As the individual FSM classes are derived from the CFSM class, it is possible to run the start class method on a
   # child class.  However, the system is really designed to only be run on the CFSM class.  This exception gets
   # raised if start is invoked on another class.
@@ -67,19 +107,5 @@ class CFSM
   # This error is raised if this field contains an object other than proc, symbol, or nil.
   class CfsmErrorTransitionUnknownType < CfsmError; end
 
-  # This error is raised, if the options hash passed to the constructor of CfsmEvent includes an illegal key indicating
-  # a likely typo.
-  class CfsmEventHasIllegalOption < CfsmError
-    # @param [Hash<Symbol, Object>] hash the hash contains the invalid keys.
-    def initialize(hash)
-      @hash = hash
-    end
 
-    # @return [Hash] the illegal key value pairings in the options list.
-    attr_reader :hash
-
-    def to_s
-      "CfsmEvent has the following illegal options within the hash: #{hash.keys.to_a.to_s}"
-    end
-  end
 end

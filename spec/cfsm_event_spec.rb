@@ -26,6 +26,10 @@ describe CfsmEvent do
       expect( event.data_sym ).to eq( :sym )
       expect( event.status ).to be_nil
     end
+
+    it 'should raise an Exception if an unknown option is provided in the initialisation hash' do
+      expect { CfsmEvent.new( :test_event, :data => { :data_string => 'String field' }, :erroneous_field => true ) }.to raise_exception(CFSM::CfsmEventHasIllegalOption)
+    end
   end
 
   describe '#inspect' do
@@ -34,9 +38,10 @@ describe CfsmEvent do
                              :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym } ).inspect ).to \
       eq('{ test_event: src = rspec, prio = 1, status = nil, expiry = nil, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
 
+      # TODO remove the absolute line reference in the string.
       expect( CfsmEvent.new( :test_event, :prio => 2, :expiry => Time.mktime(2015,12,1,14,30),
                              :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym } ).inspect ).to \
-      eq('{ test_event: src = _spec.rb:37:in `new\', prio = 2, status = nil, expiry = 1-Dec 14:30.000, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
+      eq('{ test_event: src = _spec.rb:42:in `new\', prio = 2, status = nil, expiry = 1-Dec 14:30.000, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
     end
   end
 
@@ -54,7 +59,7 @@ describe CfsmEvent do
 
     it 'should raise an exception if already posted and then status is set to delayed' do
       event.instance_eval { set_status( :pending, 'NameSpace1' ) }
-      expect { event.instance_eval { set_status( :delayed, 'NameSpace2' ) } }.to raise_exception(CfsmEvent::AlreadySubmittedSetToDelayed)
+      expect { event.instance_eval { set_status( :delayed, 'NameSpace2' ) } }.to raise_exception(CFSM::AlreadySubmittedSetToDelayed)
     end
 
     it 'should remove namespaces correctly.' do

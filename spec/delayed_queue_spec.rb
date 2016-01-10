@@ -17,7 +17,7 @@ module CfsmClasses
     describe '#post' do
       it 'should raise exception if an event does not have a delay or expiry set' do
         delayed_queue = DelayedQueue.new { |event| }
-        expect { delayed_queue.post CfsmEvent.new( :tst_event ) }.to raise_exception CfsmEvent::EventDoesNotHaveExpiry
+        expect { delayed_queue.post CfsmEvent.new( :tst_event ) }.to raise_exception CFSM::EventDoesNotHaveExpiry
         delayed_queue.kill
       end
 
