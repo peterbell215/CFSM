@@ -3,7 +3,7 @@
 
 require 'logger'
 
-require 'cfsm_event'
+require 'CFSM_event'
 require 'cfsm_classes/transition'
 require 'cfsm_classes/prio_queue'
 require 'cfsm_classes/sorted_array'
@@ -20,8 +20,6 @@ require 'condition_optimisation/condition_graph'
 require 'condition_optimisation/conditions_node'
 require 'condition_optimisation/conditions_set'
 require 'cfsm_classes/event_processor'
-
-# TODO make filename and class name consistent
 
 # This is the core class for the system.  The user defines CFSMs by deriving a new class from this class.
 # The class definition includes the state machine definition.  For example:
@@ -139,7 +137,7 @@ class CFSM
 
   # Used to post an event to all CFSM systems that need to know about it.
   #
-  # @param [CfsmEvent] event
+  # @param [CFSMEvent] event
   def self.post( event )
     if event.expiry
       CFSM.delayed_queue.post( event )
@@ -151,7 +149,7 @@ class CFSM
   # Use to inform the system of a change in either a FSM's internal state, or an event's internal variables.
   # This should lead to re-evaluating the current set of outstanding events.
   #
-  # @param [CFSM, CfsmEvent] obj the object that has changed.
+  # @param [CFSM, CFSMEvent] obj the object that has changed.
   # @return [Boolean] returns whether an event was process
   def self.eval( obj )
     event_processed = false
@@ -160,7 +158,7 @@ class CFSM
       CFSM.event_processors.each_value do |processor|
         event_processed ||= processor.process_event if processor[obj.class]
       end
-    elsif obj.is_a? CfsmEvent
+    elsif obj.is_a? CFSMEvent
       event_processed ||= CFSM.event_processors.each_value { |processor| processor.process_event }
     end
     event_processed
@@ -174,7 +172,7 @@ class CFSM
 
   # Used to cancel an event posted into the system.
   #
-  # @param [CfsmEvent] event cancel the event in the queue
+  # @param [CFSMEvent] event cancel the event in the queue
   # @return [Boolean] returns whether cancelling of the event was successful
   def self.cancel( event )
     if CFSM.delayed_queue.cancel( event ).nil?

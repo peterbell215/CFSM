@@ -4,7 +4,7 @@
 require 'rspec'
 
 require 'CFSM'
-require 'cfsm_event'
+require 'CFSM_event'
 
 module ConditionOptimisation
   describe 'evaluate multiple graphs' do

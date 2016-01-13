@@ -4,13 +4,13 @@
 require 'rspec'
 
 require 'CFSM'
-require 'cfsm_event'
+require 'CFSM_event'
 require 'condition_parser/event_attribute'
 
 module ConditionParser
   describe EventAttribute do
     before(:all) do
-      class TestEvent < CfsmEvent
+      class TestEvent < CFSMEvent
         def initialize(a)
           @attr2 = a
         end

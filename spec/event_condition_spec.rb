@@ -35,7 +35,7 @@ module ConditionParser
     # CFSM classes might be empty causing CFSM to complain about lack of instantiated FSMs for a specific class.
     let!( :test_fsm1_1 ) { TestFSM1.new( 5 ) }
     let!( :fsm_condition1 ) { EventCondition::fsm_state_checker(TestFSM1, :a) }
-    let!( :test_event ) { CfsmEvent.new( :test_event, :data => { :test_var => 5 } ) }
+    let!( :test_event ) { CFSMEvent.new(:test_event, :data => {:test_var => 5 } ) }
     let!( :fsm_state_variable ){ FsmStateVariable.new(TestFSM1,:test_var) }
     let!( :event_attribute1 ){ EventAttribute.new(:test_var) }
     let!( :event_attribute2 ){ EventAttribute.new(:test_var2) }

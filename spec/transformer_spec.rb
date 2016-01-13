@@ -18,21 +18,21 @@ module ConditionParser
     context 'single condition evaluations' do
       it 'should produce an EventCondition of a comparison with a String' do
         expected_result = ConditionParser::EventCondition.new( :==, EventAttribute.new('a'), 'Peter')
-        expect( condition_parser.process_if( 'a == "Peter"', CfsmEvent, TestFSM ) ).to eq( expected_result )
+        expect( condition_parser.process_if('a == "Peter"', CFSMEvent, TestFSM ) ).to eq(expected_result )
       end
 
       it 'should produce an evaluation of a comparison with an Integer' do
         expected_result = ConditionParser::EventCondition.new( :==, EventAttribute.new('a'), 4)
-        expect( condition_parser.process_if( 'a == 4', CfsmEvent, TestFSM ) ).to eq( expected_result )
+        expect( condition_parser.process_if('a == 4', CFSMEvent, TestFSM ) ).to eq(expected_result )
       end
 
       it 'should produce an evaluation of a comparison with a FSM state variable' do
         expected_result = ConditionParser::EventCondition.new( :<, FsmStateVariable.new( TestFSM, 'distance_to_travel'), 5.0)
-        expect( condition_parser.process_if( '@distance_to_travel < 5.0', CfsmEvent, TestFSM ) ).to eq( expected_result )
+        expect( condition_parser.process_if('@distance_to_travel < 5.0', CFSMEvent, TestFSM ) ).to eq(expected_result )
       end
 
       it 'should produce an evaluation of a comparison between an event variable and with a FSM state variable' do
-        result = condition_parser.process_if( '@distance_to_travel < threshold_on_distance', CfsmEvent, TestFSM )
+        result = condition_parser.process_if('@distance_to_travel < threshold_on_distance', CFSMEvent, TestFSM )
         expected_result = ConditionParser::EventCondition.new( :<, FsmStateVariable.new( TestFSM, 'distance_to_travel' ),
                                                                EventAttribute.new('threshold_on_distance') )
         expect( result ).to eq( expected_result )
@@ -41,7 +41,7 @@ module ConditionParser
 
     context 'Complex expression evaluations' do
       it 'should produce an evaluation of an AND set of conditions' do
-        result = condition_parser.process_if( 'a == 4 and b == "Peter"', CfsmEvent, TestFSM )
+        result = condition_parser.process_if('a == 4 and b == "Peter"', CFSMEvent, TestFSM )
         expect( result ).to be_a Hash
         expect( result[:and] ).to be_a Array
         expect( result[:or] ).to be_nil
@@ -50,7 +50,7 @@ module ConditionParser
       end
 
       it 'should produce an evaluation of an OR set of conditions' do
-        result = condition_parser.process_if('a == 4 or b == "Peter"', CfsmEvent, TestFSM  )
+        result = condition_parser.process_if('a == 4 or b == "Peter"', CFSMEvent, TestFSM  )
         expect( result ).to have_parse_tree(
           { :or =>
             [
@@ -61,7 +61,7 @@ module ConditionParser
       end
 
       it 'should produce an evaluation of an expression including brackets' do
-        result = condition_parser.process_if('a == 4 and (@b == "Peter" or c<5)', CfsmEvent, TestFSM  )
+        result = condition_parser.process_if('a == 4 and (@b == "Peter" or c<5)', CFSMEvent, TestFSM  )
         expect( result ).to have_parse_tree(
           { :and =>
             [
@@ -78,7 +78,7 @@ module ConditionParser
 
       describe 'cache_conditions' do
         it 'should convert EventConditions to cached Fixnums' do
-          result = condition_parser.process_if('a == 4 and (@b == "Peter" or c<5)', CfsmEvent, TestFSM  )
+          result = condition_parser.process_if('a == 4 and (@b == "Peter" or c<5)', CFSMEvent, TestFSM  )
           cache = ConditionCache.new
           Transformer.cache_conditions( cache, result )
 

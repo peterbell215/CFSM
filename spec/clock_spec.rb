@@ -4,7 +4,7 @@
 require 'rspec'
 
 require 'CFSM'
-require 'cfsm_event'
+require 'CFSM_event'
 
 describe CFSM do
   it 'should run a clock FSM correctly' do

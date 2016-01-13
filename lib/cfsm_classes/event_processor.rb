@@ -230,7 +230,7 @@ module CfsmClasses
     # Receives an event for consideration by the event_class processor.  So long as the EventProcessor has
     # been started and we have a ConditionGraph for that event's class we stick it into the queue for processing.  If
     # we are not operating in async mode, then we also process the event_class.
-    # @param event [CfsmEvent] the event being posted.
+    # @param event [CFSMEvent] the event being posted.
     # @return [void]
     def post( event )
       if @thread && @conditions[ event.event_class ]
@@ -244,7 +244,7 @@ module CfsmClasses
     # Cancel a pending event_class.  Mainly used to cancel events due at point in the future.  However, can also
     # be used to cancel an event_class that is in the main queue, but has not yet been acted on.
     #
-    # @param [CfsmEvent] event
+    # @param [CFSMEvent] event
     # @return [Boolean] whether the event_class was still :pending to be cancelled.
     def cancel( event )
       CFSM.logger.info( "#{namespace.to_s}: cancelling event #{event.inspect}" )
@@ -268,7 +268,7 @@ module CfsmClasses
     # removes that event from the queue and executes the transitions.  Returns the processed event.  If no events can be
     # found that result in a transition, it returns nil to allow the calling method to perform a wait_for_next_event.
     #
-    # @return [nil, CfsmEvent] if one or more transitions were executed returns the event causing the transition, otherwise nil
+    # @return [nil, CFSMEvent] if one or more transitions were executed returns the event causing the transition, otherwise nil
     def process_event
       @process_mutex.synchronize do
         CFSM.logger.info( "#{namespace.to_s}: checking if events can be processed.  Queue holds #{@event_queue.size} event(s)" )
@@ -368,7 +368,7 @@ HEREDOC
     end
 
     # The status is something that should only be set by EventProcessor.  Therefore, it is a private method
-    # on CfsmEvent.  This helper function allows us to set the status using `#instance_exec`.
+    # on CFSMEvent.  This helper function allows us to set the status using `#instance_exec`.
     # @param [Event] event whose status needs setting
     # @param [Symbol] status the new status
     def set_event_status( event, status )
@@ -388,7 +388,7 @@ HEREDOC
     # Once we have determined that one or more transitions need to happen, then the transitions
     # are processed in this method.
     #
-    # @param event [CfsmEvent]  - the event causing the transitions
+    # @param event [CFSMEvent]  - the event causing the transitions
     # @param transitions[Array<Transition>] - the list of transitions to execute.
     def process_transitions(event, transitions)
       @event_queue.delete( event )

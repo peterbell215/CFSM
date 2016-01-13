@@ -4,12 +4,12 @@
 require 'rspec'
 
 require 'CFSM'
-require 'cfsm_event'
+require 'CFSM_event'
 
-describe CfsmEvent do
+describe CFSMEvent do
   describe '#initialize' do
     it 'should create an object with default priority and delay' do
-      event = CfsmEvent.new :test_event
+      event = CFSMEvent.new :test_event
 
       expect( event.event_class ).to eq(:test_event)
       expect( event.prio ).to eq( 0 )
@@ -18,7 +18,7 @@ describe CfsmEvent do
     end
 
     it 'should create an object with additional data items' do
-      event = CfsmEvent.new :test_event, :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym }
+      event = CFSMEvent.new :test_event, :data => {:data_string => 'String field', :data_fixnum => 5, :data_sym => :sym }
 
       expect( event.event_class ).to eq(:test_event)
       expect( event.data_string ).to eq( 'String field' )
@@ -28,25 +28,25 @@ describe CfsmEvent do
     end
 
     it 'should raise an Exception if an unknown option is provided in the initialisation hash' do
-      expect { CfsmEvent.new( :test_event, :data => { :data_string => 'String field' }, :erroneous_field => true ) }.to raise_exception(CFSM::CFSMEventHasIllegalOption)
+      expect { CFSMEvent.new(:test_event, :data => {:data_string => 'String field' }, :erroneous_field => true ) }.to raise_exception(CFSM::CFSMEventHasIllegalOption)
     end
   end
 
   describe '#inspect' do
     it 'should return a string describing the event' do
-      expect( CfsmEvent.new( :test_event, :src => 'rspec', :prio => 1,
-                             :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym } ).inspect ).to \
+      expect(CFSMEvent.new(:test_event, :src => 'rspec', :prio => 1,
+                           :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym } ).inspect ).to \
       eq('{ test_event: src = rspec, prio = 1, status = nil, expiry = nil, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
 
       # TODO remove the absolute line reference in the string.
-      expect( CfsmEvent.new( :test_event, :prio => 2, :expiry => Time.mktime(2015,12,1,14,30),
-                             :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym } ).inspect ).to \
+      expect(CFSMEvent.new(:test_event, :prio => 2, :expiry => Time.mktime(2015, 12, 1, 14, 30),
+                           :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym } ).inspect ).to \
       eq('{ test_event: src = _spec.rb:42:in `new\', prio = 2, status = nil, expiry = 1-Dec 14:30.000, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
     end
   end
 
   describe '#set_status' do
-    subject(:event) { CfsmEvent.new :test_event }
+    subject(:event) { CFSMEvent.new :test_event }
 
     it 'should create a hash to store the namespaces if set.' do
       expect( event.status ).to be_nil
@@ -95,7 +95,7 @@ describe CfsmEvent do
     it 'should allow a delayed event to become active after a certain time.' do
       test_fsm = TestFSM.new
       CFSM.start
-      test_event = CfsmEvent.new( :delayed_event, :delay => 0.10 )
+      test_event = CFSMEvent.new(:delayed_event, :delay => 0.10 )
       CFSM.post( test_event )
 
       expect( test_fsm.state ).to eql( :a )
@@ -108,7 +108,7 @@ describe CfsmEvent do
     it 'should allow a delayed event to be cancelled.' do
       test_fsm = TestFSM.new
       CFSM.start
-      test_event = CfsmEvent.new( :delayed_event, :delay => 0.10 )
+      test_event = CFSMEvent.new(:delayed_event, :delay => 0.10 )
       CFSM.post( test_event )
 
       expect( test_fsm.state ).to eql( :a )
@@ -124,7 +124,7 @@ describe CfsmEvent do
 
       expect( test_fsm.state ).to eql( :a )
 
-      test_event = CfsmEvent.new( :event )
+      test_event = CFSMEvent.new(:event )
       CFSM.post( test_event )
 
       sleep( 0.05 )

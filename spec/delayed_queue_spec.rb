@@ -13,13 +13,13 @@ module CfsmClasses
     # Note, these can be created using RSpec `subject`, as this is evaluated lazily.  This means that some of the
     # CFSM classes might be empty causing CFSM to complain about lack of instantiated FSMs for a specific class.
     let!(:seq) { Enumerator.new { |yielder| 2.step { |num| yielder.yield num } } }
-    let!(:expected_events) { Array.new(5) { d = seq.next; CfsmEvent.new( :tst_event, :delay => 2+d/2.0, :data => { :seq => d } ) } }
+    let!(:expected_events) { Array.new(5) { d = seq.next; CFSMEvent.new(:tst_event, :delay => 2+d/2.0, :data => {:seq => d } ) } }
     let!(:expected_events_seq) { expected_events.each }
 
     describe '#post' do
       it 'should raise exception if an event does not have a delay or expiry set' do
         delayed_queue = DelayedQueue.new { |event| }
-        expect { delayed_queue.post CfsmEvent.new( :tst_event ) }.to raise_exception CFSM::EventDoesNotHaveExpiry
+        expect { delayed_queue.post CFSMEvent.new(:tst_event ) }.to raise_exception CFSM::EventDoesNotHaveExpiry
         delayed_queue.kill
       end
 
@@ -41,7 +41,7 @@ module CfsmClasses
       it 'should retrieve events at the correct time if pushed in random order but no override of first element' do
         # If we add an element whose delay is ahead of the first element in the queue, this will require the Delayed
         # queue to cancel the first event and start again.  Here we avoid that edge case.  Deal with that in the next test.
-        first_event = CfsmEvent.new( :tst_event, :delay => 1, :data => { :seq => seq.next } )
+        first_event = CFSMEvent.new(:tst_event, :delay => 1, :data => {:seq => seq.next } )
         events = expected_events.shuffle.unshift first_event  # This ensures the first element is a 1s delay.  The 2nd is at least 2s
         expected_events.unshift first_event
 
@@ -60,7 +60,7 @@ module CfsmClasses
 
       it 'should receive an event that is sooner than the current top event' do
         # We add an element that is ahead of the current queue.
-        first_event = CfsmEvent.new( :tst_event, :delay => 1, :data => { :seq => seq } )
+        first_event = CFSMEvent.new(:tst_event, :delay => 1, :data => {:seq => seq } )
         events = expected_events.shuffle.push first_event      # This ensures the last element has a 1s delay.
         expected_events.unshift first_event
 

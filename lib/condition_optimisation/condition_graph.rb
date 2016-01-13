@@ -134,7 +134,7 @@ module ConditionOptimisation
     # keeping track of all fsms in play.  Once all conditions have been evaluated, then the transitions associated
     # with that condition node are added to the list of transitions that need executing.
     #
-    # @param [CfsmEvent] event
+    # @param [CFSMEvent] event
     def execute( event )
       transitions = Set.new      # list of transitions that can be executed.
 

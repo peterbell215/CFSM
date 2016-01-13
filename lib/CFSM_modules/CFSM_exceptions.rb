@@ -10,26 +10,26 @@ class CFSM
   # an expiry.  This should never happen, since only CFSM classes are allowed to change the attributes of an event
   # once created and posted.
   class EventDoesNotHaveExpiry < CFSMError
-    # @param [CfsmEvent] event The event giving rise to the error.
+    # @param [CFSMEvent] event The event giving rise to the error.
     def initialize(event)
       @event = event
     end
-    # @return [CfsmEvent] The event giving rise to the error.
+    # @return [CFSMEvent] The event giving rise to the error.
     attr_reader :event
   end
 
   # Exception class that handles the situation where an event has been sent to the relevant namespaces for processing
   # and then has its state set back to `:delayed`.  This should not happen.
   class AlreadySubmittedSetToDelayed < CFSMError
-    # @param [CfsmEvent] event The event giving rise to the error.
+    # @param [CFSMEvent] event The event giving rise to the error.
     def initialize(event)
       @event = event
     end
-    # @return [CfsmEvent] The event giving rise to the error.
+    # @return [CFSMEvent] The event giving rise to the error.
     attr_reader :event
   end
 
-  # This error is raised, if the options hash passed to the constructor of CfsmEvent includes an illegal key indicating
+  # This error is raised, if the options hash passed to the constructor of CFSMEvent includes an illegal key indicating
   # a likely typo.
   class CFSMEventHasIllegalOption < CFSMError
     # @param [Hash<Symbol, Object>] hash the hash contains the invalid keys.
@@ -42,7 +42,7 @@ class CFSM
 
     # @return [String] the Exceptions error message
     def to_s
-      "CfsmEvent has the following illegal options within the hash: #{hash.keys.to_a.to_s}"
+      "CFSMEvent has the following illegal options within the hash: #{hash.keys.to_a.to_s}"
     end
   end
 

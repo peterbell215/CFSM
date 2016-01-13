@@ -9,7 +9,7 @@
 #   data in the data hash.
 # @example Creating an event without a sub-class
 #   Cfsm.Event.new( :car_arrived, :data> { :from => :N, :lane => 2}, :prio => 2, :delay => 10 )
-class CfsmEvent
+class CFSMEvent
   # @param [Symbol,Class] event_class
   # @param [Hash] opts the options for this event.
   # @option opts [String|Symbol] :src provides details of the source. If omitted stores the location from which
@@ -20,7 +20,7 @@ class CfsmEvent
   # @option opts [Fixnum] :delay allows the posting of the event to be delayed.  Default is 0.
   # @option opts [Boolean] :autopost allows the event to be immediately posted to the relevant CFSMs.
   # @raise [CfsmEventHasIllegalOption] if opts contains a key other than the above.
-  # @return [CfsmEvent]
+  # @return [CFSMEvent]
   def initialize( event_class, options={} )
     @event_class = event_class
     # As we destroy the hash to check that no illegal options remain, we need to clone.

@@ -19,9 +19,9 @@ module CfsmClasses
     # Posts the event to the global delayed event queue.  Note that this implies that the event
     # expiry needs to be set by the caller.
     #
-    # @param [CfsmEvent] event the event being posted to the CFSMs.
-    # @return [CfsmEvent] returns the posted event
-    # @raise [CfsmEvent::EventDoesNotHaveExpiry] if the event does not have an expiry set.
+    # @param [CFSMEvent] event the event being posted to the CFSMs.
+    # @return [CFSMEvent] returns the posted event
+    # @raise [CFSMEvent::EventDoesNotHaveExpiry] if the event does not have an expiry set.
     def post( event )
       raise CFSM::EventDoesNotHaveExpiry.new(event) if event.expiry.nil?
 

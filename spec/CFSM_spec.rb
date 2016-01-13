@@ -5,7 +5,7 @@ require 'rspec'
 require 'rspec/wait'
 
 require 'CFSM'
-require 'cfsm_event'
+require 'CFSM_event'
 
 describe CFSM do
   # Reset the CFSM system each time we start an RSpec so we can define an FSM specific to the test
@@ -58,7 +58,7 @@ describe CFSM do
         expect( test_fsm_a.state ).to eq( :a )
         expect( test_fsm_a.test_method ).to eq( 'Test method invoked' )
 
-        event = CfsmEvent.new(:event1, :delay => 3600 )
+        event = CFSMEvent.new(:event1, :delay => 3600 )
 
         CFSM.start :sync => false
         CFSM.post( event )
@@ -172,7 +172,7 @@ HEREDOC
               expect(test_fsm_c.state).to eql(:a)
 
               CFSM.start options
-              CFSM.post(event = CfsmEvent.new(:event1))
+              CFSM.post(event = CFSMEvent.new(:event1))
 
               # If we are operating in async mode, then wait for the event to have been processed.
               unless options[:sync]
@@ -234,7 +234,7 @@ HEREDOC
       expect( fsm.state ).to eq( :a )
 
       CFSM.start :sync => true
-      CFSM.post( CfsmEvent.new(:event1) )
+      CFSM.post(CFSMEvent.new(:event1) )
 
       expect( fsm.state ).to eq( :b )
     end
@@ -251,7 +251,7 @@ HEREDOC
       it 'should be possible to cancel an event that is waiting' do
         test_fsm = TestFSM.new
         CFSM.start
-        event1 = CfsmEvent.new(:event1, :delay => 3600, :data => { :testcase => 0 })
+        event1 = CFSMEvent.new(:event1, :delay => 3600, :data => {:testcase => 0 })
         CFSM.post event1
         expect( event1.status ).to eq( :delayed )
         expect( CFSM.cancel event1 ).to be_truthy
@@ -261,7 +261,7 @@ HEREDOC
       it 'should be possible to cancel an event that is waiting' do
         test_fsm = TestFSM.new
         CFSM.start
-        event1 = CfsmEvent.new(:event1, :data => { :testcase => 0 })
+        event1 = CFSMEvent.new(:event1, :data => {:testcase => 0 })
         CFSM.post event1
         expect( event1.status ).to eq( :pending )
         expect( CFSM.cancel event1 ).to be_truthy
@@ -286,7 +286,7 @@ HEREDOC
       fsm_1.set_initial_state( :c )
 
       CFSM.start :sync => true
-      CFSM.post( CfsmEvent.new(:event1) )
+      CFSM.post(CFSMEvent.new(:event1) )
 
       expect( fsm_0.state ).to eq( :b )
       expect( fsm_1.state ).to eq( :c )
@@ -318,14 +318,14 @@ HEREDOC
           CFSM.start :sync => true
 
           expect( fsm.state ).to eq( :a )
-          CFSM.post( CfsmEvent.new(:event1) )
+          CFSM.post(CFSMEvent.new(:event1) )
           expect( fsm.state ).to eq( :b )
         end
 
         it "should advance once the FSM's member variable is correctly set" do
           CFSM.start :sync => true
           expect( fsm.state ).to eq( :a )
-          event = CfsmEvent.new(:event1)
+          event = CFSMEvent.new(:event1)
           CFSM.post( event )
           expect( fsm.state ).to eq( :a )
           fsm.test = 1
@@ -350,7 +350,7 @@ HEREDOC
           CFSM.start :sync => true
 
           expect( fsm.state ).to eq( :a )
-          CFSM.post( CfsmEvent.new(:event1, :data => { :test => 1} ) )
+          CFSM.post(CFSMEvent.new(:event1, :data => {:test => 1} ) )
           expect( fsm.state ).to eq( :b )
         end
 
@@ -358,7 +358,7 @@ HEREDOC
           CFSM.start :sync => true
 
           expect( fsm.state ).to eq( :a )
-          CFSM.post( CfsmEvent.new(:event1, :data => { :test => 2} ) )
+          CFSM.post(CFSMEvent.new(:event1, :data => {:test => 2} ) )
           expect( fsm.state ).to eq( :a )
         end
       end
@@ -382,7 +382,7 @@ HEREDOC
           expect( fsm1.state ).to eq(:a)
           expect( fsm2.state ).to eq(:a)
 
-          event = CfsmEvent.new :event1, :src => :fsm1, :autopost => true
+          event = CFSMEvent.new :event1, :src => :fsm1, :autopost => true
 
           expect( fsm1.state ).to eq(:b)
           expect( fsm2.state ).to eq(:a)
@@ -438,7 +438,7 @@ HEREDOC
         end
       end
 
-      subject(:event) { CfsmEvent.new( :event ) }
+      subject(:event) { CFSMEvent.new(:event ) }
 
       ['block' , 'method'].each do |exec_style|
         [false, true].each do |test_case|
@@ -512,7 +512,7 @@ HEREDOC
     end
 
     let!( :fsm ) { TestFSM.new }
-    let!( :event ) { CfsmEvent.new(:event1, :data => { :test => 2} ) }
+    let!( :event ) { CFSMEvent.new(:event1, :data => {:test => 2} ) }
 
     it 'should advance once the event matches the condition' do
       CFSM.start :sync => true

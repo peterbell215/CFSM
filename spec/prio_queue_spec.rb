@@ -11,13 +11,13 @@ module CfsmClasses
 
     context 'basic queue behaviour' do
       it 'should stack and unstack in the correct order for same priority' do
-        (0..10).each { |i| subject.push( CfsmEvent.new :test_event, :data => { :element => i } ) }
+        (0..10).each { |i| subject.push(CFSMEvent.new :test_event, :data => {:element => i } ) }
         (0..10).each { |i| expect( subject.pop.element ).to eq( i ) }
       end
 
       it 'should stack and unstack in the correct order for different priorities' do
         prio_map = (0..10).to_a.shuffle
-        (0..10).each { |i| subject.push( CfsmEvent.new :test_event, :prio => prio_map[i], :data => { :element =>  i } ) }
+        (0..10).each { |i| subject.push(CFSMEvent.new :test_event, :prio => prio_map[i], :data => {:element =>  i } ) }
         10.times do
           event = subject.pop
           expect( prio_map[event.element] ).to eq( event.prio )
@@ -27,7 +27,7 @@ module CfsmClasses
 
     context 'multi-threading' do
       it 'should allow one process to push the elements and a second to pull' do
-        (0..10).each { |i| subject.push( CfsmEvent.new :test_event, :data => { :element => i } ) }
+        (0..10).each { |i| subject.push(CFSMEvent.new :test_event, :data => {:element => i } ) }
         (0..10).each { |i| expect( subject.pop.element ).to eq( i ) }
       end
 
@@ -35,7 +35,7 @@ module CfsmClasses
         (0..10).each do |i|
           t = Thread.new { expect( subject.pop.element ).to eq(i) }
           t.wakeup
-          subject.push( CfsmEvent.new :test_event, :data => { :element => i } )
+          subject.push(CFSMEvent.new :test_event, :data => {:element => i } )
           expect( t.join(60) ).not_to be_nil
         end
       end
@@ -45,7 +45,7 @@ module CfsmClasses
 
         t= Thread.new do
           (0..50).each do |i|
-            subject.push(CfsmEvent.new :test_event, :data => {:element => i})
+            subject.push(CFSMEvent.new :test_event, :data => {:element => i})
             sleep r.rand( 3.0 )
           end
         end
@@ -67,7 +67,7 @@ module CfsmClasses
       end
 
       it 'should return the correct size for a queue with elements' do
-        11.times { subject.push( CfsmEvent.new :test_event, :prio => rand(10), :data => { :element =>  rand(10) } ) }
+        11.times { subject.push(CFSMEvent.new :test_event, :prio => rand(10), :data => {:element =>  rand(10) } ) }
         expect( subject.size ).to eq(11)
       end
     end
@@ -75,7 +75,7 @@ module CfsmClasses
     describe '#remove' do
       it 'should remove elements in the queue' do
         data = (0..10).to_a.shuffle!
-        events = Array.new(11) { CfsmEvent.new :test_event, :prio => rand(6), :data => { :element => data.pop } }
+        events = Array.new(11) { CFSMEvent.new :test_event, :prio => rand(6), :data => {:element => data.pop } }
 
         events.each { |e| subject.push( e ) }
 
@@ -88,14 +88,14 @@ module CfsmClasses
 
       it 'should return nil if attempting to remove an element not in the queue' do
         data = (0..10).to_a.shuffle!
-        11.times { subject.push( CfsmEvent.new :test_event, :prio => rand(6), :data => { :element => data.pop } ) }
+        11.times { subject.push(CFSMEvent.new :test_event, :prio => rand(6), :data => {:element => data.pop } ) }
 
-        expect( subject.delete( CfsmEvent.new :test_event, :prio => rand(6), :data => { :element => 15 } ) ).to be_nil
+        expect( subject.delete(CFSMEvent.new :test_event, :prio => rand(6), :data => {:element => 15 } ) ).to be_nil
         expect( subject.size ).to eq( 11 )
       end
 
       it 'should return nil if attempting to remove from empty queue' do
-        expect( subject.delete( CfsmEvent.new :test_event, :prio => rand(6), :data => { :element => 15 } ) ).to be_nil
+        expect( subject.delete(CFSMEvent.new :test_event, :prio => rand(6), :data => {:element => 15 } ) ).to be_nil
       end
     end
 
@@ -104,7 +104,7 @@ module CfsmClasses
         data = (0..10).to_a.shuffle
         prio = (0..10).to_a.reverse!
 
-        (0..10).each { |i| subject.push( CfsmEvent.new :test_event, :prio => prio[i], :data => { :element =>  data[i] } ) }
+        (0..10).each { |i| subject.push(CFSMEvent.new :test_event, :prio => prio[i], :data => {:element =>  data[i] } ) }
 
         subject.to_a.each_with_index do |item, index|
           expect(item.element).to eq(data[index])
@@ -119,7 +119,7 @@ module CfsmClasses
           data = (0..10).to_a.shuffle
           prio = (0..10).to_a.reverse!
 
-          (0..10).each { |i| subject.push( CfsmEvent.new :test_event, :prio => prio[i], :data => { :element => data[i] } ) }
+          (0..10).each { |i| subject.push(CFSMEvent.new :test_event, :prio => prio[i], :data => {:element => data[i] } ) }
 
           index = 0
 
@@ -134,7 +134,7 @@ module CfsmClasses
 
     describe '#inspect' do
       it 'should generate a string showing the queue.' do
-        (0..2).each { |i| subject.push( CfsmEvent.new :test_event, :prio => i, :data => { :element => i } ) }
+        (0..2).each { |i| subject.push(CFSMEvent.new :test_event, :prio => i, :data => {:element => i } ) }
 
         result = subject.inspect.split("\n")[1..-1]
 
@@ -164,12 +164,12 @@ module CfsmClasses
 
         wait_for { subject.thread_waiting?( t ) }.to be_truthy
 
-        (0..10).each {|i| subject.push(CfsmEvent.new :test_event, :data => {:element => i} ) }
+        (0..10).each {|i| subject.push(CFSMEvent.new :test_event, :data => {:element => i} ) }
       end
 
       describe '#wait_for_new_element' do
         it 'should wait for a new element to arrive even it the queue has content' do
-          6.times { subject.push( CfsmEvent.new :test_event, :prio => rand(10), :data => {:element => rand(10) } ) }
+          6.times { subject.push(CFSMEvent.new :test_event, :prio => rand(10), :data => {:element => rand(10) } ) }
 
           expect( subject.size ).to eq( 6 )
 
@@ -181,7 +181,7 @@ module CfsmClasses
           t.run
           wait_for { subject.thread_waiting?(t ) }.to be_truthy
 
-          subject.push(CfsmEvent.new :test_event, :data => { :element => 8 } )
+          subject.push(CFSMEvent.new :test_event, :data => {:element => 8 } )
           expect( t.join(60) ).not_to be_nil
         end
       end
