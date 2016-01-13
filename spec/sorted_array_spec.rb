@@ -3,7 +3,7 @@
 require 'rspec'
 require 'rspec/expectations'
 
-require 'cfsm'
+require 'CFSM'
 
 # Test class used to exercise the SortedArray.  Store insert sequence in an instance variable.
 class Entry

@@ -1,7 +1,7 @@
 # @author Peter Bell
 # Licensed under MIT.  See License file in top level directory.
 
-require 'cfsm'
+require 'CFSM'
 
 module CfsmClasses
   # This class implements a queue for delayed events.  The algorithm is as described on the

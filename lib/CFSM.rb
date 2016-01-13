@@ -161,12 +161,12 @@ class CFSM
         event_processed ||= processor.process_event if processor[obj.class]
       end
     elsif obj.is_a? CfsmEvent
-      # TODO lack of Rspec test coverage
-      event_processed ||= CFSM.event_processors[ obj ].process_event
+      event_processed ||= CFSM.event_processors.each_value { |processor| processor.process_event }
     end
     event_processed
   end
 
+  # @return [Hash{String,Symbol=>:initialising,:process_event,:running,:waiting_for_event}] a hash that maps each namespace to a status of the event processor.
   def self.status
     # TODO lack of Rspec test coverage
     CFSM.event_processors.values.inject( {} ) { |hash, processor| hash[processor.namespace] = processor.status; hash  }

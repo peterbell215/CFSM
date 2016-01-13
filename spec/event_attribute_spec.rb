@@ -3,7 +3,7 @@
 
 require 'rspec'
 
-require 'cfsm'
+require 'CFSM'
 require 'cfsm_event'
 require 'condition_parser/event_attribute'
 

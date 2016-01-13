@@ -1,6 +1,6 @@
 # @author Peter Bell
 # Licensed under MIT.  See License file in top level directory.
-require 'cfsm'
+require 'CFSM'
 
 module ConditionOptimisation
   describe ConditionsSet do

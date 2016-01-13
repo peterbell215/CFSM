@@ -1,6 +1,6 @@
 # @author Peter Bell
 # Licensed under MIT.  See License file in top level directory.
-require 'cfsm'
+require 'CFSM'
 
 module ConditionParser
   # Holds a check of the state that needs to be considered.  In our implementation which state

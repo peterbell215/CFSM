@@ -4,7 +4,7 @@
 require 'rspec'
 require 'rspec/wait'
 
-require 'cfsm'
+require 'CFSM'
 require 'cfsm_event'
 
 describe CFSM do
@@ -499,6 +499,32 @@ HEREDOC
 
         expect { sleep 30 }.to raise_error CFSM::CfsmErrorTransitionUnknownType
       end
+    end
+  end
+
+  describe '#eval' do
+    before( :each ) do
+      class TestFSM < CFSM
+        state :a do
+          on :event1, :transition => :b, :if => 'test==1'
+        end
+      end
+    end
+
+    let!( :fsm ) { TestFSM.new }
+    let!( :event ) { CfsmEvent.new(:event1, :data => { :test => 2} ) }
+
+    it 'should advance once the event matches the condition' do
+      CFSM.start :sync => true
+
+      expect( fsm.state ).to eq( :a )
+      CFSM.post( event )
+      expect( fsm.state ).to eq( :a )
+
+      event.test = 1
+
+      CFSM.eval( event )
+      expect( fsm.state ).to eq( :b )
     end
   end
 

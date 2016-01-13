@@ -2,7 +2,7 @@
 # Licensed under MIT.  See License file in top level directory.
 require 'rspec'
 
-require 'cfsm'
+require 'CFSM'
 
 module CfsmClasses
   describe Transition do

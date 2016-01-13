@@ -4,7 +4,7 @@ require 'rspec'
 require 'rspec/wait'
 require 'rspec/expectations'
 
-require 'cfsm'
+require 'CFSM'
 
 module CfsmClasses
   describe DelayedQueue do

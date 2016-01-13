@@ -2,7 +2,7 @@
 # Licensed under MIT.  See License file in top level directory.
 require 'set'
 
-require 'cfsm'
+require 'CFSM'
 
 module ConditionOptimisation
   # This is generic across all tests within this test script.  In the simplified test cases we represent

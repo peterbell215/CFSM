@@ -3,7 +3,7 @@
 require 'rspec'
 require 'rspec/wait'
 
-require 'cfsm'
+require 'CFSM'
 
 module CfsmClasses
   describe PrioQueue do

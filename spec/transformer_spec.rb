@@ -2,7 +2,7 @@
 # Licensed under MIT.  See License file in top level directory.
 require 'rspec/expectations'
 
-require 'cfsm'
+require 'CFSM'
 
 module ConditionParser
   RSpec::Matchers.define :have_parse_tree do |expected|

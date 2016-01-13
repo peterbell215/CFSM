@@ -3,7 +3,7 @@
 
 module CfsmClasses
   # This class hides the implementation complexities of the Communicating FSM system.  It is really only to be invoked from
-  # methods within the CFSM class.  Each event processor looks after one namespace and all FSMs withint that namespace.
+  # methods within the CFSM class.  Each event processor looks after one namespace and all FSMs within that namespace.
   #
   # @api private
   class EventProcessor
@@ -264,9 +264,9 @@ module CfsmClasses
       @@parser = ConditionParser::Parser.new
     end
 
-    # Look at each event_class in priority order until the event processor can find one to process. If it can, then it removes that
-    # event from the queue and executes the transitions.  Returns the processed event.  If no events can be found
-    # that result in a transition, it returns nil to allow the calling method to perform a wait_for_next_event.
+    # Look at each event_class in priority order until the event processor can find one to process. If it can, then it
+    # removes that event from the queue and executes the transitions.  Returns the processed event.  If no events can be
+    # found that result in a transition, it returns nil to allow the calling method to perform a wait_for_next_event.
     #
     # @return [nil, CfsmEvent] if one or more transitions were executed returns the event causing the transition, otherwise nil
     def process_event

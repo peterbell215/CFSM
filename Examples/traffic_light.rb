@@ -2,7 +2,7 @@ require 'tk'
 
 $LOAD_PATH.unshift("#{File.dirname(__FILE__)}/../lib")
 
-require 'cfsm'
+require 'CFSM'
 
 class TrafficLightGraphic
   ROAD_Y = 250

@@ -12,8 +12,6 @@ module ConditionParser
     # @param event_condition [ConditionNode] the event condition being cached.
     # @return [ConditionNode] the cached value - either the event condition, or a previously stored copy of the same
     def add(event_condition)
-      # TODO: we need to re-arrange the in-equality if it contains both an event attribute and a state attribute.
-
       # check if the member exists: if not add.
       index_existing_entry = self.index( event_condition )
       if index_existing_entry.nil?

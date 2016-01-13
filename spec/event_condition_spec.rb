@@ -3,7 +3,7 @@
 
 require 'rspec'
 
-require 'cfsm'
+require 'CFSM'
 
 # TODO add missing tests
 
