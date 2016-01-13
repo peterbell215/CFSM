@@ -37,7 +37,7 @@ require 'cfsm_classes/event_processor'
 #     end
 #   end
 class CFSM
-  load 'CFSM_modules/cfsm_exceptions.rb'
+  load 'CFSM_modules/CFSM_exceptions.rb'
 
   # Create the FSM.
   #

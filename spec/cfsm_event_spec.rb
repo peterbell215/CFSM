@@ -28,7 +28,7 @@ describe CfsmEvent do
     end
 
     it 'should raise an Exception if an unknown option is provided in the initialisation hash' do
-      expect { CfsmEvent.new( :test_event, :data => { :data_string => 'String field' }, :erroneous_field => true ) }.to raise_exception(CFSM::CfsmEventHasIllegalOption)
+      expect { CfsmEvent.new( :test_event, :data => { :data_string => 'String field' }, :erroneous_field => true ) }.to raise_exception(CFSM::CFSMEventHasIllegalOption)
     end
   end
 

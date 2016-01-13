@@ -43,7 +43,7 @@ class CfsmEvent
 
     CFSM.post( self ) if opts.delete(:autopost)
 
-    raise CFSM::CfsmEventHasIllegalOption.new(opts) unless opts.empty?
+    raise CFSM::CFSMEventHasIllegalOption.new(opts) unless opts.empty?
 
     self
   end
