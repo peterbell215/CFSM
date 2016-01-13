@@ -4,10 +4,10 @@
 require 'logger'
 
 require 'CFSM_event'
-require 'cfsm_classes/transition'
-require 'cfsm_classes/prio_queue'
-require 'cfsm_classes/sorted_array'
-require 'cfsm_classes/delayed_queue'
+require 'CFSM_classes/transition'
+require 'CFSM_classes/prio_queue'
+require 'CFSM_classes/sorted_array'
+require 'CFSM_classes/delayed_queue'
 require 'condition_parser/parser'
 require 'condition_parser/event_condition'
 require 'condition_parser/event_attribute'
@@ -19,7 +19,7 @@ require 'condition_optimisation/condition_graph_factory'
 require 'condition_optimisation/condition_graph'
 require 'condition_optimisation/conditions_node'
 require 'condition_optimisation/conditions_set'
-require 'cfsm_classes/event_processor'
+require 'CFSM_classes/event_processor'
 
 # This is the core class for the system.  The user defines CFSMs by deriving a new class from this class.
 # The class definition includes the state machine definition.  For example:
