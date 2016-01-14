@@ -219,6 +219,32 @@ HEREDOC
         end
       end
     end
+
+    describe '#eval' do
+      before( :each ) do
+        class TestFSMwithEventCondition < CFSM
+          state :a do
+            on :event1, :transition => :b, :if => 'test==1'
+          end
+        end
+      end
+
+      let!( :fsm ) { TestFSMwithEventCondition.new }
+      let!( :event ) { CFSMEvent.new(:event1, :data => {:test => 2} ) }
+
+      it 'should advance once the event matches the condition' do
+        CFSM.start :sync => true
+
+        expect( fsm.state ).to eq( :a )
+        CFSM.post( event )
+        expect( fsm.state ).to eq( :a )
+
+        event.test = 1
+
+        CFSM.eval( event )
+        expect( fsm.state ).to eq( :b )
+      end
+    end
   end
 
   context 'running the FSMs' do
@@ -476,7 +502,7 @@ HEREDOC
       end
 
       it 'should correctly raise CfsmErrorTransitionUnknownType if something has gone really badly wrong' do
-        module CfsmClasses
+        module CFSMClasses
           class EventProcessor
             def corrupt_transition( event )
               @conditions[ event ][0].transitions.first.corrupt_transition
@@ -497,35 +523,8 @@ HEREDOC
         CFSM.event_processors['Global'].corrupt_transition(:event)
         CFSM.post( event )
 
-        expect { sleep 30 }.to raise_error CFSM::CfsmErrorTransitionUnknownType
+        expect { sleep 30 }.to raise_error CFSM::CFSMErrorTransitionUnknownType
       end
     end
   end
-
-  describe '#eval' do
-    before( :each ) do
-      class TestFSM < CFSM
-        state :a do
-          on :event1, :transition => :b, :if => 'test==1'
-        end
-      end
-    end
-
-    let!( :fsm ) { TestFSM.new }
-    let!( :event ) { CFSMEvent.new(:event1, :data => {:test => 2} ) }
-
-    it 'should advance once the event matches the condition' do
-      CFSM.start :sync => true
-
-      expect( fsm.state ).to eq( :a )
-      CFSM.post( event )
-      expect( fsm.state ).to eq( :a )
-
-      event.test = 1
-
-      CFSM.eval( event )
-      expect( fsm.state ).to eq( :b )
-    end
-  end
-
 end

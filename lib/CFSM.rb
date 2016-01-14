@@ -70,7 +70,7 @@ class CFSM
   # @param specs [Proc] the body of the class definitions.  Contains the *on* calls.  Executed by the EventProcessor.
   # @return [CFSM] returns the CFSM object itself
   def self.state(state, other_parameters = {}, &specs)
-    event_processor = ( CFSM.event_processors[self.namespace] ||= CfsmClasses::EventProcessor.new(self.namespace) )
+    event_processor = ( CFSM.event_processors[self.namespace] ||= CFSMClasses::EventProcessor.new(self.namespace) )
     event_processor.register_events( self, state, other_parameters, &specs )
     self
   end
@@ -100,7 +100,7 @@ class CFSM
     end
 
     # We have successfully started each processor.  Therefore we have no need for the parser.
-    CfsmClasses::EventProcessor.restart_parser
+    CFSMClasses::EventProcessor.restart_parser
 
     # Force a garbage collection.
     GC.start(:full_mark => :true)
@@ -132,7 +132,7 @@ class CFSM
     end
 
     # We have successfully started each processor.  Therefore we have no need for the parser.
-    CfsmClasses::EventProcessor.shutdown_parser
+    CFSMClasses::EventProcessor.shutdown_parser
   end
 
   # Used to post an event to all CFSM systems that need to know about it.
@@ -226,7 +226,7 @@ class CFSM
   @logger = Logger.new('cfsm.log', 0)
 
   # We have one delayed event queue.  Once the event has expired, then we push it to the processors.
-  @delayed_queue = CfsmClasses::DelayedQueue.new do |event|
+  @delayed_queue = CFSMClasses::DelayedQueue.new do |event|
     event.reset_expiry
     post( event )
   end

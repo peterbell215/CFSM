@@ -3,7 +3,7 @@
 
 require 'pathname'
 
-module CfsmClasses
+module CFSMClasses
   ##
   # Used to describe a state transition.
   class Transition

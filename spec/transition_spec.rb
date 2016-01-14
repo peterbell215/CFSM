@@ -4,7 +4,7 @@ require 'rspec'
 
 require 'CFSM'
 
-module CfsmClasses
+module CFSMClasses
   describe Transition do
     before(:each) do
       CFSM.reset

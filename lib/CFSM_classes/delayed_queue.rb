@@ -3,7 +3,7 @@
 
 require 'CFSM'
 
-module CfsmClasses
+module CFSMClasses
   # This class implements a queue for delayed events.  The algorithm is as described on the
   # Wikipedia page.  Once a delayed event is posted, it is given an expiry time.  Alternatively, it may have an
   # expiry time set.
@@ -21,7 +21,7 @@ module CfsmClasses
     #
     # @param [CFSMEvent] event the event being posted to the CFSMs.
     # @return [CFSMEvent] returns the posted event
-    # @raise [CFSMEvent::EventDoesNotHaveExpiry] if the event does not have an expiry set.
+    # @raise [CFSM::EventDoesNotHaveExpiry] if the event does not have an expiry set.
     def post( event )
       raise CFSM::EventDoesNotHaveExpiry.new(event) if event.expiry.nil?
 

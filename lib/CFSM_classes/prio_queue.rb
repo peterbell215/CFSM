@@ -1,7 +1,7 @@
 # @author Peter Bell
 # Licensed under MIT.  See License file in top level directory.
 
-module CfsmClasses
+module CFSMClasses
   # This class implements a thread safe priority queue designed around our requirements.
   class PrioQueue
     def initialize

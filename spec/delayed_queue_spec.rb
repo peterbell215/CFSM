@@ -6,7 +6,7 @@ require 'rspec/expectations'
 
 require 'CFSM'
 
-module CfsmClasses
+module CFSMClasses
   describe DelayedQueue do
     before(:each) { CFSM.reset }
 

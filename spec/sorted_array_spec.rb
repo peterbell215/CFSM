@@ -27,7 +27,7 @@ class Entry
   end
 end
 
-module CfsmClasses
+module CFSMClasses
   describe SortedArray do
     subject { SortedArray.new { |e1, e2| e1.prio <=>e2.prio } }
 

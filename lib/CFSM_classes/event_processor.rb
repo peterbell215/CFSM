@@ -1,7 +1,7 @@
 # @author Peter Bell
 # Licensed under MIT.  See License file in top level directory.
 
-module CfsmClasses
+module CFSMClasses
   # This class hides the implementation complexities of the Communicating FSM system.  It is really only to be invoked from
   # methods within the CFSM class.  Each event processor looks after one namespace and all FSMs within that namespace.
   #
@@ -124,7 +124,7 @@ module CfsmClasses
       # Create the transition object
       raise BlockAndExecDefined if proc && parameters[:exec]
       proc ||= parameters[:exec]
-      transition = CfsmClasses::Transition.new( @klass_being_defined, parameters[:transition], proc )
+      transition = CFSMClasses::Transition.new(@klass_being_defined, parameters[:transition], proc )
 
       # Store the event_class.
       @conditions[event_class].push Struct::EventTree.new( if_tree, transition )
@@ -405,7 +405,7 @@ HEREDOC
               when nil
                 true
               else
-                raise CFSM::CfsmErrorTransitionUnknownType
+                raise CFSM::CFSMErrorTransitionUnknownType
             end
         t.fsm.instance_exec( t.new_state ) { |s| set_state(s) } if do_transition
       end

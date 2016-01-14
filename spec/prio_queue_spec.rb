@@ -5,7 +5,7 @@ require 'rspec/wait'
 
 require 'CFSM'
 
-module CfsmClasses
+module CFSMClasses
   describe PrioQueue do
     before(:each) { CFSM.reset }
 

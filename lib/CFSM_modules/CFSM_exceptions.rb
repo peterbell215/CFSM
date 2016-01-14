@@ -105,7 +105,7 @@ class CFSM
   # it stores what needs to happen if an event meets the conditions.  This field can either hold a Proc reference,
   # a symbol (i.e. reference to a method), or nil if the transition should occur without any further code executed.
   # This error is raised if this field contains an object other than proc, symbol, or nil.
-  class CfsmErrorTransitionUnknownType < CFSMError; end
+  class CFSMErrorTransitionUnknownType < CFSMError; end
 
 
 end

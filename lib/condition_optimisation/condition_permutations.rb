@@ -55,7 +55,7 @@ module ConditionOptimisation
     # the test of all the conditions.  This is added to the existing graph of possible ConditionGraphs held in
     # set_of_graphs.
     #
-    # @param [Hash<Set<ConditionParser::EventCondition> => CfsmClasses::Transition>] condition_sets
+    # @param [Hash<Set<ConditionParser::EventCondition> => CFSMClasses::Transition>] condition_sets
     # @param [Array<ConditionParser::EventCondition>] seq_of_insertions
     # @return [Array<GraphEntry>]
     def apply_one_permutation( condition_sets, seq_of_insertions )

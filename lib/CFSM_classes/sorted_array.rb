@@ -1,7 +1,7 @@
 # @author Peter Bell
 # Licensed under MIT.  See License file in top level directory.
 
-module CfsmClasses
+module CFSMClasses
   # Creates an array that is maintained in a sorted fashion.  Note, that if two elements are the same
   # then the second element is inserted after the first.  This ensures that for two elements with the
   # same priority we maintain first-in-first-out as required for a prioritised queue.
