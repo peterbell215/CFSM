@@ -26,13 +26,13 @@ class CFSMEvent
     # As we destroy the hash to check that no illegal options remain, we need to clone.
     opts = options.clone
 
-    # Retrieve the data held and store as instance variables with suitable accessors
+    # Create accessors for the elements of the data hash
     if opts[:data]
       @data = opts.delete(:data)
-      @data.each do |k,v|
-        instance_variable_set("@#{k}", v)
-        eigenclass = class<<self; self; end
-        eigenclass.class_eval { attr_accessor k }
+      eigenclass = class << self; self end
+      @data.each_key do |k|
+        eigenclass.class_eval "def #{k.to_s}=(v) @data[#{k.inspect}]=v; end"
+        eigenclass.class_eval "def #{k.to_s}() @data[#{k.inspect}]; end"
       end
     end
 
@@ -65,14 +65,12 @@ class CFSMEvent
   # o _processed_ once the event has been processed in the said namespace.
   #
   # @param [String] namespace the namespace in which we are querying the status.  IF not specified, then returned or the Global namespace
-  # @return [Symobol,nil] the status. If the event has not yet been posted to the namespace, then `nil`
+  # @return [nil, :delayed, :pending, :processed] status of the event within its lifecycle.  Nil indicates an event
+  #    that has been created but has not been sent of a CFSM for processing.
   def status( namespace = 'Global' )
     @status.is_a?(Hash) ? @status[namespace] : @status
   end
 
-  # @!attribute [r] status
-  #   @return [nil, :delayed, :pending, :processed] status of the event within its lifecycle.  Nil indicates an event
-  #      that has been created but has not been sent of a CFSM for processing.
   attr_reader :src
   attr_reader :event_class
   attr_reader :prio

@@ -18,17 +18,37 @@ describe CFSMEvent do
     end
 
     it 'should create an object with additional data items' do
-      event = CFSMEvent.new :test_event, :data => {:data_string => 'String field', :data_fixnum => 5, :data_sym => :sym }
+      event = CFSMEvent.new :test_event, :data => {:data_string => 'String field', :data_fixnum => 5,
+                                                   :data_sym => :sym }
 
       expect( event.event_class ).to eq(:test_event)
       expect( event.data_string ).to eq( 'String field' )
+      expect( event.data[:data_string] ).to eq('String field')
       expect( event.data_fixnum ).to eq( 5 )
+      expect( event.data[:data_fixnum] ).to eq( 5 )
       expect( event.data_sym ).to eq( :sym )
       expect( event.status ).to be_nil
     end
 
     it 'should raise an Exception if an unknown option is provided in the initialisation hash' do
       expect { CFSMEvent.new(:test_event, :data => {:data_string => 'String field' }, :erroneous_field => true ) }.to raise_exception(CFSM::CFSMEventHasIllegalOption)
+    end
+  end
+
+  describe 'data methods' do
+    it 'should create a setter for the keys in the data hash' do
+      event = CFSMEvent.new :test_event, :data => { :data_string => 'String value' }
+
+      expect( event.data_string ).to eq( 'String value' )
+      expect( event.data[:data_string] ).to eq('String value')
+
+      event.data_string = 'New string value'
+      expect( event.data_string ).to eq( 'New string value' )
+      expect( event.data[:data_string] ).to eq('New string value')
+
+      event.data[:data_string] = 'Yet another new string value'
+      expect( event.data_string ).to eq( 'Yet another new string value' )
+      expect( event.data[:data_string] ).to eq('Yet another new string value')
     end
   end
 
@@ -41,7 +61,7 @@ describe CFSMEvent do
       # TODO remove the absolute line reference in the string.
       expect(CFSMEvent.new(:test_event, :prio => 2, :expiry => Time.mktime(2015, 12, 1, 14, 30),
                            :data => { :data_string => 'String field', :data_fixnum => 5, :data_sym => :sym } ).inspect ).to \
-      eq('{ test_event: src = _spec.rb:42:in `new\', prio = 2, status = nil, expiry = 1-Dec 14:30.000, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
+      eq('{ test_event: src = _spec.rb:62:in `new\', prio = 2, status = nil, expiry = 1-Dec 14:30.000, data = {:data_string=>"String field", :data_fixnum=>5, :data_sym=>:sym} }')
     end
   end
 
