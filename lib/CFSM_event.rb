@@ -36,7 +36,8 @@ class CFSMEvent
       end
     end
 
-    @src = opts.delete(:src) || caller(1, 1)[0]
+    @src = opts.delete(:src) ||
+        "#{Pathname.new(caller_locations[0].absolute_path).relative_path_from(CFSM.home_dir).to_s}:#{caller_locations[0].lineno}"
     @prio = opts.delete(:prio) || 0
     # At the point a delayed event is created, this sets an expiry for that event.
     @expiry = opts.delete(:expiry) || (opts[:delay] ? Time.now + opts.delete(:delay) : nil )
@@ -78,7 +79,7 @@ class CFSMEvent
   attr_reader :expiry
 
   def inspect
-    "{ #{ self.event_class.to_s }: src = #{self.src.to_s[-20..-1] || self.src.to_s}, prio = #{self.prio.to_s}, "\
+    "{ #{ self.event_class.to_s }: src = #{self.src}, prio = #{self.prio.to_s}, "\
     "status = #{@status ? @status.to_s : 'nil'}, expiry = #{self.expiry ? self.expiry.strftime("%-d-%b %H:%M.%3N") : 'nil'}, data = #{ self.data.inspect } }"
   end
 

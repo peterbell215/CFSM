@@ -37,6 +37,23 @@ require 'CFSM_classes/event_processor'
 class CFSM
   load 'CFSM_modules/CFSM_exceptions.rb'
 
+  # On the initial load which is assumed to be a `require` in the main Ruby file, we determine the path
+  # name. Any paths in the log file will be relative to this home directory to keep the info manageable.
+  @home_dir = Pathname.new(/(.*)\:[0-9]+\:in `require'/.match(caller[1])[1]).parent
+  def self.home_dir
+    @home_dir
+  end
+
+  # Provide a logger to be used throughout the system.
+  File.delete('cfsm.log') if File.exist?('cfsm.log')
+  @logger = Logger.new('cfsm.log', 0)
+
+  # We provide a logger to track how the system is performing.  This is really just a frontend for the Logger
+  # class.
+  def self.logger
+    @logger
+  end
+
   # Create the FSM.
   #
   # @param [Symbol, String] name the name of the FSM.  If no name is given, then the filename and line from which the
@@ -79,6 +96,7 @@ class CFSM
   # and that these FSMS then run until the system terminates.  The system does not expect new classes of FSMs to
   # be added once the CFSM.start method is invoked.  This is not the case, when we are unit testing using Rspec.
   # This method allows us to reset the CFSM system to allow new state machines to be defined.
+  # @return [void]
   def self.reset
     delayed_queue.cancel_all
 
@@ -113,15 +131,16 @@ class CFSM
   # non-async mode, control is only returned to the posting process, once the event has been processed.
   #
   # @param [Hash] options defines various options for the start command
-  # @option options [Array<Module>,Module] :namespace defines the namespace that should be started.  If missing all
+  # @option :namespace [Array<Module>,Module]  defines the namespace that should be started.  If missing all
   #     namespaces are started.
-  # @option options [True,False] :sync defines whether the execution of the namespaces should be run synchronous,
+  # @option :sync [Boolean] defines whether the execution of the namespaces should be run synchronous,
+  # @return [void]
   # @raise [OnlyStartOnCFSMClass] if we try and invoke the class _start_ method on a child class.
   def self.start( options = {} )
     raise OnlyStartOnCFSMClass.new(self) if self != CFSM
 
     namespaces =
-        if ( ns = options[:namespace])
+        if ( ns = options[:namespace] )
           ns.is_a?(Array) ? ns : [ns]
         else
           CFSM.event_processors.keys
@@ -213,17 +232,6 @@ class CFSM
   def self.thread_status
     CFSM.event_processors[ self.namespace ].thread_status
   end
-
-  # We provide a logger to track how the system is performing.  This is really just a frontend for the Logger
-  # class.
-  def self.logger
-    @logger
-  end
-
-  # Provide a logger to be used throughout the system.
-  # @TODO: need to deal with the cfsm.log not being available.
-  File.delete('cfsm.log')
-  @logger = Logger.new('cfsm.log', 0)
 
   # We have one delayed event queue.  Once the event has expired, then we push it to the processors.
   @delayed_queue = CFSMClasses::DelayedQueue.new do |event|
