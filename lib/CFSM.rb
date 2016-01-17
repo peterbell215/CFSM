@@ -36,23 +36,7 @@ require 'CFSM_classes/event_processor'
 #   end
 class CFSM
   load 'CFSM_modules/CFSM_exceptions.rb'
-
-  # On the initial load which is assumed to be a `require` in the main Ruby file, we determine the path
-  # name. Any paths in the log file will be relative to this home directory to keep the info manageable.
-  @home_dir = Pathname.new(/(.*)\:[0-9]+\:in `require'/.match(caller[1])[1]).parent
-  def self.home_dir
-    @home_dir
-  end
-
-  # Provide a logger to be used throughout the system.
-  File.delete('cfsm.log') if File.exist?('cfsm.log')
-  @logger = Logger.new('cfsm.log', 0)
-
-  # We provide a logger to track how the system is performing.  This is really just a frontend for the Logger
-  # class.
-  def self.logger
-    @logger
-  end
+  load 'CFSM_modules/CFSM_logger.rb'
 
   # Create the FSM.
   #

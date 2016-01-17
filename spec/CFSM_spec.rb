@@ -63,8 +63,8 @@ describe CFSM do
         CFSM.start :sync => false
         CFSM.post( event )
 
-        CFSM.logger.debug(' Rspec ')
-        CFSM.logger.debug( CFSM.dump_to_string )
+        CFSM.logger.debug('Rspec')
+        CFSM.dump_to_string.each_line { |line| CFSM.logger.debug '  ' << line.chomp }
 
         # At this point the CFSM is running.  Now reset.
         CFSM.reset
@@ -224,13 +224,13 @@ HEREDOC
       before( :each ) do
         class TestFSMwithEventCondition < CFSM
           state :a do
-            on :event1, :transition => :b, :if => 'test==1'
+            on :event_with_data, :transition => :b, :if => 'test==1'
           end
         end
       end
 
       let!( :fsm ) { TestFSMwithEventCondition.new }
-      let!( :event ) { CFSMEvent.new(:event1, :data => {:test => 2} ) }
+      let!( :event ) { CFSMEvent.new(:event_with_data, :data => {:test => 2} ) }
 
       it 'should advance once the event matches the condition' do
         CFSM.start :sync => true
