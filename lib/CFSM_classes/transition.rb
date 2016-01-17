@@ -46,6 +46,7 @@ module CFSMClasses
         when Symbol
           result << " on exec of #{transition_proc.to_s}"
       end
+      result
     end
 
     alias to_s inspect
